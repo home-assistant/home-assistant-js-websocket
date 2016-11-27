@@ -3,7 +3,7 @@
 This is a websocket client written in JavaScript that communicates with the Home Assistant websocket API. It can be used to integrate Home Assistant into your apps.
 
 ```javascript
-import createConnection from 'home-assistant-js-websocket';
+import { createConnection } from 'home-assistant-js-websocket';
 
 function stateChanged(event) {
   console.log('state changed', event);
@@ -19,6 +19,8 @@ createConnection('ws://localhost:8123/api/websocket').then(
 ```
 
 ## Usage
+
+### Initializing connection
 
 Connections to the websocket API are initiated by calling `createConnection(url[, options])`. `createConnection` will return a promise that will resolve to either a `Connection` object or rejects with an error code.
 
@@ -45,7 +47,7 @@ You can import them into your code as follows:
 import { ERR_CANNOT_CONNECT, ERR_INVALID_AUTH } from 'home-assistant-js-websocket';
 ```
 
-## Automatic reconnecting
+#### Automatic reconnecting
 
 The connection object will automatically try to reconnect to the server when the connection gets lost. On reconnect, it will automatically resubscribe the event listeners.
 
@@ -61,6 +63,23 @@ You can attach listeners as follows:
 ```javascript
 conn.addEventListener('ready', conn => {
   console.log('Connection has been established again');
+});
+```
+
+### Entities
+
+An Entity Store is available that at all times will represent the latest information about the available entities. It is possible to listen for `change` events on the store to be notified when it gets updated.
+
+
+```javascript
+import { createEntityStore } from 'home-assistant-js-websocket';
+
+// conn is connection from earlier.
+
+createEntityStore(conn).then((entityStore) => {
+  console.log('Current entities', entityStore.entities);
+
+  entityStore.addEventListener('change', entities => console.log('Store updated!', entities));
 });
 ```
 
@@ -91,3 +110,7 @@ Call a service within Home Assistant. Returns a promise that will resolve when t
 Subscribe to all or specific events on the Home Assistant bus. Calls `eventCallback` for each event that gets received.
 
 Returns a promise that will resolve to a function that will cancel the subscription once called.
+
+#### `conn.addEventListener(eventType, listener)
+
+Listen for events on the connection. [See docs.](#automatic-reconnecting)
