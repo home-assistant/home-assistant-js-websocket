@@ -1,6 +1,6 @@
 # :aerial_tramway: JavaScript websocket client for Home Assistant
 
-This is a websocket client written in JavaScript that communicates with the Home Assistant websocket API. It can be used to integrate Home Assistant into your apps.
+This is a websocket client written in JavaScript that communicates with the Home Assistant websocket API. It can be used to integrate Home Assistant into your apps. It has 0 dependencies.
 
 ```javascript
 import { createConnection } from 'home-assistant-js-websocket';
@@ -70,19 +70,14 @@ conn.addEventListener('ready', conn => {
 
 ### Entities
 
-An Entity Store is available that at all times will represent the latest information about the available entities. It is possible to listen for `change` events on the store to be notified when it gets updated.
-
+You can subscribe to the entities of Home Assistant. Your callback will be called when the entities are first loaded and on every change after that. The function `subscribeEntities` will return a promise that resolves to an unsubscribe function.
 
 ```javascript
-import { createEntityStore } from 'home-assistant-js-websocket';
+import { subscribeEntities } from 'home-assistant-js-websocket';
 
-// conn is connection from earlier.
+// conn is the connection from earlier.
 
-createEntityStore(conn).then((entityStore) => {
-  console.log('Current entities', entityStore.entities);
-
-  entityStore.addEventListener('change', entities => console.log('Store updated!', entities));
-});
+subscribeEntities(conn, entities => console.log('New entities!', entities));
 ```
 
 ## Connection API Reference
