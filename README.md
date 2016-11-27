@@ -3,7 +3,7 @@
 This is a websocket client written in JavaScript that communicates with the Home Assistant websocket API. It can be used to integrate Home Assistant into your apps. It has 0 dependencies.
 
 ```javascript
-import { createConnection } from 'home-assistant-js-websocket';
+import { createConnection, subscribeEntities } from 'home-assistant-js-websocket';
 
 function stateChanged(event) {
   console.log('state changed', event);
@@ -12,7 +12,7 @@ function stateChanged(event) {
 createConnection('ws://localhost:8123/api/websocket').then(
   (conn) => {
     console.log('Connection established!');
-    conn.subscribeEvents(stateChanged, 'state_changed');
+    subscribeEntities(conn, entities => console.log('New entities!', entities));
   },
   err => console.error('Connection failed with code', err)
 )
