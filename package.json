@@ -1,6 +1,6 @@
 {
   "name": "home-assistant-js-websocket",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Home Assistant websocket client",
   "main": "dist/haws.cjs.js",
   "jsnext:main": "dist/haws.es.js",
@@ -10,13 +10,13 @@
     "type": "git"
   },
   "scripts": {
-    "dev": "rollup -c --watch --sourcemap inline",
+    "watch": "rollup -c --watch --sourcemap inline",
     "build": "rollup -c --environment BUILD_DEV:0",
-    "test": "eslint lib"
+    "lint": "eslint lib"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
   "license": "MIT",
-  "dependencies": {
+  "devDependencies": {
     "eslint": "^3.11.0",
     "eslint-config-airbnb-base": "^10.0.1",
     "eslint-plugin-import": "^2.2.0",
@@ -26,5 +26,8 @@
     "rollup-plugin-uglify": "^1.0.1",
     "rollup-watch": "^2.5.0",
     "uglify-js": "git+https://github.com/mishoo/UglifyJS2.git#harmony"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }
