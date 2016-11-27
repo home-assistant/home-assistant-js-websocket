@@ -8,6 +8,7 @@
     "browser": true
   },
   "rules": {
-    "no-plusplus": 0
+    "no-plusplus": 0,
+    "comma-dangle": 0
   }
 }

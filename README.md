@@ -70,7 +70,9 @@ conn.addEventListener('ready', conn => {
 
 ### Entities
 
-You can subscribe to the entities of Home Assistant. Your callback will be called when the entities are first loaded and on every change after that. The function `subscribeEntities` will return a promise that resolves to an unsubscribe function.
+You can subscribe to the entities of Home Assistant. Your callback will be called when the entities are first loaded and on every change after that.
+
+The function `subscribeEntities` will return a promise that resolves to an unsubscribe function.
 
 ```javascript
 import { subscribeEntities } from 'home-assistant-js-websocket';
@@ -78,6 +80,20 @@ import { subscribeEntities } from 'home-assistant-js-websocket';
 // conn is the connection from earlier.
 
 subscribeEntities(conn, entities => console.log('New entities!', entities));
+```
+
+### Config
+
+You can subscribe to the config of Home Assistant. Config can change when either a component gets loaded or a new service gets registered.
+
+The function `subscribeConfig` will return a promise that resolves to an unsubscribe function.
+
+```javascript
+import { subscribeConfig } from 'home-assistant-js-websocket';
+
+// conn is the connection from earlier.
+
+subscribeConfig(conn, config => console.log('New config!', config));
 ```
 
 ## Connection API Reference
