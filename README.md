@@ -18,6 +18,8 @@ createConnection('ws://localhost:8123/api/websocket').then(
 )
 ```
 
+[Try it on JSFiddle.](https://jsfiddle.net/balloob/9w3oyswa/)
+
 ## Usage
 
 ### Initializing connection
