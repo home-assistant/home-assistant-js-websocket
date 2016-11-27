@@ -1,2 +1,93 @@
-# home-assistant-js-websocket
-:aerial_tramway: JavaScript websocket client for Home Assistant
+# :aerial_tramway: JavaScript websocket client for Home Assistant
+
+This is a websocket client written in JavaScript that communicates with the Home Assistant websocket API. It can be used to integrate Home Assistant into your apps.
+
+```javascript
+import createConnection from 'home-assistant-js-websocket';
+
+function stateChanged(event) {
+  console.log('state changed', event);
+}
+
+createConnection('ws://localhost:8123/api/websocket').then(
+  (conn) => {
+    console.log('Connection established!');
+    conn.subscribeEvents(stateChanged, 'state_changed');
+  },
+  err => console.error('Connection failed with code', err)
+)
+```
+
+## Usage
+
+Connections to the websocket API are initiated by calling `createConnection(url[, options])`. `createConnection` will return a promise that will resolve to either a `Connection` object or rejects with an error code.
+
+#### Available options
+
+Currently the following options are available:
+
+| Option | Description |
+| ------ | ----------- |
+| authToken | Auth token to use to validate with Home Assistant.
+
+#### Possible error codes
+
+Currently the following error codes can be expected:
+
+| Error | Description |
+| ----- | ----------- |
+| ERR_CANNOT_CONNECT | If the client was unable to connect to the websocket API.
+| ERR_INVALID_AUTH | If the supplied authentication was invalid.
+
+You can import them into your code as follows:
+
+```javascript
+import { ERR_CANNOT_CONNECT, ERR_INVALID_AUTH } from 'home-assistant-js-websocket';
+```
+
+## Automatic reconnecting
+
+The connection object will automatically try to reconnect to the server when the connection gets lost. On reconnect, it will automatically resubscribe the event listeners.
+
+The `Connection` object implements two events to signal loss of connection and successful reconnect.
+
+| Event | Description |
+| ----- | ----------- |
+| ready | Fired when authentication is successful and the connection is ready to take commands.
+| disconnected | Fired when the connection is lost.
+
+You can attach listeners as follows:
+
+```javascript
+conn.addEventListener('ready', conn => {
+  console.log('Connection has been established again');
+});
+```
+
+## Connection API Reference
+
+##### `conn.getStates()`
+
+Get the state of all entities. Returns a promise that will resolve to the result of querying the server for all the states.
+
+##### `conn.getServices()`
+
+Get all available services. Returns a promise that will resolve to the result of querying the server for all the services.
+
+##### `conn.getPanels()`
+
+Get the Home Assistant panel config. Returns a promise that will resolve to the result of querying the server for all the panels config.
+
+##### `conn.getConfig()`
+
+Get the Home Assistant server config. Returns a promise that will resolve to the result of querying the server for all the config.
+
+##### `conn.callService(domain, service[, serviceData])`
+
+Call a service within Home Assistant. Returns a promise that will resolve when the service has been called successfully.
+
+##### `conn.subscribeEvents(eventCallback[, eventType])`
+
+Subscribe to all or specific events on the Home Assistant bus. Calls `eventCallback` for each event that gets received.
+
+Returns a promise that will resolve to a function that will cancel the subscription once called.
