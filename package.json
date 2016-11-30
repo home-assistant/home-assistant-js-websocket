@@ -1,6 +1,6 @@
 {
   "name": "home-assistant-js-websocket",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Home Assistant websocket client",
   "main": "dist/haws.cjs.js",
   "jsnext:main": "dist/haws.es.js",
