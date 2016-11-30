@@ -11,7 +11,7 @@
   },
   "scripts": {
     "watch": "rollup -c --watch --sourcemap inline",
-    "build": "rollup -c --environment BUILD_DEV:0",
+    "build": "rollup -c --environment NODE_ENV:production",
     "lint": "eslint lib test",
     "test": "tape -r reify test/**/*.spec.js | faucet",
     "test-watch": "tape-watch -r reify test/**/*.spec.js | faucet"

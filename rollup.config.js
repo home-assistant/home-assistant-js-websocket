@@ -3,8 +3,8 @@ import uglify from 'rollup-plugin-uglify';
 import replace from 'rollup-plugin-replace';
 import { minify } from 'uglify-js';
 
-const DEV = !!JSON.parse(process.env.BUILD_DEV || 'true');
-const DEMO = !!JSON.parse(process.env.BUILD_DEMO || 'false');
+const ENV = process.env.NODE_ENV || 'development';
+const DEV = ENV === 'development';
 
 const config = {
   moduleName: 'HAWS',
@@ -16,7 +16,6 @@ const config = {
     replace({
       values: {
         __DEV__: JSON.stringify(DEV),
-        __DEMO__: JSON.stringify(DEMO),
       },
     }),
   ],
