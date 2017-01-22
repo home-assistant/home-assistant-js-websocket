@@ -173,6 +173,6 @@ Subscribe to all or specific events on the Home Assistant bus. Calls `eventCallb
 
 Returns a promise that will resolve to a function that will cancel the subscription once called.
 
-#### `conn.addEventListener(eventType, listener)`
+##### `conn.addEventListener(eventType, listener)`
 
 Listen for events on the connection. [See docs.](#automatic-reconnecting)
