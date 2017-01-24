@@ -60,12 +60,15 @@ The `Connection` object implements two events to signal loss of connection and s
 | ready | Fired when authentication is successful and the connection is ready to take commands.
 | disconnected | Fired when the connection is lost.
 
-You can attach listeners as follows:
+You can attach and remove listeners as follows:
 
 ```javascript
-conn.addEventListener('ready', conn => {
+function eventHandler() {
   console.log('Connection has been established again');
-});
+}
+
+conn.addEventListener('ready', eventHandler);
+conn.removeEventListener('ready', eventHandler);
 ```
 
 ### Entities
