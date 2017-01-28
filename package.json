@@ -17,7 +17,7 @@
     "test-watch": "tape-watch -r reify test/**/*.spec.js | faucet"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "devDependencies": {
     "eslint": "^3.14.0",
     "eslint-config-airbnb-base": "^11.0.1",
