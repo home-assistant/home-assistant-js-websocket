@@ -33,6 +33,7 @@ Currently the following options are available:
 | Option | Description |
 | ------ | ----------- |
 | authToken | Auth token to use to validate with Home Assistant.
+| setupRetry | Number of times to retry initial connection when it fails. -1 means infinite.
 
 #### Possible error codes
 
