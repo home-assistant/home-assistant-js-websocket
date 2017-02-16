@@ -2,7 +2,7 @@ import test from 'tape';
 
 import { getViewEntities, extractViews } from '../lib/view';
 
-import { createEntities, createGroup, createView, entityMap } from './test_util';
+import { createEntities, createEntity, createGroup, createView, entityMap } from './test_util';
 
 test('extractViews should work', (t) => {
   const entities = createEntities(10);
@@ -50,6 +50,34 @@ test('getViewEntities should work', (t) => {
   Object.assign(
     expectedEntities,
     entityMap(group2.attributes.entity_id.map(ent => entities[ent])));
+
+  t.deepEqual(expectedEntities, getViewEntities(entities, view));
+  t.end();
+});
+
+
+test('getViewEntities should not include hidden entities inside groups', (t) => {
+  const visibleEntity = createEntity({ attributes: { hidden: false } });
+  const hiddenEntity = createEntity({ attributes: { hidden: true } });
+  const group1 = createGroup({ attributes: { entity_id: [
+    visibleEntity.entity_id, hiddenEntity.entity_id] } });
+
+  const entities = {
+    [visibleEntity.entity_id]: visibleEntity,
+    [hiddenEntity.entity_id]: hiddenEntity,
+    [group1.entity_id]: group1,
+  };
+
+  const view = createView({
+    attributes: {
+      entity_id: [group1.entity_id],
+    },
+  });
+
+  const expectedEntities = {
+    [visibleEntity.entity_id]: visibleEntity,
+    [group1.entity_id]: group1,
+  };
 
   t.deepEqual(expectedEntities, getViewEntities(entities, view));
   t.end();

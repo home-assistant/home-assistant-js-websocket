@@ -2,6 +2,8 @@
 let mockState = 1;
 
 export function createEntity(entity) {
+  mockState++;
+  entity.entity_id = entity.entity_id || `test.test_${mockState}`;
   entity.last_changed = entity.last_changed || (new Date()).toISOString();
   entity.last_updated = entity.last_updated || entity.last_changed;
   entity.attributes = entity.attributes || {};
