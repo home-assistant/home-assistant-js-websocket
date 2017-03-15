@@ -74,7 +74,7 @@ conn.removeEventListener('ready', eventHandler);
 
 ### Entities
 
-You can subscribe to the entities of Home Assistant. Your callback will be called when the entities are first loaded and on every change after that.
+You can subscribe to the entities of Home Assistant. Your callback will be called when the entities are first loaded and on every change to the state of any of the entities after that. The callback will be called with a single object that contains the entities keyed by entity_id.
 
 The function `subscribeEntities` will return a promise that resolves to an unsubscribe function.
 
