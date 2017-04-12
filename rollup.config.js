@@ -1,7 +1,6 @@
 import buble from 'rollup-plugin-buble';
-import uglify from 'rollup-plugin-uglify';
+import babili from 'rollup-plugin-babili';
 import replace from 'rollup-plugin-replace';
-import { minify } from 'uglify-js';
 
 const ENV = process.env.NODE_ENV || 'development';
 const DEV = ENV === 'development';
@@ -20,14 +19,13 @@ const config = {
     }),
   ],
   targets: [
-    { dest: 'dist/haws.cjs.js', format: 'cjs' },
     { dest: 'dist/haws.umd.js', format: 'umd' },
     { dest: 'dist/haws.es.js', format: 'es' },
   ],
 };
 
 if (!DEV) {
-  config.plugins.push(uglify({}, minify));
+  config.plugins.push(babili({ comments: false }));
 }
 
 export default config;
