@@ -1,0 +1,3 @@
+-r reify
+--recursive
+--timeout 10000

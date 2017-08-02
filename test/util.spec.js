@@ -1,13 +1,15 @@
-import test from 'tape';
+import assert from 'assert';
 
 import { extractDomain, extractObjectId } from '../lib/util';
 
-test('extractDomain should work', (t) => {
-  t.equal('light', extractDomain('light.kitchen'));
-  t.end();
+describe('extractDomain', () => {
+  it('extractDomain should work', () => {
+    assert.equal('light', extractDomain('light.kitchen'));
+  });
 });
 
-test('extractObjectId should work', (t) => {
-  t.equal('kitchen', extractObjectId('light.kitchen'));
-  t.end();
+describe('extractObjectId', () => {
+  it('extractObjectId should work', () => {
+    assert.equal('kitchen', extractObjectId('light.kitchen'));
+  });
 });
