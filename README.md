@@ -180,3 +180,24 @@ Returns a promise that will resolve to a function that will cancel the subscript
 ##### `conn.addEventListener(eventType, listener)`
 
 Listen for events on the connection. [See docs.](#automatic-reconnecting)
+
+## Using this in NodeJS
+
+To use this package in NodeJS, install the [ws package](https://www.npmjs.com/package/ws) and make it available as `WebSocket` on the `global` object before importing this package.
+
+```js
+const WebSocket = require('ws');
+global.WebSocket = WebSocket;
+const HAWS = require("home-assistant-js-websocket");
+
+const getWsUrl = haUrl => `ws://${haUrl}/api/websocket`;
+
+HAWS.createConnection(getWsUrl('localhost:8123')).then(conn => {
+  HAWS.subscribeEntities(conn, logEntities);
+});
+
+function logEntities(entities) {
+  Object.keys(entities).forEach(key => console.log(`${key}: ${entities[key].state}`));
+  console.log('')
+}
+```
