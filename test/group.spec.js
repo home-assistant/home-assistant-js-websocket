@@ -54,7 +54,7 @@ describe('splitByGroups', () => {
     const result = splitByGroups(entities);
 
     const expected = {
-      groups: [group2, group1],
+      groups: [group1, group2],
       ungrouped: entityMap(entityIds.map(ent => entities[ent])),
     };
 
