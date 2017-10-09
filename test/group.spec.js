@@ -52,6 +52,7 @@ describe('splitByGroups', () => {
     entities[group2.entity_id] = group2;
 
     const result = splitByGroups(entities);
+    result.groups.sort((gr1, gr2) => gr1.attributes.order - gr2.attributes.order);
 
     const expected = {
       groups: [group2, group1],
