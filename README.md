@@ -54,17 +54,18 @@ import { ERR_CANNOT_CONNECT, ERR_INVALID_AUTH } from 'home-assistant-js-websocke
 
 The connection object will automatically try to reconnect to the server when the connection gets lost. On reconnect, it will automatically resubscribe the event listeners.
 
-The `Connection` object implements two events to signal loss of connection and successful reconnect.
+The `Connection` object implements three events related to the reconnecting logic.
 
-| Event | Description |
-| ----- | ----------- |
-| ready | Fired when authentication is successful and the connection is ready to take commands.
-| disconnected | Fired when the connection is lost.
+| Event | Data | Description |
+| ----- | ---- | ----------- |
+| ready | - | Fired when authentication is successful and the connection is ready to take commands.
+| disconnected | - | Fired when the connection is lost.
+| reconnect-error | Error code | Fired when we encounter a fatal error when trying to reconnect. Currently limited to `ERR_INVALID_AUTH`.
 
 You can attach and remove listeners as follows:
 
 ```javascript
-function eventHandler() {
+function eventHandler(connection, data) {
   console.log('Connection has been established again');
 }
 
