@@ -1,15 +1,27 @@
 import buble from 'rollup-plugin-buble';
-import babili from 'rollup-plugin-babili';
+import minify from 'rollup-plugin-babel-minify';
 import replace from 'rollup-plugin-replace';
 
 const ENV = process.env.NODE_ENV || 'development';
 const DEV = ENV === 'development';
 
 const config = {
-  moduleName: 'HAWS',
-  entry: 'lib/index.js',
-  exports: 'named',
-  format: 'iife',
+  input: 'lib/index.js',
+
+  output: [
+    {
+      file: 'dist/haws.umd.js',
+      format: 'iife',
+      name: 'HAWS',
+      format: 'umd',
+    },
+    {
+      file: 'dist/haws.es.js',
+      format: 'es',
+      exports: 'named',
+    },
+  ],
+
   plugins: [
     buble(),
     replace({
@@ -18,14 +30,10 @@ const config = {
       },
     }),
   ],
-  targets: [
-    { dest: 'dist/haws.umd.js', format: 'umd' },
-    { dest: 'dist/haws.es.js', format: 'es' },
-  ],
 };
 
 if (!DEV) {
-  config.plugins.push(babili({ comments: false }));
+  config.plugins.push(minify({ comments: false }));
 }
 
 export default config;
