@@ -101,55 +101,6 @@ import { subscribeConfig } from 'home-assistant-js-websocket';
 subscribeConfig(conn, config => console.log('New config!', config));
 ```
 
-### Managing entities
-
-A few helper methods are included to help display the returned entities.
-
-#### getGroupEntities(entities, group)
-
-Returns an object with only the entities referenced by `group`.
-
-#### splitByGroups(entities)
-
-Split `entities` into the groups that are contained in `entities` and a collection of entities that do not belong to a group. Groups will be returned sorted by order.
-
-```json5
-{
-  groups: [
-    { entity_id: 'group.example_1', state: … },
-    { entity_id: 'group.example_2', state: … },
-  ],
-  ungrouped: {
-    'sensor.temperature': { entity_id: … },
-    'sensor.humidity': { entity_id: … },
-  }
-}
-```
-
-#### getViewEntities(entities, view)
-
-Returns an object containing all the entities from `entities` that are needed to render this view.
-
-#### extractViews(entities)
-
-Returns an ordered list of available views in `entities`.
-
-#### extractDomain(entityId)
-
-Returns the domain of `entityId`.
-
-```javascript
-extractDomain('light.kitchen')  # 'light'
-```
-
-#### extractObjectId(entityId)
-
-Returns the object id of `entityId`.
-
-```javascript
-extractObjectId('light.kitchen')  # 'kitchen'
-```
-
 ## Connection API Reference
 
 ##### `conn.getStates()`
