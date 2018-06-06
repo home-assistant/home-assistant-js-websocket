@@ -160,10 +160,6 @@ Get the state of all entities. Returns a promise that will resolve to the result
 
 Get all available services. Returns a promise that will resolve to the result of querying the server for all the services.
 
-##### `conn.getPanels()`
-
-Get the Home Assistant panel config. Returns a promise that will resolve to the result of querying the server for all the panels config.
-
 ##### `conn.getConfig()`
 
 Get the Home Assistant server config. Returns a promise that will resolve to the result of querying the server for all the config.
