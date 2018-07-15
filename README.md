@@ -32,7 +32,9 @@ Currently the following options are available:
 
 | Option | Description |
 | ------ | ----------- |
-| authToken | Auth token to use to validate with Home Assistant.
+| authToken | Legacy auth token to use to validate with Home Assistant.
+| accessToken | OAuth 2 access token to use to validate with Home Assistant.
+| expires | Access token will expires on.
 | setupRetry | Number of times to retry initial connection when it fails. -1 means infinite.
 
 #### Possible error codes
