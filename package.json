@@ -3,6 +3,7 @@
   "sideEffects": false,
   "version": "2.0.1",
   "description": "Home Assistant websocket client",
+  "source": "lib/index.js",
   "main": "dist/haws.umd.js",
   "module": "dist/haws.es.js",
   "repository": {
@@ -10,8 +11,8 @@
     "type": "git"
   },
   "scripts": {
-    "watch": "rollup -c --watch --sourcemap inline",
-    "build": "rollup -c --environment NODE_ENV:production",
+    "watch": "microbundle watch",
+    "build": "microbundle",
     "lint": "eslint lib test",
     "test": "mocha",
     "test-watch": "mocha --watch"
@@ -22,16 +23,12 @@
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.2.0",
+    "microbundle": "^0.5.1",
     "mocha": "^5.1.1",
-    "reify": "^0.15.1",
-    "rollup": "^0.59.1",
-    "rollup-plugin-babel-minify": "^4.0.0",
-    "rollup-plugin-babili": "^3.1.1",
-    "rollup-plugin-buble": "^0.19.2",
-    "rollup-plugin-replace": "^2.0.0",
-    "rollup-watch": "^4.3.1"
+    "reify": "^0.15.1"
   },
   "files": [
     "dist"
-  ]
+  ],
+  "dependencies": {}
 }

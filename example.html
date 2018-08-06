@@ -1,0 +1,62 @@
+<html>
+  <!-- Run `yarn build` and then `npx http-server -o` -->
+  <body>
+    <table>
+      <tbody>
+
+      </tbody>
+    </table>
+    <script type='module'>
+      import {
+        getAuth,
+        createConnection,
+        subscribeEntities,
+        ERR_HASS_HOST_REQUIRED,
+      } from './dist/haws.es.js';
+
+      (async () => {
+        let auth;
+        try {
+          auth = await getAuth();
+        } catch (err) {
+          if (err === ERR_HASS_HOST_REQUIRED) {
+            const hassUrl = prompt("What host to connect to?", "http://localhost:8123");
+            auth = await getAuth({ hassUrl });
+          } else {
+            alert(`Unknown error: ${err}`);
+            return;
+          }
+        }
+        const connection = await createConnection(auth);
+        subscribeEntities(connection, entities => renderEntities(connection, entities));
+      })();
+
+      function renderEntities(connection, entities) {
+        const root = document.querySelector('tbody');
+        while(root.lastChild) root.removeChild(root.lastChild);
+
+        Object.keys(entities).sort().forEach((entId) => {
+          const tr = document.createElement('tr');
+
+          const tdName = document.createElement('td');
+          tdName.innerHTML = entId;
+          tr.appendChild(tdName);
+
+          const tdState = document.createElement('td');
+          const text = document.createTextNode(entities[entId].state);
+          tdState.appendChild(text);
+
+          if (['switch', 'light', 'input_boolean'].includes(entId.split('.', 1)[0])) {
+            const button = document.createElement('button');
+            button.innerHTML = 'toggle';
+            button.onclick = () => connection.callService('homeassistant', 'toggle', {entity_id: entId});
+            tdState.appendChild(button);
+          }
+          tr.appendChild(tdState);
+
+          root.appendChild(tr);
+        });
+      }
+    </script>
+  </body>
+</html>
