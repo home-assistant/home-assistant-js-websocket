@@ -13,16 +13,12 @@
   "scripts": {
     "watch": "microbundle watch",
     "build": "microbundle",
-    "lint": "eslint lib test",
     "test": "mocha",
     "test-watch": "mocha --watch"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
   "license": "Apache-2.0",
   "devDependencies": {
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-plugin-import": "^2.2.0",
     "husky": "^1.0.0-rc.13",
     "lint-staged": "^7.2.0",
     "microbundle": "^0.5.1",
