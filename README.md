@@ -3,22 +3,35 @@
 This is a websocket client written in JavaScript that allows retrieving authentication tokens and communicate with the Home Assistant websocket API. It can be used to integrate Home Assistant into your apps. It has 0 dependencies.
 
 ```javascript
-import { createConnection, subscribeEntities } from 'home-assistant-js-websocket';
+import {
+  createConnection,
+  subscribeEntities
+} from "home-assistant-js-websocket";
 
 function stateChanged(event) {
-  console.log('state changed', event);
+  console.log("state changed", event);
 }
 
-createConnection('ws://localhost:8123/api/websocket').then(
-  (conn) => {
-    console.log('Connection established!');
-    subscribeEntities(conn, entities => console.log('New entities!', entities));
+createConnection("ws://localhost:8123/api/websocket").then(
+  conn => {
+    console.log("Connection established!");
+    subscribeEntities(conn, entities => console.log("New entities!", entities));
   },
-  err => console.error('Connection failed with code', err)
-)
+  err => console.error("Connection failed with code", err)
+);
 ```
 
 [Try it on JSFiddle.](https://jsfiddle.net/balloob/9w3oyswa/)
+
+## Trying it out
+
+We've included an [example client](https://github.com/home-assistant/home-assistant-js-websocket/blob/master/example.html) based on this lib so that it's easy to try it out:
+
+```bash
+yarn build
+npx http-server -o
+# A browser will open, navigate to example.html
+```
 
 ## Usage
 
@@ -32,8 +45,8 @@ import {
   getAuth,
   createConnection,
   subscribeEntities,
-  ERR_HASS_HOST_REQUIRED,
-} from 'home-assistant-js-websocket';
+  ERR_HASS_HOST_REQUIRED
+} from "home-assistant-js-websocket";
 
 async function connect() {
   let auth;
@@ -42,7 +55,9 @@ async function connect() {
   } catch (err) {
     if (err === ERR_HASS_HOST_REQUIRED) {
       const hassUrl = prompt(
-        "What host to connect to?", "http://localhost:8123");
+        "What host to connect to?",
+        "http://localhost:8123"
+      );
       auth = await getAuth({ hassUrl });
     } else {
       alert(`Unknown error: ${err}`);
@@ -51,7 +66,7 @@ async function connect() {
   }
   const connection = await createConnection(auth);
   subscribeEntities(connection, ent => console.log(ent));
-};
+}
 
 connect();
 ```
@@ -62,25 +77,28 @@ Connections to the websocket API are initiated by calling `createConnection(url[
 
 Currently the following options are available:
 
-| Option | Description |
-| ------ | ----------- |
-| setupRetry | Number of times to retry initial connection when it fails. -1 means infinite.
+| Option     | Description                                                                   |
+| ---------- | ----------------------------------------------------------------------------- |
+| setupRetry | Number of times to retry initial connection when it fails. -1 means infinite. |
 
 #### Possible error codes
 
 Currently the following error codes can be expected:
 
-| Error | Description |
-| ----- | ----------- |
-| ERR_CANNOT_CONNECT | If the client was unable to connect to the websocket API.
-| ERR_INVALID_AUTH | If the supplied authentication was invalid.
-| ERR_CONNECTION_LOST | Raised if connection closed while waiting for a message to be returned.
-| ERR_HASS_HOST_REQUIRED | If the authentication requires a host to be defined.
+| Error                  | Description                                                             |
+| ---------------------- | ----------------------------------------------------------------------- |
+| ERR_CANNOT_CONNECT     | If the client was unable to connect to the websocket API.               |
+| ERR_INVALID_AUTH       | If the supplied authentication was invalid.                             |
+| ERR_CONNECTION_LOST    | Raised if connection closed while waiting for a message to be returned. |
+| ERR_HASS_HOST_REQUIRED | If the authentication requires a host to be defined.                    |
 
 You can import them into your code as follows:
 
 ```javascript
-import { ERR_CANNOT_CONNECT, ERR_INVALID_AUTH } from 'home-assistant-js-websocket';
+import {
+  ERR_CANNOT_CONNECT,
+  ERR_INVALID_AUTH
+} from "home-assistant-js-websocket";
 ```
 
 #### Automatic reconnecting
@@ -89,21 +107,21 @@ The connection object will automatically try to reconnect to the server when the
 
 The `Connection` object implements three events related to the reconnecting logic.
 
-| Event | Data | Description |
-| ----- | ---- | ----------- |
-| ready | - | Fired when authentication is successful and the connection is ready to take commands.
-| disconnected | - | Fired when the connection is lost.
-| reconnect-error | Error code | Fired when we encounter a fatal error when trying to reconnect. Currently limited to `ERR_INVALID_AUTH`.
+| Event           | Data       | Description                                                                                              |
+| --------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| ready           | -          | Fired when authentication is successful and the connection is ready to take commands.                    |
+| disconnected    | -          | Fired when the connection is lost.                                                                       |
+| reconnect-error | Error code | Fired when we encounter a fatal error when trying to reconnect. Currently limited to `ERR_INVALID_AUTH`. |
 
 You can attach and remove listeners as follows:
 
 ```javascript
 function eventHandler(connection, data) {
-  console.log('Connection has been established again');
+  console.log("Connection has been established again");
 }
 
-conn.addEventListener('ready', eventHandler);
-conn.removeEventListener('ready', eventHandler);
+conn.addEventListener("ready", eventHandler);
+conn.removeEventListener("ready", eventHandler);
 ```
 
 ### Entities
@@ -113,12 +131,11 @@ You can subscribe to the entities of Home Assistant. Your callback will be calle
 The function `subscribeEntities` will return an unsubscribe function.
 
 ```javascript
-import { subscribeEntities } from 'home-assistant-js-websocket';
+import { subscribeEntities } from "home-assistant-js-websocket";
 
 // conn is the connection from earlier.
 
-subscribeEntities(
-  conn, entities => console.log('New entities!', entities));
+subscribeEntities(conn, entities => console.log("New entities!", entities));
 ```
 
 ### Config
@@ -128,12 +145,11 @@ You can subscribe to the config of Home Assistant. Config can change when either
 The function `subscribeConfig` will return an unsubscribe function.
 
 ```javascript
-import { subscribeConfig } from 'home-assistant-js-websocket';
+import { subscribeConfig } from "home-assistant-js-websocket";
 
 // conn is the connection from earlier.
 
-subscribeConfig(
-  conn, config => console.log('New config!', config));
+subscribeConfig(conn, config => console.log("New config!", config));
 ```
 
 ### Services
@@ -143,12 +159,11 @@ You can subscribe to the available services of Home Assistant. Services can chan
 The function `subscribeServices` will return an unsubscribe function.
 
 ```javascript
-import { subscribeServices } from 'home-assistant-js-websocket';
+import { subscribeServices } from "home-assistant-js-websocket";
 
 // conn is the connection from earlier.
 
-subscribeServices(
-  conn, services => console.log('New services!', services));
+subscribeServices(conn, services => console.log("New services!", services));
 ```
 
 ## Connection API Reference
@@ -184,18 +199,20 @@ Listen for events on the connection. [See docs.](#automatic-reconnecting)
 To use this package in NodeJS, install the [ws package](https://www.npmjs.com/package/ws) and make it available as `WebSocket` on the `global` object before importing this package.
 
 ```js
-const WebSocket = require('ws');
+const WebSocket = require("ws");
 global.WebSocket = WebSocket;
 const HAWS = require("home-assistant-js-websocket");
 
 const getWsUrl = haUrl => `ws://${haUrl}/api/websocket`;
 
-HAWS.createConnection(getWsUrl('localhost:8123')).then(conn => {
+HAWS.createConnection(getWsUrl("localhost:8123")).then(conn => {
   HAWS.subscribeEntities(conn, logEntities);
 });
 
 function logEntities(entities) {
-  Object.keys(entities).forEach(key => console.log(`${key}: ${entities[key].state}`));
-  console.log('')
+  Object.keys(entities).forEach(key =>
+    console.log(`${key}: ${entities[key].state}`)
+  );
+  console.log("");
 }
 ```
