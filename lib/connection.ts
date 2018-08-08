@@ -274,17 +274,20 @@ export class Connection {
     const options = Object.assign({}, this.options, { setupRetry: 0 });
 
     const reconnect = (tries: number) => {
-      setTimeout(() => {
+      setTimeout(async () => {
         if (DEBUG) {
           console.log("Trying to reconnect");
         }
-        (options.createSocket || createSocket)(this.auth, options).then(
-          socket => this.setSocket(socket),
-          err =>
-            err === ERR_INVALID_AUTH
-              ? this.fireEvent("reconnect-error", err)
-              : reconnect(tries + 1)
-        );
+        try {
+          const socket = await options.createSocket(this.auth, options);
+          this.setSocket(socket);
+        } catch (err) {
+          if (err === ERR_INVALID_AUTH) {
+            this.fireEvent("reconnect-error", err);
+          } else {
+            reconnect(tries + 1);
+          }
+        }
       }, Math.min(tries, 5) * 1000);
     };
 
