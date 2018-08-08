@@ -3,7 +3,7 @@
   "sideEffects": false,
   "version": "2.0.1",
   "description": "Home Assistant websocket client",
-  "source": "lib/index.js",
+  "source": "lib/index.ts",
   "main": "dist/haws.umd.js",
   "module": "dist/haws.es.js",
   "repository": {
@@ -23,12 +23,27 @@
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.2.0",
+    "husky": "^1.0.0-rc.13",
+    "lint-staged": "^7.2.0",
     "microbundle": "^0.5.1",
     "mocha": "^5.1.1",
-    "reify": "^0.15.1"
+    "prettier": "1.14.0",
+    "reify": "^0.15.1",
+    "ts-node": "^7.0.0"
   },
   "files": [
     "dist"
   ],
-  "dependencies": {}
+  "dependencies": {},
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{ts,js,json,css,md}": [
+      "prettier --write",
+      "git add"
+    ]
+  }
 }

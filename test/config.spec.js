@@ -1,14 +1,14 @@
-import assert from 'assert';
+import assert from "assert";
 
-import subscribeConfig from '../lib/config';
-import { mockConnection, createAwaitableEvent } from './util';
+import { subscribeConfig } from "../dist/haws.es";
+import { mockConnection, createAwaitableEvent } from "./util";
 
 const MOCK_CONFIG = {
-  hello: 'bla',
-  components: ['frontend']
+  hello: "bla",
+  components: ["frontend"]
 };
 
-describe('subscribeConfig', () => {
+describe("subscribeConfig", () => {
   let conn;
   let awaitableEvent;
 
@@ -18,7 +18,7 @@ describe('subscribeConfig', () => {
     awaitableEvent = createAwaitableEvent();
   });
 
-  it('should load initial config', async () => {
+  it("should load initial config", async () => {
     awaitableEvent.prime();
     subscribeConfig(conn, awaitableEvent.set);
 
@@ -27,7 +27,7 @@ describe('subscribeConfig', () => {
     assert.deepStrictEqual(config, MOCK_CONFIG);
   });
 
-  it('should handle component loaded events', async () => {
+  it("should handle component loaded events", async () => {
     subscribeConfig(conn, awaitableEvent.set);
 
     // We need to sleep to have it process the first full load
@@ -35,17 +35,17 @@ describe('subscribeConfig', () => {
 
     awaitableEvent.prime();
 
-    conn.mockEvent('component_loaded', {
+    conn.mockEvent("component_loaded", {
       data: {
-        component: 'api'
+        component: "api"
       }
     });
 
     const config = await awaitableEvent.wait();
 
     assert.deepEqual(config, {
-      hello: 'bla',
-      components: ['frontend', 'api'],
+      hello: "bla",
+      components: ["frontend", "api"]
     });
   });
 });

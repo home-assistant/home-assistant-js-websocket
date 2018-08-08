@@ -3,12 +3,10 @@ export function mockConnection() {
   return {
     // connection events
     // eslint-disable-next-line
-    addEventListener(event, cb) {
-
-    },
+    addEventListener(event, cb) {},
 
     // hass events
-    subscribeEvents(cb, event = '*') {
+    subscribeEvents(cb, event = "*") {
       if (!(event in listeners)) {
         listeners[event] = [];
       }
@@ -17,7 +15,7 @@ export function mockConnection() {
 
     mockEvent(event, data) {
       listeners[event].forEach(cb => cb(data));
-    },
+    }
   };
 }
 
@@ -31,11 +29,13 @@ export function createAwaitableEvent() {
     },
 
     prime() {
-      curPromise = new Promise((resolve) => { curResolve = resolve; });
+      curPromise = new Promise(resolve => {
+        curResolve = resolve;
+      });
     },
 
     wait() {
       return curPromise;
-    },
+    }
   };
 }
