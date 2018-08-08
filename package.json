@@ -13,8 +13,7 @@
   "scripts": {
     "watch": "microbundle watch",
     "build": "microbundle",
-    "test": "mocha",
-    "test-watch": "mocha --watch"
+    "test": "microbundle && mocha"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
   "license": "Apache-2.0",
