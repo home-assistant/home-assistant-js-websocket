@@ -77,9 +77,10 @@ Connections to the websocket API are initiated by calling `createConnection(url[
 
 Currently the following options are available:
 
-| Option     | Description                                                                   |
-| ---------- | ----------------------------------------------------------------------------- |
-| setupRetry | Number of times to retry initial connection when it fails. -1 means infinite. |
+| Option       | Description                                                                                                          |
+| ------------ | -------------------------------------------------------------------------------------------------------------------- |
+| setupRetry   | Number of times to retry initial connection when it fails. Set to -1 for infinite retries. Default is 0 (no retries) |
+| createSocket | Override the createSocket method with your own. `(auth, options) => Promise<WebSocket>`                              |
 
 #### Possible error codes
 

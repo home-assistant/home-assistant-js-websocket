@@ -1,9 +1,12 @@
+import { Auth } from "./auth";
+
 export type Error = 1 | 2 | 3 | 4;
 
 export type UnsubscribeFunc = () => void;
 
 export type ConnectionOptions = {
-  setupRetry?: number;
+  setupRetry: number;
+  createSocket: (auth: Auth, options: ConnectionOptions) => Promise<WebSocket>;
 };
 
 export type HassEvent = {

@@ -1,12 +1,9 @@
+/**
+ * Connection that wraps a socket and provides an interface to interact with
+ * the Home Assistant websocket API.
+ */
 import * as messages from "./messages";
-import {
-  ERR_CANNOT_CONNECT,
-  ERR_INVALID_AUTH,
-  ERR_CONNECTION_LOST,
-  MSG_TYPE_AUTH_REQUIRED,
-  MSG_TYPE_AUTH_INVALID,
-  MSG_TYPE_AUTH_OK
-} from "./const";
+import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./const";
 import {
   ConnectionOptions,
   HassEvent,
@@ -15,108 +12,9 @@ import {
   HassConfig
 } from "./types";
 import { Auth } from "./auth";
+import createSocket from "./socket";
 
-const DEBUG = true;
-
-function getSocket(auth, options: ConnectionOptions): Promise<WebSocket> {
-  // Convert from http:// -> ws://, https:// -> wss://
-  const url = `ws${auth.hassUrl.substr(4)}/api/websocket`;
-
-  if (DEBUG) {
-    console.log("[Auth phase] Initializing", url);
-  }
-
-  function connect(triesLeft, promResolve, promReject) {
-    if (DEBUG) {
-      console.log("[Auth Phase] New connection", url);
-    }
-
-    const socket = new WebSocket(url);
-
-    // If invalid auth, we will not try to reconnect.
-    let invalidAuth = false;
-
-    const closeMessage = () => {
-      // If we are in error handler make sure close handler doesn't also fire.
-      socket.removeEventListener("close", closeMessage);
-
-      if (invalidAuth) {
-        promReject(ERR_INVALID_AUTH);
-        return;
-      }
-
-      // Reject if we no longer have to retry
-      if (triesLeft === 0) {
-        // We never were connected and will not retry
-        promReject(ERR_CANNOT_CONNECT);
-        return;
-      }
-
-      const newTries = triesLeft === -1 ? -1 : triesLeft - 1;
-      // Try again in a second
-      setTimeout(
-        () =>
-          connect(
-            newTries,
-            promResolve,
-            promReject
-          ),
-        1000
-      );
-    };
-
-    const handleMessage = async event => {
-      const message = JSON.parse(event.data);
-
-      if (DEBUG) {
-        console.log("[Auth phase] Received", message);
-      }
-      switch (message.type) {
-        case MSG_TYPE_AUTH_REQUIRED:
-          try {
-            if (auth.expired) await auth.refreshAccessToken();
-            socket.send(
-              JSON.stringify(messages.authAccessToken(auth.access_token))
-            );
-          } catch (err) {
-            // Refresh token failed
-            invalidAuth = true;
-            socket.close();
-          }
-          break;
-
-        case MSG_TYPE_AUTH_INVALID:
-          invalidAuth = true;
-          socket.close();
-          break;
-
-        case MSG_TYPE_AUTH_OK:
-          socket.removeEventListener("message", handleMessage);
-          socket.removeEventListener("close", closeMessage);
-          socket.removeEventListener("error", closeMessage);
-          promResolve(socket);
-          break;
-
-        default:
-          if (DEBUG) {
-            console.warn("[Auth phase] Unhandled message", message);
-          }
-      }
-    };
-
-    socket.addEventListener("message", handleMessage);
-    socket.addEventListener("close", closeMessage);
-    socket.addEventListener("error", closeMessage);
-  }
-
-  return new Promise((resolve, reject) =>
-    connect(
-      options.setupRetry || 0,
-      resolve,
-      reject
-    )
-  );
-}
+const DEBUG = false;
 
 type EventListener = (conn: Connection, eventData?: any) => void;
 
@@ -171,7 +69,7 @@ export class Connection {
     this.auth = auth;
     // connection options
     //  - setupRetry: amount of ms to retry when unable to connect on initial setup
-    this.options = options || {};
+    this.options = options;
     // id if next command to send
     this.commandId = 1;
     // info about active subscriptions and commands in flight
@@ -380,7 +278,7 @@ export class Connection {
         if (DEBUG) {
           console.log("Trying to reconnect");
         }
-        getSocket(this.auth, options).then(
+        (options.createSocket || createSocket)(this.auth, options).then(
           socket => this.setSocket(socket),
           err =>
             err === ERR_INVALID_AUTH
@@ -399,13 +297,22 @@ export class Connection {
   }
 }
 
-export default function createConnection(
+const defaultConnectionOptions: ConnectionOptions = {
+  setupRetry: 0,
+  createSocket
+};
+
+export default async function createConnection(
   auth: Auth,
-  options: ConnectionOptions = {}
+  options?: Partial<ConnectionOptions>
 ) {
-  return getSocket(auth, options).then(socket => {
-    const conn = new Connection(auth, options);
-    conn.setSocket(socket);
-    return conn;
-  });
+  const connOptions: ConnectionOptions = Object.assign(
+    {},
+    defaultConnectionOptions,
+    options
+  );
+  const socket = await options.createSocket(auth, connOptions);
+  const conn = new Connection(auth, connOptions);
+  conn.setSocket(socket);
+  return conn;
 }
