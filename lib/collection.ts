@@ -24,7 +24,6 @@ export default function createCollection<State>(
 
   const store = new Store<State>(() => {
     unsubProm.then(unsub => unsub());
-    // eslint-disable-next-line
     conn.removeEventListener("ready", refresh);
     delete conn[key];
   });

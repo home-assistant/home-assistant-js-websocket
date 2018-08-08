@@ -35,7 +35,6 @@ function genAuthorizeUrl(
   redirectUri: string,
   state: string
 ) {
-  // eslint-disable-next-line
   let authorizeUrl = `${hassUrl}/auth/authorize?response_type=code&client_id=${encodeURIComponent(
     clientId
   )}&redirect_uri=${encodeURIComponent(redirectUri)}`;

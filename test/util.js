@@ -2,7 +2,6 @@ export function mockConnection() {
   const listeners = {};
   return {
     // connection events
-    // eslint-disable-next-line
     addEventListener(event, cb) {},
 
     // hass events

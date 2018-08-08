@@ -16,7 +16,6 @@ function processEvent(store: Store<HassEntities>, event: StateChangedEvent) {
   const state = store.state;
   if (state === undefined) return;
 
-  /* eslint-disable camelcase */
   const { entity_id, new_state } = event.data;
   if (new_state) {
     store.setState({ [new_state.entity_id]: new_state });

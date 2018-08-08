@@ -23,13 +23,11 @@ function getSocket(auth, options: ConnectionOptions): Promise<WebSocket> {
   const url = `ws${auth.hassUrl.substr(4)}/api/websocket`;
 
   if (DEBUG) {
-    // eslint-disable-next-line
     console.log("[Auth phase] Initializing", url);
   }
 
   function connect(triesLeft, promResolve, promReject) {
     if (DEBUG) {
-      // eslint-disable-next-line
       console.log("[Auth Phase] New connection", url);
     }
 
@@ -71,7 +69,6 @@ function getSocket(auth, options: ConnectionOptions): Promise<WebSocket> {
       const message = JSON.parse(event.data);
 
       if (DEBUG) {
-        // eslint-disable-next-line
         console.log("[Auth phase] Received", message);
       }
       switch (message.type) {
@@ -102,7 +99,6 @@ function getSocket(auth, options: ConnectionOptions): Promise<WebSocket> {
 
         default:
           if (DEBUG) {
-            // eslint-disable-next-line
             console.warn("[Auth phase] Unhandled message", message);
           }
       }
@@ -306,7 +302,6 @@ export class Connection {
 
   sendMessage(message, commandId?: number): void {
     if (DEBUG) {
-      // eslint-disable-next-line
       console.log("Sending", message);
     }
 
@@ -332,7 +327,6 @@ export class Connection {
     const message: WebSocketResponse = JSON.parse(event.data);
 
     if (DEBUG) {
-      // eslint-disable-next-line
       console.log("Received", message);
     }
 
@@ -358,7 +352,6 @@ export class Connection {
 
       default:
         if (DEBUG) {
-          // eslint-disable-next-line
           console.warn("Unhandled message", message);
         }
     }
@@ -385,7 +378,6 @@ export class Connection {
     const reconnect = (tries: number) => {
       setTimeout(() => {
         if (DEBUG) {
-          // eslint-disable-next-line
           console.log("Trying to reconnect");
         }
         getSocket(this.auth, options).then(
