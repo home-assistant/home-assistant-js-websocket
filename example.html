@@ -28,7 +28,7 @@
           return;
         }
       }
-      const connection = await createConnection(auth);
+      const connection = await createConnection({ auth });
       subscribeEntities(connection, entities => renderEntities(connection, entities));
     })();
 
