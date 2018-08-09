@@ -1,5 +1,5 @@
-export function parseQuery(queryString: string) {
-  const query = {};
+export function parseQuery<T>(queryString: string) {
+  const query: any = {};
   const items = queryString.split("&");
   for (let i = 0; i < items.length; i++) {
     const item = items[i].split("=");
@@ -7,5 +7,5 @@ export function parseQuery(queryString: string) {
     const value = item.length > 1 ? decodeURIComponent(item[1]) : undefined;
     query[key] = value;
   }
-  return query;
+  return query as T;
 }

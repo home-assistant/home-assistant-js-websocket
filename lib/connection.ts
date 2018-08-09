@@ -7,15 +7,18 @@ import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./const";
 import {
   ConnectionOptions,
   HassEvent,
-  HassEntities,
   HassServices,
-  HassConfig
+  HassConfig,
+  MessageBase,
+  HassEntity
 } from "./types";
 import createSocket from "./socket";
 
 const DEBUG = false;
 
 type EventListener = (conn: Connection, eventData?: any) => void;
+
+type Events = "ready" | "disconnected" | "reconnect-error";
 
 type WebSocketPongResponse = {
   id: number;
@@ -61,9 +64,10 @@ export class Connection {
     [eventType: string]: EventListener[];
   };
   closeRequested: boolean;
+  // @ts-ignore: incorrectly claiming it's not set in constructor.
   socket: WebSocket;
 
-  constructor(options: ConnectionOptions) {
+  constructor(socket: WebSocket, options: ConnectionOptions) {
     // connection options
     //  - setupRetry: amount of ms to retry when unable to connect on initial setup
     //  - createSocket: create a new Socket connection
@@ -78,6 +82,7 @@ export class Connection {
     this.closeRequested = false;
 
     this._handleClose = this._handleClose.bind(this);
+    this.setSocket(socket);
   }
 
   setSocket(socket: WebSocket) {
@@ -109,7 +114,7 @@ export class Connection {
     }
   }
 
-  addEventListener(eventType, callback) {
+  addEventListener(eventType: Events, callback: EventListener) {
     let listeners = this.eventListeners[eventType];
 
     if (!listeners) {
@@ -119,7 +124,7 @@ export class Connection {
     listeners.push(callback);
   }
 
-  removeEventListener(eventType, callback) {
+  removeEventListener(eventType: Events, callback: EventListener) {
     const listeners = this.eventListeners[eventType];
 
     if (!listeners) {
@@ -133,7 +138,7 @@ export class Connection {
     }
   }
 
-  fireEvent(eventType, eventData?) {
+  fireEvent(eventType: Events, eventData?: any) {
     (this.eventListeners[eventType] || []).forEach(callback =>
       callback(this, eventData)
     );
@@ -145,7 +150,7 @@ export class Connection {
   }
 
   getStates() {
-    return this.sendMessagePromise<HassEntities>(messages.states());
+    return this.sendMessagePromise<HassEntity[]>(messages.states());
   }
 
   getServices() {
@@ -156,7 +161,7 @@ export class Connection {
     return this.sendMessagePromise<HassConfig>(messages.config());
   }
 
-  callService(domain, service, serviceData) {
+  callService(domain: string, service: string, serviceData?: object) {
     return this.sendMessagePromise(
       messages.callService(domain, service, serviceData)
     );
@@ -196,7 +201,7 @@ export class Connection {
     return this.sendMessagePromise(messages.ping());
   }
 
-  sendMessage(message, commandId?: number): void {
+  sendMessage(message: MessageBase, commandId?: number): void {
     if (DEBUG) {
       console.log("Sending", message);
     }
@@ -209,7 +214,10 @@ export class Connection {
     this.socket.send(JSON.stringify(message));
   }
 
-  sendMessagePromise<Result>(message, commandId?: number): Promise<Result> {
+  sendMessagePromise<Result>(
+    message: MessageBase,
+    commandId?: number
+  ): Promise<Result> {
     return new Promise((resolve, reject) => {
       if (!commandId) {
         commandId = this._genCmdId();
@@ -312,7 +320,6 @@ export default async function createConnection(
     options
   );
   const socket = await connOptions.createSocket(connOptions);
-  const conn = new Connection(connOptions);
-  conn.setSocket(socket);
+  const conn = new Connection(socket, connOptions);
   return conn;
 }

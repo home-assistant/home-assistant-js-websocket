@@ -1,6 +1,7 @@
 import createCollection from "./collection";
 import { HassConfig } from "./types";
 import { Connection } from "./connection";
+import Store from "./store";
 
 type ComponentLoadedEvent = {
   data: {
@@ -11,7 +12,7 @@ type ComponentLoadedEvent = {
 function processComponentLoaded(
   state: HassConfig,
   event: ComponentLoadedEvent
-): Partial<HassConfig> {
+): Partial<HassConfig> | null {
   if (state === undefined) return null;
 
   return {
@@ -19,8 +20,8 @@ function processComponentLoaded(
   };
 }
 
-const fetchConfig = conn => conn.getConfig();
-const subscribeUpdates = (conn, store) =>
+const fetchConfig = (conn: Connection) => conn.getConfig();
+const subscribeUpdates = (conn: Connection, store: Store<HassConfig>) =>
   conn.subscribeEvents(
     store.action(processComponentLoaded),
     "component_loaded"

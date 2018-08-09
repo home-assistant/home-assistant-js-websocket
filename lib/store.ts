@@ -27,14 +27,14 @@ export default class Store<State> {
   action(
     action: (
       state: State,
-      ...args
+      ...args: any[]
     ) => Partial<State> | Promise<Partial<State>> | null
   ) {
     const apply = (result: Partial<State>) => this.setState(result, false);
 
     // Note: perf tests verifying this implementation: https://esbench.com/bench/5a295e6299634800a0349500
-    return (...args) => {
-      const ret = action(this.state, ...args);
+    return (...args: any[]) => {
+      const ret = action(this.state as State, ...args);
       if (ret != null) {
         return "then" in ret ? ret.then(apply) : apply(ret);
       }
@@ -70,11 +70,12 @@ export default class Store<State> {
    * @function
    */
   unsubscribe(listener: Listener<State>) {
+    let toFind: Listener<State> | null = listener;
     const out = [];
     const listeners = this.listeners;
     for (let i = 0; i < listeners.length; i++) {
-      if (listeners[i] === listener) {
-        listener = null;
+      if (listeners[i] === toFind) {
+        toFind = null;
       } else {
         out.push(listeners[i]);
       }

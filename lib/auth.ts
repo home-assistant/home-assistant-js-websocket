@@ -18,12 +18,19 @@ type getAuthOptions = {
   loadCache?: LoadCacheFunc;
 };
 
-type queryData = {
-  state?: string;
-  code?: string;
-};
-
 const CALLBACK_KEY = "auth_callback";
+
+type QueryCallbackData =
+  | {}
+  | {
+      state: string;
+      code: string;
+      [CALLBACK_KEY]: string;
+    };
+
+type OAuthState = {
+  hassUrl: string;
+};
 
 function genClientId() {
   return `${location.protocol}//${location.host}/`;
@@ -62,7 +69,11 @@ function redirectAuthorize(hassUrl: string, state: string) {
   );
 }
 
-async function tokenRequest(hassUrl: string, clientId: string, data: object) {
+async function tokenRequest(
+  hassUrl: string,
+  clientId: string,
+  data: { [key: string]: string }
+) {
   const formData = new FormData();
   formData.append("client_id", clientId);
   Object.keys(data).forEach(key => {
@@ -100,39 +111,44 @@ function refreshAccessToken(
   });
 }
 
-function encodeOauthState(state: object) {
+function encodeOAuthState(state: OAuthState): string {
   return btoa(JSON.stringify(state));
 }
 
-function decodeOauthState(encoded: string) {
+function decodeOAuthState(encoded: string): OAuthState {
   return JSON.parse(atob(encoded));
 }
 
 export class Auth {
-  _saveCache?: SaveCacheFunc;
-  expires: number;
-  hassUrl: string;
-  refresh_token: string;
-  access_token: string;
+  private _saveCache?: SaveCacheFunc;
+  data: AuthData;
 
-  constructor(data: AuthData, saveCache: SaveCacheFunc) {
-    Object.assign(this, data);
+  constructor(data: AuthData, saveCache?: SaveCacheFunc) {
+    this.data = data;
     this._saveCache = saveCache;
+  }
+
+  get wsUrl() {
+    // Convert from http:// -> ws://, https:// -> wss://
+    return `ws${this.data.hassUrl.substr(4)}/api/websocket`;
+  }
+
+  get accessToken() {
+    return this.data.access_token;
   }
 
   get expired() {
     // Token needs to be at least 10 seconds valid
-    return Date.now() > this.expires - 10000;
+    return Date.now() > this.data.expires - 10000;
   }
 
   async refreshAccessToken() {
-    const data = await refreshAccessToken(
-      this.hassUrl,
+    this.data = await refreshAccessToken(
+      this.data.hassUrl,
       genClientId(),
-      this.refresh_token
+      this.data.refresh_token
     );
-    Object.assign(this, data);
-    if (this._saveCache) this._saveCache(data);
+    if (this._saveCache) this._saveCache(this.data);
   }
 }
 
@@ -142,14 +158,14 @@ export default async function getAuth({
   saveCache
 }: getAuthOptions = {}): Promise<Auth> {
   // Check if we came back from an authorize redirect
-  const query: queryData = parseQuery(location.search.substr(1));
+  const query = parseQuery<QueryCallbackData>(location.search.substr(1));
 
-  let data: AuthData;
+  let data: AuthData | undefined;
 
   // Check if we got redirected here from authorize page
-  if (query[CALLBACK_KEY]) {
+  if ("auth_callback" in query) {
     // Restore state
-    const state = decodeOauthState(query.state);
+    const state = decodeOAuthState(query.state);
     try {
       data = await fetchToken(state.hassUrl, genClientId(), query.code);
       if (saveCache) saveCache(data);
@@ -168,7 +184,7 @@ export default async function getAuth({
   if (!data && hassUrl) {
     redirectAuthorize(
       hassUrl,
-      encodeOauthState({
+      encodeOAuthState({
         hassUrl
       })
     );

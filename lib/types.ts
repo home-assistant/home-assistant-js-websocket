@@ -10,6 +10,12 @@ export type ConnectionOptions = {
   createSocket: (options: ConnectionOptions) => Promise<WebSocket>;
 };
 
+export type MessageBase = {
+  id?: number;
+  type: string;
+  [key: string]: any;
+};
+
 export type HassEvent = {
   event_type: string;
   data: object;
@@ -59,8 +65,10 @@ export type HassService = {
   };
 };
 
+export type HassDomainServices = {
+  [service_name: string]: HassService;
+};
+
 export type HassServices = {
-  [domain: string]: {
-    [service_name: string]: HassService;
-  };
+  [domain: string]: HassDomainServices;
 };
