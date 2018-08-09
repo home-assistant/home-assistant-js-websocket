@@ -50,7 +50,7 @@ async function connect() {
 connect();
 ```
 
-Connections to the websocket API are initiated by calling `createConnection(auth[, options])`. This method will return a promise that will resolve to either a `Connection` object or rejects with error codes `ERR_INVALID_AUTH` or `ERR_CANNOT_CONNECT`.
+Connections to the websocket API are initiated by calling `createConnection(options)`. This method will return a promise that will resolve to either a `Connection` object or rejects with error codes `ERR_INVALID_AUTH` or `ERR_CANNOT_CONNECT`.
 
 #### Available options
 
@@ -181,18 +181,6 @@ To use this package in NodeJS, install the [ws package](https://www.npmjs.com/pa
 ```js
 const WebSocket = require("ws");
 global.WebSocket = WebSocket;
-const HAWS = require("home-assistant-js-websocket");
-
-const getWsUrl = haUrl => `ws://${haUrl}/api/websocket`;
-
-HAWS.createConnection(getWsUrl("localhost:8123")).then(conn => {
-  HAWS.subscribeEntities(conn, logEntities);
-});
-
-function logEntities(entities) {
-  Object.keys(entities).forEach(key =>
-    console.log(`${key}: ${entities[key].state}`)
-  );
-  console.log("");
-}
 ```
+
+You'll also need to instantiate your own Auth object.
