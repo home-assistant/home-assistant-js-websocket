@@ -1,4 +1,4 @@
--r reify
 -r ts-node/register
+-r reify
 --recursive
 --timeout 10000
