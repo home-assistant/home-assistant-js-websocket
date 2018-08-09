@@ -4,6 +4,7 @@
   "version": "3.0.0-rc1",
   "description": "Home Assistant websocket client",
   "source": "lib/index.ts",
+  "types": "dist/index.d.ts",
   "main": "dist/haws.umd.js",
   "module": "dist/haws.es.js",
   "repository": {
@@ -13,7 +14,7 @@
   "scripts": {
     "watch": "microbundle watch",
     "build": "microbundle",
-    "test": "microbundle && mocha"
+    "test": "mocha"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
   "license": "Apache-2.0",
