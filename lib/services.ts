@@ -1,5 +1,5 @@
 import createCollection from "./collection";
-import { HassServices } from "./types";
+import { HassServices, HassDomainServices } from "./types";
 import { Connection } from "./connection";
 import Store from "./store";
 
@@ -43,7 +43,7 @@ function processServiceRemoved(
 
   if (!curDomainInfo || !(service in curDomainInfo)) return null;
 
-  const domainInfo = {};
+  const domainInfo: HassDomainServices = {};
   Object.keys(curDomainInfo).forEach(sKey => {
     if (sKey !== service) domainInfo[sKey] = curDomainInfo[sKey];
   });

@@ -26,9 +26,9 @@ function processEvent(store: Store<HassEntities>, event: StateChangedEvent) {
   }
 }
 
-async function fetchEntities(conn) {
+async function fetchEntities(conn: Connection): Promise<HassEntities> {
   const states = await conn.getStates();
-  const entities = {};
+  const entities: HassEntities = {};
   for (let i = 0; i < states.length; i++) {
     const state = states[i];
     entities[state.entity_id] = state;

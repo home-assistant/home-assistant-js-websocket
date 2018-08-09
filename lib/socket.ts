@@ -5,10 +5,11 @@ import {
   MSG_TYPE_AUTH_OK,
   MSG_TYPE_AUTH_REQUIRED,
   ERR_INVALID_AUTH,
-  ERR_CANNOT_CONNECT
+  ERR_CANNOT_CONNECT,
+  ERR_HASS_HOST_REQUIRED
 } from "./const";
 import { MSG_TYPE_AUTH_INVALID } from "./const";
-import { ConnectionOptions } from "./types";
+import { ConnectionOptions, Error } from "./types";
 import { authAccessToken } from "./messages";
 
 const DEBUG = false;
@@ -16,16 +17,23 @@ const DEBUG = false;
 export default function createSocket(
   options: ConnectionOptions
 ): Promise<WebSocket> {
+  if (!options.auth) {
+    throw ERR_HASS_HOST_REQUIRED;
+  }
   const auth = options.auth;
 
   // Convert from http:// -> ws://, https:// -> wss://
-  const url = `ws${auth.hassUrl.substr(4)}/api/websocket`;
+  const url = auth.wsUrl;
 
   if (DEBUG) {
     console.log("[Auth phase] Initializing", url);
   }
 
-  function connect(triesLeft, promResolve, promReject) {
+  function connect(
+    triesLeft: number,
+    promResolve: (socket: WebSocket) => void,
+    promReject: (err: Error) => void
+  ) {
     if (DEBUG) {
       console.log("[Auth Phase] New connection", url);
     }
@@ -63,7 +71,7 @@ export default function createSocket(
       );
     };
 
-    const handleMessage = async event => {
+    const handleMessage = async (event: MessageEvent) => {
       const message = JSON.parse(event.data);
 
       if (DEBUG) {
@@ -73,7 +81,7 @@ export default function createSocket(
         case MSG_TYPE_AUTH_REQUIRED:
           try {
             if (auth.expired) await auth.refreshAccessToken();
-            socket.send(JSON.stringify(authAccessToken(auth.access_token)));
+            socket.send(JSON.stringify(authAccessToken(auth.accessToken)));
           } catch (err) {
             // Refresh token failed
             invalidAuth = true;
