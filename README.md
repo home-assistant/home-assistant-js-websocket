@@ -2,27 +2,6 @@
 
 This is a websocket client written in JavaScript that allows retrieving authentication tokens and communicate with the Home Assistant websocket API. It can be used to integrate Home Assistant into your apps. It has 0 dependencies.
 
-```javascript
-import {
-  createConnection,
-  subscribeEntities
-} from "home-assistant-js-websocket";
-
-function stateChanged(event) {
-  console.log("state changed", event);
-}
-
-createConnection("ws://localhost:8123/api/websocket").then(
-  conn => {
-    console.log("Connection established!");
-    subscribeEntities(conn, entities => console.log("New entities!", entities));
-  },
-  err => console.error("Connection failed with code", err)
-);
-```
-
-[Try it on JSFiddle.](https://jsfiddle.net/balloob/9w3oyswa/)
-
 ## Trying it out
 
 We've included an [example client](https://github.com/home-assistant/home-assistant-js-websocket/blob/master/example.html) based on this lib so that it's easy to try it out:
@@ -71,7 +50,7 @@ async function connect() {
 connect();
 ```
 
-Connections to the websocket API are initiated by calling `createConnection(url[, options])`. `createConnection` will return a promise that will resolve to either a `Connection` object or rejects with an error code.
+Connections to the websocket API are initiated by calling `createConnection(auth[, options])`. This method will return a promise that will resolve to either a `Connection` object or rejects with error codes `ERR_INVALID_AUTH` or `ERR_CANNOT_CONNECT`.
 
 #### Available options
 
