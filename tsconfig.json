@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "lib": ["es2015", "dom"],
+    "target": "es2018",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true
+  }
+}
