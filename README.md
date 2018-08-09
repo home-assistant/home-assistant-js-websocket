@@ -43,7 +43,7 @@ async function connect() {
       return;
     }
   }
-  const connection = await createConnection(auth);
+  const connection = await createConnection({ auth });
   subscribeEntities(connection, ent => console.log(ent));
 }
 

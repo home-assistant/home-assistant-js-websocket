@@ -6,7 +6,8 @@ export type UnsubscribeFunc = () => void;
 
 export type ConnectionOptions = {
   setupRetry: number;
-  createSocket: (auth: Auth, options: ConnectionOptions) => Promise<WebSocket>;
+  auth?: Auth;
+  createSocket: (options: ConnectionOptions) => Promise<WebSocket>;
 };
 
 export type HassEvent = {

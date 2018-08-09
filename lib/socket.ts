@@ -9,13 +9,15 @@ import {
 } from "./const";
 import { MSG_TYPE_AUTH_INVALID } from "./const";
 import { ConnectionOptions } from "./types";
+import { authAccessToken } from "./messages";
 
 const DEBUG = false;
 
 export default function createSocket(
-  auth,
   options: ConnectionOptions
 ): Promise<WebSocket> {
+  const auth = options.auth;
+
   // Convert from http:// -> ws://, https:// -> wss://
   const url = `ws${auth.hassUrl.substr(4)}/api/websocket`;
 
@@ -36,7 +38,6 @@ export default function createSocket(
     const closeMessage = () => {
       // If we are in error handler make sure close handler doesn't also fire.
       socket.removeEventListener("close", closeMessage);
-
       if (invalidAuth) {
         promReject(ERR_INVALID_AUTH);
         return;
@@ -72,9 +73,7 @@ export default function createSocket(
         case MSG_TYPE_AUTH_REQUIRED:
           try {
             if (auth.expired) await auth.refreshAccessToken();
-            socket.send(
-              JSON.stringify(message.authAccessToken(auth.access_token))
-            );
+            socket.send(JSON.stringify(authAccessToken(auth.access_token)));
           } catch (err) {
             // Refresh token failed
             invalidAuth = true;

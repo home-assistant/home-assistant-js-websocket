@@ -11,7 +11,6 @@ import {
   HassServices,
   HassConfig
 } from "./types";
-import { Auth } from "./auth";
 import createSocket from "./socket";
 
 const DEBUG = false;
@@ -53,7 +52,6 @@ type WebSocketResponse =
   | WebSocketResultErrorResponse;
 
 export class Connection {
-  auth: Auth;
   options: ConnectionOptions;
   commandId: number;
   commands: {
@@ -65,10 +63,10 @@ export class Connection {
   closeRequested: boolean;
   socket: WebSocket;
 
-  constructor(auth: Auth, options: ConnectionOptions) {
-    this.auth = auth;
+  constructor(options: ConnectionOptions) {
     // connection options
     //  - setupRetry: amount of ms to retry when unable to connect on initial setup
+    //  - createSocket: create a new Socket connection
     this.options = options;
     // id if next command to send
     this.commandId = 1;
@@ -279,7 +277,7 @@ export class Connection {
           console.log("Trying to reconnect");
         }
         try {
-          const socket = await options.createSocket(this.auth, options);
+          const socket = await options.createSocket(options);
           this.setSocket(socket);
         } catch (err) {
           if (err === ERR_INVALID_AUTH) {
@@ -306,7 +304,6 @@ const defaultConnectionOptions: ConnectionOptions = {
 };
 
 export default async function createConnection(
-  auth: Auth,
   options?: Partial<ConnectionOptions>
 ) {
   const connOptions: ConnectionOptions = Object.assign(
@@ -314,8 +311,8 @@ export default async function createConnection(
     defaultConnectionOptions,
     options
   );
-  const socket = await options.createSocket(auth, connOptions);
-  const conn = new Connection(auth, connOptions);
+  const socket = await connOptions.createSocket(connOptions);
+  const conn = new Connection(connOptions);
   conn.setSocket(socket);
   return conn;
 }
