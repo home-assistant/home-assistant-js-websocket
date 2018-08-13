@@ -1,4 +1,5 @@
 import getAuth from "./auth";
+import createCollection from "./collection";
 import createConnection from "./connection";
 import subscribeConfig from "./config";
 import subscribeServices from "./services";
@@ -16,6 +17,7 @@ export {
   ERR_CONNECTION_LOST,
   ERR_HASS_HOST_REQUIRED,
   getAuth,
+  createCollection,
   createConnection,
   subscribeConfig,
   subscribeServices,
