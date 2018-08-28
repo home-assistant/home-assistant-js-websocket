@@ -52,14 +52,27 @@ connect();
 
 Connections to the websocket API are initiated by calling `createConnection(options)`. This method will return a promise that will resolve to either a `Connection` object or rejects with error codes `ERR_INVALID_AUTH` or `ERR_CANNOT_CONNECT`.
 
-#### Available options
+#### Available getAuth options
 
-Currently the following options are available:
+All options are optional.
 
-| Option       | Description                                                                                                          |
-| ------------ | -------------------------------------------------------------------------------------------------------------------- |
-| setupRetry   | Number of times to retry initial connection when it fails. Set to -1 for infinite retries. Default is 0 (no retries) |
-| createSocket | Override the createSocket method with your own. `(auth, options) => Promise<WebSocket>`                              |
+| Option      | Description                                                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------------------------------- |
+| hassUrl     | The url where the Home Assistant instance can be reached.                                                           |
+| clientId    | Client ID to use. Client IDs for Home Assistant is the url of your application. Defaults to domain of current page. |
+| redirectUri | The url to redirect back to when the user has logged in. Defaults to current page.                                  |
+| saveCache   | Function to store the token cache.                                                                                  |
+| loadCache   | Function that returns a promise that resolves to previously stored token cache or undefined if no cache available.  |
+
+#### Available createConnection options
+
+You need to either provide `auth` or `createSocket`.
+
+| Option       | Description                                                                                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| auth         | Auth object to use to create a connection.                                                                                                           |
+| createSocket | Override the createSocket method with your own. `(auth, options) => Promise<WebSocket>`. Needs to return a connection that is already authenticated. |
+| setupRetry   | Number of times to retry initial connection when it fails. Set to -1 for infinite retries. Default is 0 (no retries)                                 |
 
 #### Possible error codes
 
