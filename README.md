@@ -60,7 +60,7 @@ All options are optional.
 | ----------- | ------------------------------------------------------------------------------------------------------------------- |
 | hassUrl     | The url where the Home Assistant instance can be reached.                                                           |
 | clientId    | Client ID to use. Client IDs for Home Assistant is the url of your application. Defaults to domain of current page. |
-| redirectUri | The url to redirect back to when the user has logged in. Defaults to current page.                                  |
+| redirectUrl | The url to redirect back to when the user has logged in. Defaults to current page.                                  |
 | saveCache   | Function to store the token cache.                                                                                  |
 | loadCache   | Function that returns a promise that resolves to previously stored token cache or undefined if no cache available.  |
 

@@ -16,7 +16,7 @@ type LoadCacheFunc = () => Promise<AuthData | undefined>;
 type getAuthOptions = {
   hassUrl?: string;
   clientId?: string;
-  redirectUri?: string;
+  redirectUrl?: string;
   saveCache?: SaveCacheFunc;
   loadCache?: LoadCacheFunc;
 };
@@ -40,7 +40,7 @@ function genClientId() {
   return `${location.protocol}//${location.host}/`;
 }
 
-function genRedirectUri() {
+function genRedirectUrl() {
   // Get current url but without # part.
   const { protocol, host, pathname, search } = location;
   return `${protocol}//${host}${pathname}${search}`;
@@ -49,12 +49,12 @@ function genRedirectUri() {
 function genAuthorizeUrl(
   hassUrl: string,
   clientId: string,
-  redirectUri: string,
+  redirectUrl: string,
   state: string
 ) {
   let authorizeUrl = `${hassUrl}/auth/authorize?response_type=code&client_id=${encodeURIComponent(
     clientId
-  )}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+  )}&redirect_uri=${encodeURIComponent(redirectUrl)}`;
 
   if (state) {
     authorizeUrl += `&state=${encodeURIComponent(state)}`;
@@ -65,17 +65,17 @@ function genAuthorizeUrl(
 function redirectAuthorize(
   hassUrl: string,
   clientId: string,
-  redirectUri: string,
+  redirectUrl: string,
   state: string
 ) {
   // Add either ?auth_callback=1 or &auth_callback=1
-  redirectUri += redirectUri.includes("?") ? "&" : "?";
-  redirectUri += `${CALLBACK_KEY}=1`;
+  redirectUrl += redirectUrl.includes("?") ? "&" : "?";
+  redirectUrl += `${CALLBACK_KEY}=1`;
 
   document.location.href = genAuthorizeUrl(
     hassUrl,
     clientId,
-    redirectUri,
+    redirectUrl,
     state
   );
 }
@@ -216,13 +216,13 @@ export default async function getAuth(
     hassUrl = hassUrl.substr(0, hassUrl.length - 1);
   }
   const clientId = options.clientId || genClientId();
-  const redirectUri = options.redirectUri || genRedirectUri();
+  const redirectUrl = options.redirectUrl || genRedirectUrl();
 
   // If no tokens found but a hassUrl was passed in, let's go get some tokens!
   redirectAuthorize(
     hassUrl,
     clientId,
-    redirectUri,
+    redirectUrl,
     encodeOAuthState({
       hassUrl,
       clientId
