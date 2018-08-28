@@ -157,6 +157,10 @@ export default async function getAuth({
   loadCache,
   saveCache
 }: getAuthOptions = {}): Promise<Auth> {
+  // Strip trailing slash.
+  if (hassUrl && hassUrl.substr(hassUrl.length - 1) === "/") {
+    hassUrl = hassUrl.substr(0, hassUrl.length - 1);
+  }
   // Check if we came back from an authorize redirect
   const query = parseQuery<QueryCallbackData>(location.search.substr(1));
 
