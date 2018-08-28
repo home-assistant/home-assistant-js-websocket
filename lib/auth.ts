@@ -100,15 +100,18 @@ function fetchToken(hassUrl: string, clientId: string, code: string) {
   });
 }
 
-function refreshAccessToken(
+async function refreshAccessToken(
   hassUrl: string,
   clientId: string,
   refreshToken: string
 ) {
-  return tokenRequest(hassUrl, clientId, {
+  const data = await tokenRequest(hassUrl, clientId, {
     grant_type: "refresh_token",
     refresh_token: refreshToken
   });
+  // Access token response does not contain refresh token.
+  data.refresh_token = refreshToken;
+  return data;
 }
 
 function encodeOAuthState(state: OAuthState): string {
