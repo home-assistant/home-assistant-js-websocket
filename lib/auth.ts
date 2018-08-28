@@ -211,7 +211,7 @@ export default async function getAuth(
   }
 
   // Strip trailing slash.
-  if (hassUrl.substr(hassUrl.length - 1) === "/") {
+  if (hassUrl[hassUrl.length - 1] === "/") {
     hassUrl = hassUrl.substr(0, hassUrl.length - 1);
   }
   const clientId = options.clientId || genClientId();
