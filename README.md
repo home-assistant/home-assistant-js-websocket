@@ -14,9 +14,7 @@ npx http-server -o
 
 ## Usage
 
-### Initializing connection
-
-To initialize a connection, you need an authentication token for the instance that you want to connect to. This library implements the necessary steps to guide the user to authenticate your website with their Home Assistant instance and give you a token. All you need from the user is ask the url of their instance.
+To initialize a connection, you need an authentication token for the instance that you want to connect to. This library implements the necessary steps to guide the user to authenticate your website with their Home Assistant instance and give you a token. All you need from the user is the url of their instance.
 
 ```js
 // Example connect code
@@ -30,6 +28,7 @@ import {
 async function connect() {
   let auth;
   try {
+    // Try to pick up authentication after user logs in
     auth = await getAuth();
   } catch (err) {
     if (err === ERR_HASS_HOST_REQUIRED) {
@@ -37,6 +36,7 @@ async function connect() {
         "What host to connect to?",
         "http://localhost:8123"
       );
+      // Redirect user to log in on their instance
       auth = await getAuth({ hassUrl });
     } else {
       alert(`Unknown error: ${err}`);
@@ -50,40 +50,63 @@ async function connect() {
 connect();
 ```
 
-Connections to the websocket API are initiated by calling `createConnection(options)`. This method will return a promise that will resolve to either a `Connection` object or rejects with error codes `ERR_INVALID_AUTH` or `ERR_CANNOT_CONNECT`.
+### `getAuth()`
 
-#### Available getAuth options
+Use this method to get authentication from a server via OAuth2. This method will handle redirecting to an instance and fetchin the token after the user successful logs in.
 
-All options are optional.
+You can pass options using the syntax:
 
-| Option      | Description                                                                                                                    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| hassUrl     | The url where the Home Assistant instance can be reached.                                                                      |
-| clientId    | Client ID to use. Client IDs for Home Assistant is the url of your application. Defaults to domain of current page.            |
-| redirectUrl | The url to redirect back to when the user has logged in. Defaults to current page.                                             |
-| saveTokens  | Function to store an object containing the token information.                                                                  |
-| loadTokens  | Function that returns a promise that resolves to previously stored token information object or undefined if no info available. |
+```js
+getAuth({ hassUrl: "http://localhost:8123" });
+```
 
-#### Available createConnection options
+| Option      | Description                                                                                                                                                                                              |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| hassUrl     | The url where the Home Assistant instance can be reached. This option is needed so we know where to redirect the user for authentication. Once redirected back, it is not needed to pass this option in. |
+| clientId    | Client ID to use. Client IDs for Home Assistant is the url of your application. Defaults to domain of current page.                                                                                      |
+| redirectUrl | The url to redirect back to when the user has logged in. Defaults to current page.                                                                                                                       |
+| saveTokens  | Function to store an object containing the token information.                                                                                                                                            |
+| loadTokens  | Function that returns a promise that resolves to previously stored token information object or undefined if no info available.                                                                           |
 
-You need to either provide `auth` or `createSocket`.
+In certain instances `getAuth` will raise an error. These errors can be imported from the package:
 
-| Option       | Description                                                                                                                                          |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| auth         | Auth object to use to create a connection.                                                                                                           |
-| createSocket | Override the createSocket method with your own. `(auth, options) => Promise<WebSocket>`. Needs to return a connection that is already authenticated. |
-| setupRetry   | Number of times to retry initial connection when it fails. Set to -1 for infinite retries. Default is 0 (no retries)                                 |
+```js
+// When bundling your application
+import {
+  ERR_HASS_HOST_REQUIRED,
+  ERR_INVALID_AUTH
+} from "home-assistant-js-websocket";
 
-#### Possible error codes
+// When using the UMD build
+HAWS.ERR_HASS_HOST_REQUIRED;
+```
 
-Currently the following error codes can be expected:
+| Error                    | Description                                                                                                                                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ERR_HASS_HOST_REQUIRED` | You need to pass in `hassUrl` to `getAuth` to continue getting auth. This option is not needed when the user is redirected back after successfully logging in. |
+| `ERR_INVALID_AUTH`       | This error will be raised if the url contains an authorization code that is no longer valid.                                                                   |
+| Other errors             | Unknown error!                                                                                                                                                 |
 
-| Error                  | Description                                                             |
-| ---------------------- | ----------------------------------------------------------------------- |
-| ERR_CANNOT_CONNECT     | If the client was unable to connect to the websocket API.               |
-| ERR_INVALID_AUTH       | If the supplied authentication was invalid.                             |
-| ERR_CONNECTION_LOST    | Raised if connection closed while waiting for a message to be returned. |
-| ERR_HASS_HOST_REQUIRED | If the authentication requires a host to be defined.                    |
+### `createConnection()`
+
+You need to either provide `auth` or `createSocket` as options to createConnection:
+
+```js
+createConnection({ auth });
+```
+
+| Option       | Description                                                                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| auth         | Auth object to use to create a connection.                                                                                                     |
+| createSocket | Override the createSocket method with your own. `(options) => Promise<WebSocket>`. Needs to return a connection that is already authenticated. |
+| setupRetry   | Number of times to retry initial connection when it fails. Set to -1 for infinite retries. Default is 0 (no retries)                           |
+
+Currently the following error codes can be raised by createConnection:
+
+| Error              | Description                                               |
+| ------------------ | --------------------------------------------------------- |
+| ERR_CANNOT_CONNECT | If the client was unable to connect to the websocket API. |
+| ERR_INVALID_AUTH   | If the supplied authentication was invalid.               |
 
 You can import them into your code as follows:
 
@@ -94,7 +117,7 @@ import {
 } from "home-assistant-js-websocket";
 ```
 
-#### Automatic reconnecting
+### Automatic reconnecting
 
 The connection object will automatically try to reconnect to the server when the connection gets lost. On reconnect, it will automatically resubscribe the event listeners.
 
@@ -244,13 +267,26 @@ Returns a promise that will resolve to a function that will cancel the subscript
 
 Listen for events on the connection. [See docs.](#automatic-reconnecting)
 
+##### `conn.sendMessagePromise(message)`
+
+Send a message to the server. Returns a promise that resolves or rejects based on the result of the server. Special case rejection is `ERR_CONNECTION_LOST` if the connection is lost while the command is in progress.
+
 ## Using this in NodeJS
 
-To use this package in NodeJS, install the [ws package](https://www.npmjs.com/package/ws) and make it available as `WebSocket` on the `global` object before importing this package.
+To use this package in NodeJS, you will want to define your own `createSocket` method for `createConnection` to use. Your createSocket function will need to set up the web socket connection with Home Assistant and handle the auth.
 
 ```js
 const WebSocket = require("ws");
-global.WebSocket = WebSocket;
-```
 
-You'll also need to instantiate your own Auth object.
+createConnection({
+  createSocket() {
+    // Open connection
+    const ws = new WebSocket("ws://localhost:8123");
+
+    // Functions to handle authentication with Home Assistant
+    // Implement yourself :)
+
+    return ws;
+  }
+});
+```
