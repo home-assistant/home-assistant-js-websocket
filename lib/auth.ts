@@ -1,5 +1,5 @@
 import { parseQuery } from "./util";
-import { ERR_HASS_HOST_REQUIRED } from "./const";
+import { ERR_HASS_HOST_REQUIRED, ERR_INVALID_AUTH } from "./const";
 
 type AuthData = {
   hassUrl: string;
@@ -85,7 +85,12 @@ async function tokenRequest(
     body: formData
   });
 
-  if (!resp.ok) throw new Error("Unable to fetch tokens");
+  if (!resp.ok) {
+    throw resp.status === 400 /* auth invalid */ ||
+    resp.status === 403 /* user not active */
+      ? ERR_INVALID_AUTH
+      : new Error("Unable to fetch tokens");
+  }
 
   const tokens: AuthData = await resp.json();
   tokens.hassUrl = hassUrl;

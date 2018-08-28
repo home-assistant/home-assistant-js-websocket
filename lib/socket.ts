@@ -84,7 +84,7 @@ export default function createSocket(
             socket.send(JSON.stringify(authAccessToken(auth.accessToken)));
           } catch (err) {
             // Refresh token failed
-            invalidAuth = true;
+            invalidAuth = err === ERR_INVALID_AUTH;
             socket.close();
           }
           break;
