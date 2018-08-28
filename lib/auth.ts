@@ -10,15 +10,15 @@ type AuthData = {
   expires_in: number;
 };
 
-type SaveCacheFunc = (data: AuthData) => void;
-type LoadCacheFunc = () => Promise<AuthData | undefined>;
+type SaveTokensFunc = (data: AuthData) => void;
+type LoadTokensFunc = () => Promise<AuthData | undefined>;
 
 type getAuthOptions = {
   hassUrl?: string;
   clientId?: string;
   redirectUrl?: string;
-  saveCache?: SaveCacheFunc;
-  loadCache?: LoadCacheFunc;
+  saveTokens?: SaveTokensFunc;
+  loadTokens?: LoadTokensFunc;
 };
 
 const CALLBACK_KEY = "auth_callback";
@@ -140,12 +140,12 @@ function decodeOAuthState(encoded: string): OAuthState {
 }
 
 export class Auth {
-  private _saveCache?: SaveCacheFunc;
+  private _saveTokens?: SaveTokensFunc;
   data: AuthData;
 
-  constructor(data: AuthData, saveCache?: SaveCacheFunc) {
+  constructor(data: AuthData, saveTokens?: SaveTokensFunc) {
     this.data = data;
-    this._saveCache = saveCache;
+    this._saveTokens = saveTokens;
   }
 
   get wsUrl() {
@@ -168,14 +168,14 @@ export class Auth {
       this.data.clientId,
       this.data.refresh_token
     );
-    if (this._saveCache) this._saveCache(this.data);
+    if (this._saveTokens) this._saveTokens(this.data);
   }
 }
 
 export default async function getAuth(
   options: getAuthOptions = {}
 ): Promise<Auth> {
-  const { loadCache, saveCache } = options;
+  const { loadTokens, saveTokens } = options;
 
   // Check if we came back from an authorize redirect
   const query = parseQuery<QueryCallbackData>(location.search.substr(1));
@@ -188,7 +188,7 @@ export default async function getAuth(
     const state = decodeOAuthState(query.state);
     try {
       data = await fetchToken(state.hassUrl, state.clientId, query.code);
-      if (saveCache) saveCache(data);
+      if (saveTokens) saveTokens(data);
     } catch (err) {
       // Do we want to tell user we were unable to fetch tokens?
       // For now we don't do anything, having rest of code pick it up.
@@ -196,13 +196,13 @@ export default async function getAuth(
     }
   }
 
-  // Check for cached tokens
-  if (!data && loadCache) {
-    data = await loadCache();
+  // Check for stored tokens
+  if (!data && loadTokens) {
+    data = await loadTokens();
   }
 
   if (data) {
-    return new Auth(data, saveCache);
+    return new Auth(data, saveTokens);
   }
 
   let hassUrl = options.hassUrl;
