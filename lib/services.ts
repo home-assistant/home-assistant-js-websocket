@@ -1,5 +1,5 @@
 import createCollection from "./collection";
-import { HassServices, HassDomainServices } from "./types";
+import { HassServices, HassDomainServices, UnsubscribeFunc } from "./types";
 import { Connection } from "./connection";
 import Store from "./store";
 
@@ -64,7 +64,10 @@ const subscribeUpdates = (conn: Connection, store: Store<HassServices>) =>
     )
   ]).then(unsubs => () => unsubs.forEach(fn => fn()));
 
-export default (conn: Connection, onChange: (state: HassServices) => void) =>
+export default (
+  conn: Connection,
+  onChange: (state: HassServices) => void
+): UnsubscribeFunc =>
   createCollection<HassServices>(
     "_srv",
     fetchServices,

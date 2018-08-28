@@ -905,9 +905,9 @@ gzip-size@^3.0.0:
   dependencies:
     duplexer "^0.1.1"
 
-gzip-size@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/gzip-size/-/gzip-size-4.1.0.tgz#8ae096257eabe7d69c45be2b67c448124ffb517c"
+gzip-size@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/gzip-size/-/gzip-size-5.0.0.tgz#a55ecd99222f4c48fd8c01c625ce3b349d0a0e80"
   dependencies:
     duplexer "^0.1.1"
     pify "^3.0.0"
@@ -1492,9 +1492,9 @@ merge-source-map@^1.1.0:
   dependencies:
     source-map "^0.6.1"
 
-microbundle@^0.5.1:
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/microbundle/-/microbundle-0.5.1.tgz#ddb9fc8d85fe19ba5354bea70eb0b32576685058"
+microbundle@^0.6.0:
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/microbundle/-/microbundle-0.6.0.tgz#0e1c4a055b90c500d031f28ff518a209bdb93898"
   dependencies:
     acorn-jsx "^4.1.1"
     asyncro "^3.0.0"
@@ -1504,10 +1504,9 @@ microbundle@^0.5.1:
     chalk "^2.4.0"
     cssnano "^3.10.0"
     es6-promisify "^6.0.0"
-    gzip-size "^4.1.0"
+    gzip-size "^5.0.0"
     pretty-bytes "^5.1.0"
-    regenerator-runtime "^0.11.1"
-    rollup "^0.62.0"
+    rollup "^0.63.0"
     rollup-plugin-buble "^0.19.2"
     rollup-plugin-bundle-size "^1.0.1"
     rollup-plugin-commonjs "^9.0.0"
@@ -2239,7 +2238,7 @@ regenerator-runtime@^0.10.5:
   version "0.10.5"
   resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.10.5.tgz#336c3efc1220adcedda2c9fab67b5a7955a33658"
 
-regenerator-runtime@^0.11.0, regenerator-runtime@^0.11.1:
+regenerator-runtime@^0.11.0:
   version "0.11.1"
   resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.11.1.tgz#be05ad7f9bf7d22e056f9726cee5017fbf19e2e9"
 
@@ -2453,9 +2452,9 @@ rollup-pluginutils@^2.0.1:
     estree-walker "^0.5.2"
     micromatch "^2.3.11"
 
-rollup@^0.62.0:
-  version "0.62.0"
-  resolved "https://registry.yarnpkg.com/rollup/-/rollup-0.62.0.tgz#4ca8b3c9582195dc9341ff8a1375f58319b95bfc"
+rollup@^0.63.0:
+  version "0.63.5"
+  resolved "https://registry.yarnpkg.com/rollup/-/rollup-0.63.5.tgz#5543eecac9a1b83b7e1be598b5be84c9c0a089db"
   dependencies:
     "@types/estree" "0.0.39"
     "@types/node" "*"

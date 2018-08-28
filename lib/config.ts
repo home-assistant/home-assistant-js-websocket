@@ -1,5 +1,5 @@
 import createCollection from "./collection";
-import { HassConfig } from "./types";
+import { HassConfig, UnsubscribeFunc } from "./types";
 import { Connection } from "./connection";
 import Store from "./store";
 
@@ -27,7 +27,10 @@ const subscribeUpdates = (conn: Connection, store: Store<HassConfig>) =>
     "component_loaded"
   );
 
-export default (conn: Connection, onChange: (state: HassConfig) => void) =>
+export default (
+  conn: Connection,
+  onChange: (state: HassConfig) => void
+): UnsubscribeFunc =>
   createCollection<HassConfig>(
     "_cnf",
     fetchConfig,
