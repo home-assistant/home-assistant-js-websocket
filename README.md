@@ -56,13 +56,13 @@ Connections to the websocket API are initiated by calling `createConnection(opti
 
 All options are optional.
 
-| Option      | Description                                                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------------------------------- |
-| hassUrl     | The url where the Home Assistant instance can be reached.                                                           |
-| clientId    | Client ID to use. Client IDs for Home Assistant is the url of your application. Defaults to domain of current page. |
-| redirectUri | The url to redirect back to when the user has logged in. Defaults to current page.                                  |
-| saveCache   | Function to store the token cache.                                                                                  |
-| loadCache   | Function that returns a promise that resolves to previously stored token cache or undefined if no cache available.  |
+| Option      | Description                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| hassUrl     | The url where the Home Assistant instance can be reached.                                                                      |
+| clientId    | Client ID to use. Client IDs for Home Assistant is the url of your application. Defaults to domain of current page.            |
+| redirectUrl | The url to redirect back to when the user has logged in. Defaults to current page.                                             |
+| saveTokens  | Function to store an object containing the token information.                                                                  |
+| loadTokens  | Function that returns a promise that resolves to previously stored token information object or undefined if no info available. |
 
 #### Available createConnection options
 
