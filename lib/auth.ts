@@ -158,8 +158,7 @@ export class Auth {
   }
 
   get expired() {
-    // Token needs to be at least 10 seconds valid
-    return Date.now() > this.data.expires - 10000;
+    return Date.now() > this.data.expires;
   }
 
   async refreshAccessToken() {
