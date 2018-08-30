@@ -1,7 +1,7 @@
-import createCollection from "./collection";
+import { createCollection } from "./collection";
 import { HassServices, HassDomainServices, UnsubscribeFunc } from "./types";
 import { Connection } from "./connection";
-import Store from "./store";
+import { Store } from "./store";
 
 type ServiceRegisteredEvent = {
   data: {
@@ -64,7 +64,7 @@ const subscribeUpdates = (conn: Connection, store: Store<HassServices>) =>
     )
   ]).then(unsubs => () => unsubs.forEach(fn => fn()));
 
-export default (
+export const subscribeServices = (
   conn: Connection,
   onChange: (state: HassServices) => void
 ): UnsubscribeFunc =>

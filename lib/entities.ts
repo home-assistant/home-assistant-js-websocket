@@ -1,7 +1,7 @@
-import createCollection from "./collection";
+import { createCollection } from "./collection";
 import { HassEntities, HassEntity, UnsubscribeFunc } from "./types";
 import { Connection } from "./connection";
-import Store from "./store";
+import { Store } from "./store";
 
 type StateChangedEvent = {
   type: "state_changed";
@@ -42,7 +42,7 @@ const subscribeUpdates = (conn: Connection, store: Store<HassEntities>) =>
     "state_changed"
   );
 
-export default (
+export const subscribeEntities = (
   conn: Connection,
   onChange: (state: HassEntities) => void
 ): UnsubscribeFunc =>

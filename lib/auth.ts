@@ -1,7 +1,7 @@
 import { parseQuery } from "./util";
-import { ERR_HASS_HOST_REQUIRED, ERR_INVALID_AUTH } from "./const";
+import { ERR_HASS_HOST_REQUIRED, ERR_INVALID_AUTH } from "./errors";
 
-type AuthData = {
+export type AuthData = {
   hassUrl: string;
   clientId: string;
   expires: number;
@@ -10,10 +10,10 @@ type AuthData = {
   expires_in: number;
 };
 
-type SaveTokensFunc = (data: AuthData) => void;
-type LoadTokensFunc = () => Promise<AuthData | undefined>;
+export type SaveTokensFunc = (data: AuthData) => void;
+export type LoadTokensFunc = () => Promise<AuthData | undefined>;
 
-type getAuthOptions = {
+export type getAuthOptions = {
   hassUrl?: string;
   clientId?: string;
   redirectUrl?: string;
@@ -21,14 +21,12 @@ type getAuthOptions = {
   loadTokens?: LoadTokensFunc;
 };
 
-const CALLBACK_KEY = "auth_callback";
-
 type QueryCallbackData =
   | {}
   | {
       state: string;
       code: string;
-      [CALLBACK_KEY]: string;
+      auth_callback: string;
     };
 
 type OAuthState = {
@@ -69,8 +67,7 @@ function redirectAuthorize(
   state: string
 ) {
   // Add either ?auth_callback=1 or &auth_callback=1
-  redirectUrl += redirectUrl.includes("?") ? "&" : "?";
-  redirectUrl += `${CALLBACK_KEY}=1`;
+  redirectUrl += (redirectUrl.includes("?") ? "&" : "?") + "auth_callback=1";
 
   document.location.href = genAuthorizeUrl(
     hassUrl,
@@ -171,15 +168,11 @@ export class Auth {
   }
 }
 
-export default async function getAuth(
-  options: getAuthOptions = {}
-): Promise<Auth> {
-  const { loadTokens, saveTokens } = options;
+export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
+  let data: AuthData | undefined;
 
   // Check if we came back from an authorize redirect
   const query = parseQuery<QueryCallbackData>(location.search.substr(1));
-
-  let data: AuthData | undefined;
 
   // Check if we got redirected here from authorize page
   if ("auth_callback" in query) {
@@ -187,7 +180,7 @@ export default async function getAuth(
     const state = decodeOAuthState(query.state);
     try {
       data = await fetchToken(state.hassUrl, state.clientId, query.code);
-      if (saveTokens) saveTokens(data);
+      if (options.saveTokens) options.saveTokens(data);
     } catch (err) {
       // Do we want to tell user we were unable to fetch tokens?
       // For now we don't do anything, having rest of code pick it up.
@@ -196,12 +189,12 @@ export default async function getAuth(
   }
 
   // Check for stored tokens
-  if (!data && loadTokens) {
-    data = await loadTokens();
+  if (!data && options.loadTokens) {
+    data = await options.loadTokens();
   }
 
   if (data) {
-    return new Auth(data, saveTokens);
+    return new Auth(data, options.saveTokens);
   }
 
   let hassUrl = options.hassUrl;

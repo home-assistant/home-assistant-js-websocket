@@ -7,7 +7,7 @@ import { UnsubscribeFunc } from "./types";
 type Listener<State> = (state: State) => void;
 type NoSubscribersCallback = () => void;
 
-export default class Store<State> {
+export class Store<State> {
   private _noSub: NoSubscribersCallback;
   listeners: Listener<State>[];
   state: State | undefined;

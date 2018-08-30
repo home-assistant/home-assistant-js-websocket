@@ -1,7 +1,7 @@
-import createCollection from "./collection";
+import { createCollection } from "./collection";
 import { HassConfig, UnsubscribeFunc } from "./types";
 import { Connection } from "./connection";
-import Store from "./store";
+import { Store } from "./store";
 
 type ComponentLoadedEvent = {
   data: {
@@ -27,7 +27,7 @@ const subscribeUpdates = (conn: Connection, store: Store<HassConfig>) =>
     "component_loaded"
   );
 
-export default (
+export const subscribeConfig = (
   conn: Connection,
   onChange: (state: HassConfig) => void
 ): UnsubscribeFunc =>

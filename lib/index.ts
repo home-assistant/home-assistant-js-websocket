@@ -1,25 +1,28 @@
-import getAuth from "./auth";
-import createCollection from "./collection";
-import createConnection from "./connection";
-import subscribeConfig from "./config";
-import subscribeServices from "./services";
-import subscribeEntities from "./entities";
-import {
-  ERR_CANNOT_CONNECT,
-  ERR_INVALID_AUTH,
-  ERR_CONNECTION_LOST,
-  ERR_HASS_HOST_REQUIRED
-} from "./const";
+import { ConnectionOptions } from "./types";
+import { createSocket } from "./socket";
+import { Connection } from "./connection";
 
-export {
-  ERR_CANNOT_CONNECT,
-  ERR_INVALID_AUTH,
-  ERR_CONNECTION_LOST,
-  ERR_HASS_HOST_REQUIRED,
-  getAuth,
-  createCollection,
-  createConnection,
-  subscribeConfig,
-  subscribeServices,
-  subscribeEntities
+export * from "./auth";
+export * from "./collection";
+export * from "./connection";
+export * from "./config";
+export * from "./services";
+export * from "./entities";
+export * from "./errors";
+export * from "./types";
+
+const defaultConnectionOptions: ConnectionOptions = {
+  setupRetry: 0,
+  createSocket
 };
+
+export async function createConnection(options?: Partial<ConnectionOptions>) {
+  const connOptions: ConnectionOptions = Object.assign(
+    {},
+    defaultConnectionOptions,
+    options
+  );
+  const socket = await connOptions.createSocket(connOptions);
+  const conn = new Connection(socket, connOptions);
+  return conn;
+}

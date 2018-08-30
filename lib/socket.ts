@@ -2,21 +2,20 @@
  * Create a web socket connection with a Home Assistant instance.
  */
 import {
-  MSG_TYPE_AUTH_OK,
-  MSG_TYPE_AUTH_REQUIRED,
   ERR_INVALID_AUTH,
   ERR_CANNOT_CONNECT,
   ERR_HASS_HOST_REQUIRED
-} from "./const";
-import { MSG_TYPE_AUTH_INVALID } from "./const";
+} from "./errors";
 import { ConnectionOptions, Error } from "./types";
 import { authAccessToken } from "./messages";
 
 const DEBUG = false;
 
-export default function createSocket(
-  options: ConnectionOptions
-): Promise<WebSocket> {
+const MSG_TYPE_AUTH_REQUIRED = "auth_required";
+const MSG_TYPE_AUTH_INVALID = "auth_invalid";
+const MSG_TYPE_AUTH_OK = "auth_ok";
+
+export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
   if (!options.auth) {
     throw ERR_HASS_HOST_REQUIRED;
   }
