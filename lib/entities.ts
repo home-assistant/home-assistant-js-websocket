@@ -2,6 +2,7 @@ import { createCollection } from "./collection";
 import { HassEntities, HassEntity, UnsubscribeFunc } from "./types";
 import { Connection } from "./connection";
 import { Store } from "./store";
+import { getStates } from "./commands";
 
 type StateChangedEvent = {
   type: "state_changed";
@@ -27,7 +28,7 @@ function processEvent(store: Store<HassEntities>, event: StateChangedEvent) {
 }
 
 async function fetchEntities(conn: Connection): Promise<HassEntities> {
-  const states = await conn.getStates();
+  const states = await getStates(conn);
   const entities: HassEntities = {};
   for (let i = 0; i < states.length; i++) {
     const state = states[i];

@@ -10,6 +10,7 @@ export * from "./services";
 export * from "./entities";
 export * from "./errors";
 export * from "./types";
+export * from "./commands";
 
 const defaultConnectionOptions: ConnectionOptions = {
   setupRetry: 0,

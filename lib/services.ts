@@ -2,6 +2,7 @@ import { createCollection } from "./collection";
 import { HassServices, HassDomainServices, UnsubscribeFunc } from "./types";
 import { Connection } from "./connection";
 import { Store } from "./store";
+import { getServices } from "./commands";
 
 type ServiceRegisteredEvent = {
   data: {
@@ -51,7 +52,7 @@ function processServiceRemoved(
   return { [domain]: domainInfo };
 }
 
-const fetchServices = (conn: Connection) => conn.getServices();
+const fetchServices = (conn: Connection) => getServices(conn);
 const subscribeUpdates = (conn: Connection, store: Store<HassServices>) =>
   Promise.all([
     conn.subscribeEvents<ServiceRegisteredEvent>(

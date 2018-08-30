@@ -1,6 +1,6 @@
 import { Error } from "./types";
 
-export function authAccessToken(accessToken: string) {
+export function auth(accessToken: string) {
   return {
     type: "auth",
     access_token: accessToken
@@ -22,6 +22,12 @@ export function config() {
 export function services() {
   return {
     type: "get_services"
+  };
+}
+
+export function user() {
+  return {
+    type: "auth/current_user"
   };
 }
 

@@ -7,7 +7,7 @@ import {
   ERR_HASS_HOST_REQUIRED
 } from "./errors";
 import { ConnectionOptions, Error } from "./types";
-import { authAccessToken } from "./messages";
+import * as messages from "./messages";
 
 const DEBUG = false;
 
@@ -80,7 +80,7 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
         case MSG_TYPE_AUTH_REQUIRED:
           try {
             if (auth.expired) await auth.refreshAccessToken();
-            socket.send(JSON.stringify(authAccessToken(auth.accessToken)));
+            socket.send(JSON.stringify(messages.auth(auth.accessToken)));
           } catch (err) {
             // Refresh token failed
             invalidAuth = err === ERR_INVALID_AUTH;

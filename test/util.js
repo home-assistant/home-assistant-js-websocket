@@ -1,5 +1,6 @@
 export function mockConnection() {
   const listeners = {};
+  const responses = {};
   return {
     // connection events
     addEventListener(event, cb) {},
@@ -14,6 +15,17 @@ export function mockConnection() {
 
     mockEvent(event, data) {
       listeners[event].forEach(cb => cb(data));
+    },
+
+    mockResponse(type, data) {
+      responses[type] = data;
+    },
+
+    async sendMessagePromise(message) {
+      if (message.type in responses) {
+        return responses[message.type];
+      }
+      throw new Error("Unexpected type");
     }
   };
 }
