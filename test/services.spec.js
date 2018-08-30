@@ -1,6 +1,6 @@
 import assert from "assert";
 
-import subscribeServices from "../lib/services";
+import { subscribeServices } from "../lib/services";
 import { mockConnection, createAwaitableEvent } from "./util";
 
 const MOCK_SERVICES = {
