@@ -2,7 +2,7 @@
   "name": "home-assistant-js-websocket",
   "amdName": "HAWS",
   "sideEffects": false,
-  "version": "3.0.0-rc4",
+  "version": "3.0.0-rc5",
   "description": "Home Assistant websocket client",
   "source": "lib/index.ts",
   "types": "dist/index.d.ts",
