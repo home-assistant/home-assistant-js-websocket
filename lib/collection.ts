@@ -1,4 +1,4 @@
-import Store from "./store";
+import { Store } from "./store";
 import { Connection } from "./connection";
 import { UnsubscribeFunc } from "./types";
 
@@ -6,7 +6,7 @@ import { UnsubscribeFunc } from "./types";
 // subscribeUpdates(connection, store) returns promise that resolves
 // to an unsubscription function.
 
-export default function createCollection<State>(
+export function createCollection<State>(
   key: string,
   fetchCollection: (conn: Connection) => Promise<State>,
   subscribeUpdates: (

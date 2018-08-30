@@ -3,7 +3,7 @@
  * the Home Assistant websocket API.
  */
 import * as messages from "./messages";
-import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./const";
+import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./errors";
 import {
   ConnectionOptions,
   HassEvent,
@@ -12,7 +12,6 @@ import {
   MessageBase,
   HassEntity
 } from "./types";
-import createSocket from "./socket";
 
 const DEBUG = false;
 
@@ -252,6 +251,8 @@ export class Connection {
         break;
 
       case "pong":
+        this.commands[message.id].resolve();
+        delete this.commands[message.id];
         break;
 
       default:
@@ -301,25 +302,6 @@ export class Connection {
   }
 
   private _genCmdId() {
-    this.commandId += 1;
-    return this.commandId;
+    return ++this.commandId;
   }
-}
-
-const defaultConnectionOptions: ConnectionOptions = {
-  setupRetry: 0,
-  createSocket
-};
-
-export default async function createConnection(
-  options?: Partial<ConnectionOptions>
-) {
-  const connOptions: ConnectionOptions = Object.assign(
-    {},
-    defaultConnectionOptions,
-    options
-  );
-  const socket = await connOptions.createSocket(connOptions);
-  const conn = new Connection(socket, connOptions);
-  return conn;
 }
