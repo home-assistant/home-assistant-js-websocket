@@ -23,15 +23,17 @@ export function createCollection<State>(
   let unsubProm: Promise<UnsubscribeFunc>;
 
   const store = new Store<State>(() => {
-    unsubProm.then(unsub => unsub());
+    if (unsubProm) unsubProm.then(unsub => unsub());
     conn.removeEventListener("ready", refresh);
     delete conn[key];
   });
 
-  conn[key] = store.subscribe;
+  conn[key] = (onChange: (state: State) => void) => store.subscribe(onChange);
 
   // Subscribe to changes
-  unsubProm = subscribeUpdates(conn, store);
+  if (subscribeUpdates) {
+    unsubProm = subscribeUpdates(conn, store);
+  }
 
   async function refresh() {
     store.setState(await fetchCollection(conn), true);
