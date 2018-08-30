@@ -11,6 +11,7 @@
     import {
       getAuth,
       getUser,
+      callService,
       createConnection,
       subscribeEntities,
       ERR_HASS_HOST_REQUIRED,
@@ -56,7 +57,7 @@
         if (['switch', 'light', 'input_boolean'].includes(entId.split('.', 1)[0])) {
           const button = document.createElement('button');
           button.innerHTML = 'toggle';
-          button.onclick = () => connection.callService('homeassistant', 'toggle', { entity_id: entId });
+          button.onclick = () => callService(connection, 'homeassistant', 'toggle', { entity_id: entId });
           tdState.appendChild(button);
         }
         tr.appendChild(tdState);
