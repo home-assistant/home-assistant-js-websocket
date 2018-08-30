@@ -14,7 +14,7 @@ describe("subscribeConfig", () => {
 
   beforeEach(() => {
     conn = mockConnection();
-    conn.getConfig = async () => MOCK_CONFIG;
+    conn.mockResponse("get_config", MOCK_CONFIG);
     awaitableEvent = createAwaitableEvent();
   });
 

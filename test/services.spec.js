@@ -23,7 +23,7 @@ describe("subscribeServices", () => {
 
   beforeEach(() => {
     conn = mockConnection();
-    conn.getServices = async () => MOCK_SERVICES;
+    conn.mockResponse("get_services", MOCK_SERVICES);
     awaitableEvent = createAwaitableEvent();
   });
 

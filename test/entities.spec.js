@@ -21,7 +21,7 @@ describe("subscribeEntities", () => {
 
   beforeEach(() => {
     conn = mockConnection();
-    conn.getStates = async () => MOCK_ENTITIES;
+    conn.mockResponse("get_states", MOCK_ENTITIES);
     awaitableEvent = createAwaitableEvent();
   });
 

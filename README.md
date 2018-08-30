@@ -241,21 +241,7 @@ Collections are useful to define if data is needed for initial data load. You ca
 
 ## Connection API Reference
 
-##### `conn.getStates()`
-
-Get the state of all entities. Returns a promise that will resolve to the result of querying the server for all the states.
-
-##### `conn.getServices()`
-
-Get all available services. Returns a promise that will resolve to the result of querying the server for all the services.
-
-##### `conn.getConfig()`
-
-Get the Home Assistant server config. Returns a promise that will resolve to the result of querying the server for all the config.
-
-##### `conn.callService(domain, service[, serviceData])`
-
-Call a service within Home Assistant. Returns a promise that will resolve when the service has been called successfully.
+A connection object is obtained by calling [`createConnection()`](#createconnection).
 
 ##### `conn.subscribeEvents(eventCallback[, eventType])`
 
@@ -270,6 +256,19 @@ Listen for events on the connection. [See docs.](#automatic-reconnecting)
 ##### `conn.sendMessagePromise(message)`
 
 Send a message to the server. Returns a promise that resolves or rejects based on the result of the server. Special case rejection is `ERR_CONNECTION_LOST` if the connection is lost while the command is in progress.
+
+## Other methods
+
+The library also contains a few helper method that you can use to ineract with the API.
+
+- `getUser(connection) -> Promise<HassEntity[]>`
+- `callService(connection, domain, service, serviceData?) -> Promise`
+
+The following are also available, but it's recommended that you use the subscribe methods documented above.
+
+- `getStates(connection) -> Promise<HassEntity[]>`
+- `getServices(connection) -> Promise<HassEntity[]>`
+- `getConfig(connection) -> Promise<HassEntity[]>`
 
 ## Using this in NodeJS
 
