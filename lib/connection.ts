@@ -4,18 +4,14 @@
  */
 import * as messages from "./messages";
 import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./errors";
-import {
-  ConnectionOptions,
-  HassEvent,
-  HassServices,
-  HassConfig,
-  MessageBase,
-  HassEntity
-} from "./types";
+import { ConnectionOptions, HassEvent, MessageBase } from "./types";
 
 const DEBUG = false;
 
-type EventListener = (conn: Connection, eventData?: any) => void;
+export type ConnectionEventListener = (
+  conn: Connection,
+  eventData?: any
+) => void;
 
 type Events = "ready" | "disconnected" | "reconnect-error";
 
@@ -60,7 +56,7 @@ export class Connection {
     [commandId: number]: any;
   };
   eventListeners: {
-    [eventType: string]: EventListener[];
+    [eventType: string]: ConnectionEventListener[];
   };
   closeRequested: boolean;
   // @ts-ignore: incorrectly claiming it's not set in constructor.
@@ -113,7 +109,7 @@ export class Connection {
     }
   }
 
-  addEventListener(eventType: Events, callback: EventListener) {
+  addEventListener(eventType: Events, callback: ConnectionEventListener) {
     let listeners = this.eventListeners[eventType];
 
     if (!listeners) {
@@ -123,7 +119,7 @@ export class Connection {
     listeners.push(callback);
   }
 
-  removeEventListener(eventType: Events, callback: EventListener) {
+  removeEventListener(eventType: Events, callback: ConnectionEventListener) {
     const listeners = this.eventListeners[eventType];
 
     if (!listeners) {
@@ -146,24 +142,6 @@ export class Connection {
   close() {
     this.closeRequested = true;
     this.socket.close();
-  }
-
-  getStates() {
-    return this.sendMessagePromise<HassEntity[]>(messages.states());
-  }
-
-  getServices() {
-    return this.sendMessagePromise<HassServices>(messages.services());
-  }
-
-  getConfig() {
-    return this.sendMessagePromise<HassConfig>(messages.config());
-  }
-
-  callService(domain: string, service: string, serviceData?: object) {
-    return this.sendMessagePromise(
-      messages.callService(domain, service, serviceData)
-    );
   }
 
   // eventCallback will be called when a new event fires

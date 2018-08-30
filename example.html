@@ -10,6 +10,7 @@
   <script type='module'>
     import {
       getAuth,
+      getUser,
       createConnection,
       subscribeEntities,
       ERR_HASS_HOST_REQUIRED,
@@ -30,8 +31,11 @@
         }
       }
       const connection = await createConnection({ auth });
-      window.connection = connection;
       subscribeEntities(connection, entities => renderEntities(connection, entities));
+
+      // To play from the console
+      window.connection = connection;
+      getUser(connection).then(user => console.log("Logged in as", user));
     })();
 
     function renderEntities(connection, entities) {

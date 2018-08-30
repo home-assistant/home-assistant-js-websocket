@@ -2,6 +2,7 @@ import { createCollection } from "./collection";
 import { HassConfig, UnsubscribeFunc } from "./types";
 import { Connection } from "./connection";
 import { Store } from "./store";
+import { getConfig } from "./commands";
 
 type ComponentLoadedEvent = {
   data: {
@@ -20,7 +21,7 @@ function processComponentLoaded(
   };
 }
 
-const fetchConfig = (conn: Connection) => conn.getConfig();
+const fetchConfig = (conn: Connection) => getConfig(conn);
 const subscribeUpdates = (conn: Connection, store: Store<HassConfig>) =>
   conn.subscribeEvents(
     store.action(processComponentLoaded),
