@@ -70,6 +70,18 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
       );
     };
 
+    // Auth is mandatory, so we can send the auth message right away.
+    const handleOpen = async (event: MessageEventInit) => {
+      try {
+        if (auth.expired) await auth.refreshAccessToken();
+        socket.send(JSON.stringify(messages.auth(auth.accessToken)));
+      } catch (err) {
+        // Refresh token failed
+        invalidAuth = err === ERR_INVALID_AUTH;
+        socket.close();
+      }
+    };
+
     const handleMessage = async (event: MessageEvent) => {
       const message = JSON.parse(event.data);
 
@@ -77,23 +89,13 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
         console.log("[Auth phase] Received", message);
       }
       switch (message.type) {
-        case MSG_TYPE_AUTH_REQUIRED:
-          try {
-            if (auth.expired) await auth.refreshAccessToken();
-            socket.send(JSON.stringify(messages.auth(auth.accessToken)));
-          } catch (err) {
-            // Refresh token failed
-            invalidAuth = err === ERR_INVALID_AUTH;
-            socket.close();
-          }
-          break;
-
         case MSG_TYPE_AUTH_INVALID:
           invalidAuth = true;
           socket.close();
           break;
 
         case MSG_TYPE_AUTH_OK:
+          socket.removeEventListener("open", handleOpen);
           socket.removeEventListener("message", handleMessage);
           socket.removeEventListener("close", closeMessage);
           socket.removeEventListener("error", closeMessage);
@@ -102,11 +104,15 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
 
         default:
           if (DEBUG) {
-            console.warn("[Auth phase] Unhandled message", message);
+            // We already send this message when socket opens
+            if (message.type !== MSG_TYPE_AUTH_REQUIRED) {
+              console.warn("[Auth phase] Unhandled message", message);
+            }
           }
       }
     };
 
+    socket.addEventListener("open", handleOpen);
     socket.addEventListener("message", handleMessage);
     socket.addEventListener("close", closeMessage);
     socket.addEventListener("error", closeMessage);
