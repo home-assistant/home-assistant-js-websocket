@@ -35,6 +35,7 @@
       subscribeEntities(connection, entities => renderEntities(connection, entities));
 
       // To play from the console
+      window.auth = auth;
       window.connection = connection;
       getUser(connection).then(user => console.log("Logged in as", user));
     })();
