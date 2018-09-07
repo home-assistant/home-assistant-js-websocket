@@ -14,8 +14,9 @@
   },
   "scripts": {
     "watch": "microbundle watch",
-    "build": "microbundle",
-    "test": "mocha"
+    "build": "microbundle --target browser",
+    "test": "mocha",
+    "prepublish": "microbundle --target browser"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
   "license": "Apache-2.0",
