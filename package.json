@@ -16,7 +16,7 @@
     "watch": "microbundle watch",
     "build": "microbundle --target browser",
     "test": "mocha",
-    "prepublish": "microbundle --target browser && mocha"
+    "prepublishOnly": "rm -rf dist && microbundle --target browser && mocha"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
   "license": "Apache-2.0",
