@@ -10,8 +10,8 @@ export type AuthData = {
   expires_in: number;
 };
 
-export type SaveTokensFunc = (data: AuthData) => void;
-export type LoadTokensFunc = () => Promise<AuthData | undefined>;
+export type SaveTokensFunc = (data: AuthData | null) => void;
+export type LoadTokensFunc = () => Promise<AuthData | null | undefined>;
 
 export type getAuthOptions = {
   hassUrl?: string;
@@ -114,20 +114,6 @@ function fetchToken(hassUrl: string, clientId: string, code: string) {
   });
 }
 
-async function refreshAccessToken(
-  hassUrl: string,
-  clientId: string,
-  refreshToken: string
-) {
-  const data = await tokenRequest(hassUrl, clientId, {
-    grant_type: "refresh_token",
-    refresh_token: refreshToken
-  });
-  // Access token response does not contain refresh token.
-  data.refresh_token = refreshToken;
-  return data;
-}
-
 function encodeOAuthState(state: OAuthState): string {
   return btoa(JSON.stringify(state));
 }
@@ -158,18 +144,40 @@ export class Auth {
     return Date.now() > this.data.expires;
   }
 
+  /**
+   * Refresh the access token.
+   */
   async refreshAccessToken() {
-    this.data = await refreshAccessToken(
-      this.data.hassUrl,
-      this.data.clientId,
-      this.data.refresh_token
-    );
-    if (this._saveTokens) this._saveTokens(this.data);
+    const data = await tokenRequest(this.data.hassUrl, this.data.clientId, {
+      grant_type: "refresh_token",
+      refresh_token: this.data.refresh_token
+    });
+    // Access token response does not contain refresh token.
+    data.refresh_token = this.data.refresh_token;
+    this.data = data;
+    if (this._saveTokens) this._saveTokens(data);
+  }
+
+  /**
+   * Revoke the refresh & access tokens.
+   */
+  async revoke() {
+    const formData = new FormData();
+    formData.append("action", "revoke");
+    formData.append("token", this.data.refresh_token);
+
+    // There is no error checking, as revoke will always return 200
+    await fetch(`${this.data.hassUrl}/auth/token`, {
+      method: "POST",
+      body: formData
+    });
+
+    if (this._saveTokens) this._saveTokens(null);
   }
 }
 
 export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
-  let data: AuthData | undefined;
+  let data: AuthData | null | undefined;
 
   // Check if we came back from an authorize redirect
   const query = parseQuery<QueryCallbackData>(location.search.substr(1));

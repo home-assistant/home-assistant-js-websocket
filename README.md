@@ -257,6 +257,24 @@ Listen for events on the connection. [See docs.](#automatic-reconnecting)
 
 Send a message to the server. Returns a promise that resolves or rejects based on the result of the server. Special case rejection is `ERR_CONNECTION_LOST` if the connection is lost while the command is in progress.
 
+## Auth API Reference
+
+An instance of Auth is returned from the `getAuth` method. It has the following properties:
+
+- `wsUrl`: the websocket url of the instance
+- `accessToken`: the access token
+- `expired`: boolean that indicates if the access token has expired
+
+##### `auth.refreshAccessToken()`
+
+Fetches a new access token from the server.
+
+##### `auth.revoke()`
+
+Makes a request to the server to revoke the refresh and all related access token. Returns a promise that resolves when the request is finished.
+
+**Note:** If you support storing and retrieving tokens, the returned auth object might load tokens from your cache that are no longer valid. If this happens, the promise returned by `createConnection` will reject with `ERR_INVALID_AUTH`. If that happens, clear your tokens with `storeTokens(null`) and call `getAuth` again. This will pick up the auth flow without relying on stored tokens.
+
 ## Other methods
 
 The library also contains a few helper method that you can use to ineract with the API.
