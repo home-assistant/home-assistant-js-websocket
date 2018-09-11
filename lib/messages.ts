@@ -61,7 +61,7 @@ type SubscribeEventMessage = {
   event_type?: string;
 };
 
-export function subscribeEvents(eventType: string) {
+export function subscribeEvents(eventType?: string) {
   const message: SubscribeEventMessage = {
     type: "subscribe_events"
   };

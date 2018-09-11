@@ -148,7 +148,7 @@ export class Connection {
   // Returned promise resolves to an unsubscribe function.
   async subscribeEvents<EventType>(
     eventCallback: (ev: EventType) => void,
-    eventType: string
+    eventType?: string
   ) {
     // Command ID that will be used
     const commandId = this._genCmdId();
