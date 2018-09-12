@@ -96,7 +96,7 @@ export class Connection {
       Object.keys(oldCommands).forEach(id => {
         const info = oldCommands[id];
 
-        if (info.eventType) {
+        if (info.eventCallback) {
           this.subscribeEvents(info.eventCallback, info.eventType).then(
             unsub => {
               info.unsubscribe = unsub;
