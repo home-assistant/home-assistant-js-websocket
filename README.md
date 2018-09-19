@@ -288,6 +288,32 @@ The following are also available, but it's recommended that you use the subscrib
 - `getServices(connection) -> Promise<HassEntity[]>`
 - `getConfig(connection) -> Promise<HassEntity[]>`
 
+## Using this with long-lived access tokens
+
+If you are in a browser, you should prefer to use the `getAuth()` flow. This will use the more secure refresh/access token pair. If that is not possible, you can ask the user to create a long-lived access token.
+
+You will need to create your own auth object if you want to use this library with a long-lived access token.
+
+```js
+import {
+  Auth,
+  createConnection,
+  subscribeEntities
+} from "home-assistant-js-websocket";
+
+(async () => {
+  let auth = new Auth({
+    access_token: "YOUR ACCESS OTKEN",
+    // Set expires to very far in the future
+    expires: new Date(new Date().getTime() + 1e11),
+    hassUrl: "http://localhost:8123"
+  });
+
+  const connection = await createConnection({ auth });
+  subscribeEntities(connection, entities => console.log(entities));
+})();
+```
+
 ## Using this in NodeJS
 
 To use this package in NodeJS, you will want to define your own `createSocket` method for `createConnection` to use. Your createSocket function will need to set up the web socket connection with Home Assistant and handle the auth.
