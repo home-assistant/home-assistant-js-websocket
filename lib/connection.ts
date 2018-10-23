@@ -51,6 +51,7 @@ type WebSocketResponse =
 
 type SubscribeEventCommmandInFlight = {
   resolve: (result?: any) => void;
+  reject: (err: any) => void;
   eventCallback: (ev: any) => void;
   eventType?: string;
   unsubscribe: () => Promise<void>;
@@ -178,6 +179,7 @@ export class Connection {
       // we get disconnected and we have to subscribe again.
       info = this.commands[commandId] = {
         resolve,
+        reject,
         eventCallback: eventCallback as (ev: any) => void,
         eventType,
         unsubscribe: async () => {
@@ -240,13 +242,19 @@ export class Connection {
       case "result":
         // If just sendMessage is used, we will not store promise for result
         if (message.id in this.commands) {
-          const info = this.commands[message.id] as CommandWithAnswerInFlight;
-          if (message.success == true) {
+          const info = this.commands[message.id];
+
+          if (message.success) {
             info.resolve(message.result);
+
+            // Don't remove event subscriptions.
+            if (!("eventCallback" in info)) {
+              delete this.commands[message.id];
+            }
           } else {
             info.reject(message.error);
+            delete this.commands[message.id];
           }
-          delete this.commands[message.id];
         }
         break;
 
