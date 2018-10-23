@@ -186,7 +186,12 @@ export class Connection {
         }
       };
 
-      this.sendMessage(messages.subscribeEvents(eventType));
+      try {
+        this.sendMessage(messages.subscribeEvents(eventType));
+      } catch (err) {
+        // Happens when the websocket is already closing.
+        // Don't have to handle the error, reconnect logic will pick it up.
+      }
     });
 
     return () => info.unsubscribe();
