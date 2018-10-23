@@ -49,11 +49,26 @@ type WebSocketResponse =
   | WebSocketResultResponse
   | WebSocketResultErrorResponse;
 
+type SubscribeEventCommmandInFlight = {
+  eventCallback: (ev: any) => void;
+  eventType?: string;
+  unsubscribe: () => Promise<void>;
+};
+
+type CommandWithAnswerInFlight = {
+  resolve: (result?: any) => void;
+  reject: (err: any) => void;
+};
+
+type CommandInFlight =
+  | SubscribeEventCommmandInFlight
+  | CommandWithAnswerInFlight;
+
 export class Connection {
   options: ConnectionOptions;
   commandId: number;
   commands: {
-    [commandId: number]: any;
+    [commandId: number]: CommandInFlight;
   };
   eventListeners: {
     [eventType: string]: ConnectionEventListener[];
@@ -76,7 +91,6 @@ export class Connection {
     // true if a close is requested by the user
     this.closeRequested = false;
 
-    this._handleClose = this._handleClose.bind(this);
     this.setSocket(socket);
   }
 
@@ -84,7 +98,7 @@ export class Connection {
     const oldSocket = this.socket;
     this.socket = socket;
     socket.addEventListener("message", ev => this._handleMessage(ev));
-    socket.addEventListener("close", this._handleClose);
+    socket.addEventListener("close", ev => this._handleClose(ev));
 
     if (oldSocket) {
       const oldCommands = this.commands;
@@ -161,7 +175,7 @@ export class Connection {
     // We store unsubscribe on info object. That way we can overwrite it in case
     // we get disconnected and we have to subscribe again.
     const info = {
-      eventCallback,
+      eventCallback: eventCallback as (ev: any) => void,
       eventType,
       unsubscribe: async () => {
         await this.sendMessagePromise(messages.unsubscribeEvents(commandId));
@@ -213,23 +227,28 @@ export class Connection {
 
     switch (message.type) {
       case "event":
-        this.commands[message.id].eventCallback(message.event);
+        const eventInfo = this.commands[
+          message.id
+        ] as SubscribeEventCommmandInFlight;
+        eventInfo.eventCallback(message.event);
         break;
 
       case "result":
         // If just sendMessage is used, we will not store promise for result
         if (message.id in this.commands) {
+          const info = this.commands[message.id] as CommandWithAnswerInFlight;
           if (message.success == true) {
-            this.commands[message.id].resolve(message.result);
+            info.resolve(message.result);
           } else {
-            this.commands[message.id].reject(message.error);
+            info.reject(message.error);
           }
           delete this.commands[message.id];
         }
         break;
 
       case "pong":
-        this.commands[message.id].resolve();
+        const pongInfo = this.commands[message.id] as CommandWithAnswerInFlight;
+        pongInfo.resolve();
         delete this.commands[message.id];
         break;
 
@@ -240,12 +259,13 @@ export class Connection {
     }
   }
 
-  private _handleClose() {
-    // Reject in-flight requests
+  private _handleClose(ev: CloseEvent) {
+    // Reject in-flight sendMessagePromise requests
     Object.keys(this.commands).forEach(id => {
-      const { reject } = this.commands[id];
-      if (reject) {
-        reject(messages.error(ERR_CONNECTION_LOST, "Connection lost"));
+      const info: CommandInFlight = this.commands[id];
+
+      if ("reject" in info) {
+        info.reject(messages.error(ERR_CONNECTION_LOST, "Connection lost"));
       }
     });
 
