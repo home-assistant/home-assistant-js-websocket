@@ -49,16 +49,17 @@ type WebSocketResponse =
   | WebSocketResultResponse
   | WebSocketResultErrorResponse;
 
-interface CommandWithAnswerInFlight {
+type SubscribeEventCommmandInFlight = {
   resolve: (result?: any) => void;
-  reject: (err: any) => void;
-}
-
-interface SubscribeEventCommmandInFlight extends CommandWithAnswerInFlight {
   eventCallback: (ev: any) => void;
   eventType?: string;
   unsubscribe: () => Promise<void>;
-}
+};
+
+type CommandWithAnswerInFlight = {
+  resolve: (result?: any) => void;
+  reject: (err: any) => void;
+};
 
 type CommandInFlight =
   | SubscribeEventCommmandInFlight
@@ -177,7 +178,6 @@ export class Connection {
       // we get disconnected and we have to subscribe again.
       info = this.commands[commandId] = {
         resolve,
-        reject,
         eventCallback: eventCallback as (ev: any) => void,
         eventType,
         unsubscribe: async () => {
@@ -268,8 +268,7 @@ export class Connection {
     Object.keys(this.commands).forEach(id => {
       const info: CommandInFlight = this.commands[id];
 
-      // We don't want to cancel subscribeEvents because we can recover them.
-      if (!("eventCallback" in info)) {
+      if ("reject" in info) {
         info.reject(messages.error(ERR_CONNECTION_LOST, "Connection lost"));
       }
     });
