@@ -187,7 +187,7 @@ export class Connection {
       };
 
       try {
-        this.sendMessage(messages.subscribeEvents(eventType));
+        this.sendMessage(messages.subscribeEvents(eventType), commandId);
       } catch (err) {
         // Happens when the websocket is already closing.
         // Don't have to handle the error, reconnect logic will pick it up.
