@@ -49,16 +49,16 @@ type WebSocketResponse =
   | WebSocketResultResponse
   | WebSocketResultErrorResponse;
 
-type SubscribeEventCommmandInFlight = {
+interface CommandWithAnswerInFlight {
+  resolve: (result?: any) => void;
+  reject: (err: any) => void;
+}
+
+interface SubscribeEventCommmandInFlight extends CommandWithAnswerInFlight {
   eventCallback: (ev: any) => void;
   eventType?: string;
   unsubscribe: () => Promise<void>;
-};
-
-type CommandWithAnswerInFlight = {
-  resolve: (result?: any) => void;
-  reject: (err: any) => void;
-};
+}
 
 type CommandInFlight =
   | SubscribeEventCommmandInFlight
@@ -108,12 +108,16 @@ export class Connection {
       this.commands = {};
 
       Object.keys(oldCommands).forEach(id => {
-        const info = oldCommands[id];
+        const info: CommandInFlight = oldCommands[id];
 
-        if (info.eventCallback) {
+        if ("eventCallback" in info) {
           this.subscribeEvents(info.eventCallback, info.eventType).then(
             unsub => {
               info.unsubscribe = unsub;
+              // We need to resolve this in case it wasn't resolved yet.
+              // This allows us to call subscribeEvents while we're disconnected
+              // and recover properly.
+              info.resolve();
             }
           );
         }
@@ -166,24 +170,24 @@ export class Connection {
   ) {
     // Command ID that will be used
     const commandId = this._genCmdId();
+    let info: SubscribeEventCommmandInFlight;
 
-    await this.sendMessagePromise(
-      messages.subscribeEvents(eventType),
-      commandId
-    );
+    await new Promise((resolve, reject) => {
+      // We store unsubscribe on info object. That way we can overwrite it in case
+      // we get disconnected and we have to subscribe again.
+      info = this.commands[commandId] = {
+        resolve,
+        reject,
+        eventCallback: eventCallback as (ev: any) => void,
+        eventType,
+        unsubscribe: async () => {
+          await this.sendMessagePromise(messages.unsubscribeEvents(commandId));
+          delete this.commands[commandId];
+        }
+      };
 
-    // We store unsubscribe on info object. That way we can overwrite it in case
-    // we get disconnected and we have to subscribe again.
-    const info = {
-      eventCallback: eventCallback as (ev: any) => void,
-      eventType,
-      unsubscribe: async () => {
-        await this.sendMessagePromise(messages.unsubscribeEvents(commandId));
-        delete this.commands[commandId];
-      }
-    };
-
-    this.commands[commandId] = info;
+      this.sendMessage(messages.subscribeEvents(eventType));
+    });
 
     return () => info.unsubscribe();
   }
@@ -205,14 +209,9 @@ export class Connection {
     this.socket.send(JSON.stringify(message));
   }
 
-  sendMessagePromise<Result>(
-    message: MessageBase,
-    commandId?: number
-  ): Promise<Result> {
+  sendMessagePromise<Result>(message: MessageBase): Promise<Result> {
     return new Promise((resolve, reject) => {
-      if (!commandId) {
-        commandId = this._genCmdId();
-      }
+      const commandId = this._genCmdId();
       this.commands[commandId] = { resolve, reject };
       this.sendMessage(message, commandId);
     });
@@ -264,7 +263,8 @@ export class Connection {
     Object.keys(this.commands).forEach(id => {
       const info: CommandInFlight = this.commands[id];
 
-      if ("reject" in info) {
+      // We don't want to cancel subscribeEvents because we can recover them.
+      if (!("eventCallback" in info)) {
         info.reject(messages.error(ERR_CONNECTION_LOST, "Connection lost"));
       }
     });
