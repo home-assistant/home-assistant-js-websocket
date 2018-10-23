@@ -35,9 +35,18 @@ export function createCollection<State>(
     unsubProm = subscribeUpdates(conn, store);
   }
 
-  async function refresh() {
-    store.setState(await fetchCollection(conn), true);
-  }
+  const refresh = async () => {
+    try {
+      store.setState(await fetchCollection(conn), true);
+    } catch (err) {
+      // Swallow errors if socket is connecting, closing or closed.
+      // We will automatically call refresh again when we re-establish the connection.
+      // Using conn.socket instead of WebSocket for better node support
+      if (conn.socket.readyState == conn.socket.OPEN) {
+        throw err;
+      }
+    }
+  };
 
   // Fetch when connection re-established.
   conn.addEventListener("ready", refresh);
