@@ -64,8 +64,19 @@ export type HassEntityBase = {
   last_updated: string;
 };
 
+export type HassEntityAttributeBase = {
+  friendly_name?: string;
+  unit_of_measurement?: string;
+  icon?: string;
+  entity_picture?: string;
+  supported_features?: number;
+  hidden: boolean;
+  assumed_state?: boolean;
+  device_class?: string;
+};
+
 export type HassEntity = HassEntityBase & {
-  attributes: { [key: string]: any };
+  attributes: HassEntityAttributeBase & { [key: string]: any };
 };
 
 export type HassEntities = { [entity_id: string]: HassEntity };
