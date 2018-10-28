@@ -16,14 +16,26 @@ export type MessageBase = {
   [key: string]: any;
 };
 
-export type HassEvent = {
-  event_type: string;
-  data: object;
+export type HassEventBase = {
   origin: string;
   time_fired: string;
   context: {
     id: string;
     user_id: string;
+  };
+};
+
+export type HassEvent = HassEventBase & {
+  event_type: string;
+  data: { [key: string]: any };
+};
+
+export type StateChangedEvent = HassEventBase & {
+  event_type: "state_changed";
+  data: {
+    entity_id: string;
+    new_state: HassEntity | null;
+    old_state: HassEntity | null;
   };
 };
 
@@ -45,12 +57,26 @@ export type HassConfig = {
   version: string;
 };
 
-export type HassEntity = {
+export type HassEntityBase = {
   entity_id: string;
   state: string;
   last_changed: string;
   last_updated: string;
-  attributes: { [s: string]: any };
+};
+
+export type HassEntityAttributeBase = {
+  friendly_name?: string;
+  unit_of_measurement?: string;
+  icon?: string;
+  entity_picture?: string;
+  supported_features?: number;
+  hidden: boolean;
+  assumed_state?: boolean;
+  device_class?: string;
+};
+
+export type HassEntity = HassEntityBase & {
+  attributes: HassEntityAttributeBase & { [key: string]: any };
 };
 
 export type HassEntities = { [entity_id: string]: HassEntity };
