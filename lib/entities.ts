@@ -1,17 +1,8 @@
 import { createCollection } from "./collection";
-import { HassEntities, HassEntity, UnsubscribeFunc } from "./types";
+import { HassEntities, StateChangedEvent, UnsubscribeFunc } from "./types";
 import { Connection } from "./connection";
 import { Store } from "./store";
 import { getStates } from "./commands";
-
-type StateChangedEvent = {
-  type: "state_changed";
-  data: {
-    entity_id: string;
-    new_state: HassEntity | null;
-    old_state: HassEntity | null;
-  };
-};
 
 function processEvent(store: Store<HassEntities>, event: StateChangedEvent) {
   const state = store.state;
