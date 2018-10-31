@@ -276,7 +276,9 @@ export class Connection {
     Object.keys(this.commands).forEach(id => {
       const info: CommandInFlight = this.commands[id];
 
-      if ("reject" in info) {
+      // We don't cancel subscribeEvents commands in flight
+      // as we will be able to recover them.
+      if (!("eventCallback" in info)) {
         info.reject(messages.error(ERR_CONNECTION_LOST, "Connection lost"));
       }
     });
