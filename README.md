@@ -189,32 +189,37 @@ Besides entities, config and services you might want to create your own collecti
 - Fetch a full data set on initial creation and on reconnect
 - Subscribe to events to keep collection up to date
 - Share subscription between multiple listeners
+- Unsubscribe when no listeners
+- Manually trigger a refresh
 
 ```typescript
-createCollection(
+// Will only initialize one collection per connection.
+getCollection<State>(
+  conn: Connection,
   key: string,
   fetchCollection: (conn: Connection) => Promise<State>,
   subscribeUpdates: (
     conn: Connection,
     store: Store<State>
   ) => Promise<() => void>,
-  conn: Connection,
-  onChange: (state: State) => void
-)
+): Collection<State>
+
+class Collection<State> {
+  active: boolean;
+  onChange(state: State) => void;
+  subscribe(subscriber: (state: State) => void): UnsubscribeFunc;
+}
 ```
 
+- `conn` is the connection to subscribe to.
 - `key` a unique key for the collection
 - `fetchCollection` needs to return a Promsise that resolves to the full state
 - `subscribeUpdates` needs to subscribe to the updates and update the store. Returns a promise that resolves to an unsubscribe function.
-- `conn` is the connection to subscribe to.
-- `onChange` is the callback to be called when collection is changed.
-
-The idea is that your collection code creates a function that fills in the first three parameters and then exposes a `subscribeX(conn, onChange)` function for other code to call.
 
 #### Collection Example
 
 ```javascript
-import { createCollection } from "home-assistant-js-websocket";
+import { getCollection } from "home-assistant-js-websocket";
 
 function panelRegistered(state, event) {
   // Returning null means no change.
@@ -231,7 +236,9 @@ const subscribeUpdates = (conn, store) =>
   conn.subscribeEvents(store.action(panelRegistered), "panel_registered");
 
 const subscribePanels = (conn, onChange) =>
-  createCollection("_pnl", fetchPanels, subscribeUpdates, conn, onChange);
+  getCollection(conn, "_pnl", fetchPanels, subscribeUpdates).subscribe(
+    onChange
+  );
 
 // Now use collection
 subscribePanels(conn, panels => console.log("New panels!", panels));

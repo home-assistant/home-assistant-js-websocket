@@ -5,15 +5,12 @@ import { UnsubscribeFunc } from "./types";
 // And then adopted to our needs + typescript
 
 type Listener<State> = (state: State) => void;
-type NoSubscribersCallback = () => void;
 
 export class Store<State> {
-  private _noSub: NoSubscribersCallback;
   listeners: Listener<State>[];
   state: State | undefined;
 
-  constructor(noSubscriptions: NoSubscribersCallback) {
-    this._noSub = noSubscriptions;
+  constructor() {
     this.listeners = [];
   }
 
@@ -81,8 +78,5 @@ export class Store<State> {
       }
     }
     this.listeners = out;
-    if (out.length === 0) {
-      this._noSub();
-    }
   }
 }

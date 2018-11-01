@@ -1,4 +1,4 @@
-import { createCollection } from "./collection";
+import { getCollection } from "./collection";
 import { HassServices, HassDomainServices, UnsubscribeFunc } from "./types";
 import { Connection } from "./connection";
 import { Store } from "./store";
@@ -65,14 +65,14 @@ const subscribeUpdates = (conn: Connection, store: Store<HassServices>) =>
     )
   ]).then(unsubs => () => unsubs.forEach(fn => fn()));
 
+const coll = (conn: Connection) =>
+  getCollection(conn, "_srv", fetchServices, subscribeUpdates);
+
+export const refreshServices = (conn: Connection): void => {
+  coll(conn).refresh();
+};
+
 export const subscribeServices = (
   conn: Connection,
   onChange: (state: HassServices) => void
-): UnsubscribeFunc =>
-  createCollection<HassServices>(
-    "_srv",
-    fetchServices,
-    subscribeUpdates,
-    conn,
-    onChange
-  );
+): UnsubscribeFunc => coll(conn).subscribe(onChange);

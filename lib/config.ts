@@ -1,4 +1,4 @@
-import { createCollection } from "./collection";
+import { getCollection } from "./collection";
 import { HassConfig, UnsubscribeFunc } from "./types";
 import { Connection } from "./connection";
 import { Store } from "./store";
@@ -28,14 +28,14 @@ const subscribeUpdates = (conn: Connection, store: Store<HassConfig>) =>
     "component_loaded"
   );
 
+const coll = (conn: Connection) =>
+  getCollection(conn, "_cnf", fetchConfig, subscribeUpdates);
+
+export const refreshConfig = (conn: Connection): void => {
+  coll(conn).refresh();
+};
+
 export const subscribeConfig = (
   conn: Connection,
   onChange: (state: HassConfig) => void
-): UnsubscribeFunc =>
-  createCollection<HassConfig>(
-    "_cnf",
-    fetchConfig,
-    subscribeUpdates,
-    conn,
-    onChange
-  );
+): UnsubscribeFunc => coll(conn).subscribe(onChange);
