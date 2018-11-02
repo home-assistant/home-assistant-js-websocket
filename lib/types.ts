@@ -62,6 +62,7 @@ export type HassEntityBase = {
   state: string;
   last_changed: string;
   last_updated: string;
+  attributes: HassEntityAttributeBase;
 };
 
 export type HassEntityAttributeBase = {
@@ -76,7 +77,7 @@ export type HassEntityAttributeBase = {
 };
 
 export type HassEntity = HassEntityBase & {
-  attributes: HassEntityAttributeBase & { [key: string]: any };
+  attributes: { [key: string]: any };
 };
 
 export type HassEntities = { [entity_id: string]: HassEntity };
