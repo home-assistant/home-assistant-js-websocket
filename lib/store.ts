@@ -9,12 +9,12 @@ type Action<State> = (
   state: State,
   ...args: any[]
 ) => Partial<State> | Promise<Partial<State>> | null;
-type BoundAction<State> = (...args: any[]) => State | Promise<State>;
+type BoundAction<State> = (...args: any[]) => void;
 
 export type Store<State> = {
   state: State | undefined;
   action(action: Action<State>): BoundAction<State>;
-  setState(update: Partial<State>, overwrite?: boolean): State;
+  setState(update: Partial<State>, overwrite?: boolean): void;
   subscribe(listener: Listener<State>): UnsubscribeFunc;
 };
 
@@ -33,13 +33,12 @@ export const createStore = <State>(state?: State): Store<State> => {
     listeners = out;
   }
 
-  function setState(update: Partial<State>, overwrite: boolean): State {
+  function setState(update: Partial<State>, overwrite: boolean): void {
     state = overwrite ? (update as State) : Object.assign({}, state, update);
     let currentListeners = listeners;
     for (let i = 0; i < currentListeners.length; i++) {
       currentListeners[i](state);
     }
-    return state;
   }
 
   /**
@@ -61,7 +60,7 @@ export const createStore = <State>(state?: State): Store<State> => {
      */
     action(action: Action<State>): BoundAction<State> {
       function apply(result: Partial<State>) {
-        return setState(result, false);
+        setState(result, false);
       }
 
       // Note: perf tests verifying this implementation: https://esbench.com/bench/5a295e6299634800a0349500

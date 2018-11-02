@@ -207,7 +207,7 @@ getCollection<State>(
 // Returns object with following type
 class Collection<State> {
   state: State;
-  async refresh(): Promise<State>;
+  async refresh(): Promise<void>;
   subscribe(subscriber: (state: State) => void): UnsubscribeFunc;
 }
 ```
