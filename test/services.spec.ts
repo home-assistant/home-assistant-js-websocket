@@ -1,7 +1,7 @@
-import assert from "assert";
+import * as assert from "assert";
 
 import { subscribeServices } from "../lib/services";
-import { mockConnection, createAwaitableEvent } from "./util";
+import { MockConnection, AwaitableEvent } from "./util";
 
 const MOCK_SERVICES = {
   light: {
@@ -18,13 +18,13 @@ const MOCK_SERVICES = {
 };
 
 describe("subscribeServices", () => {
-  let conn;
-  let awaitableEvent;
+  let conn: MockConnection;
+  let awaitableEvent: AwaitableEvent;
 
   beforeEach(() => {
-    conn = mockConnection();
+    conn = new MockConnection();
     conn.mockResponse("get_services", MOCK_SERVICES);
-    awaitableEvent = createAwaitableEvent();
+    awaitableEvent = new AwaitableEvent();
   });
 
   it("should load initial services", async () => {
@@ -75,7 +75,6 @@ describe("subscribeServices", () => {
 
     // We need to sleep to have it process the first full load
     await 0;
-
     awaitableEvent.prime();
 
     conn.mockEvent("service_registered", {
@@ -113,7 +112,6 @@ describe("subscribeServices", () => {
 
     // We need to sleep to have it process the first full load
     await 0;
-
     awaitableEvent.prime();
 
     conn.mockEvent("service_removed", {

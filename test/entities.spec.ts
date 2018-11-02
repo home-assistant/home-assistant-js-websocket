@@ -1,7 +1,7 @@
-import assert from "assert";
+import * as assert from "assert";
 
 import { subscribeEntities } from "../lib/entities";
-import { mockConnection, createAwaitableEvent } from "./util";
+import { MockConnection, AwaitableEvent } from "./util";
 
 const MOCK_LIGHT = {
   entity_id: "light.kitchen",
@@ -16,13 +16,13 @@ const MOCK_SWITCH = {
 const MOCK_ENTITIES = [MOCK_LIGHT, MOCK_SWITCH];
 
 describe("subscribeEntities", () => {
-  let conn;
-  let awaitableEvent;
+  let conn: MockConnection;
+  let awaitableEvent: AwaitableEvent;
 
   beforeEach(() => {
-    conn = mockConnection();
+    conn = new MockConnection();
     conn.mockResponse("get_states", MOCK_ENTITIES);
-    awaitableEvent = createAwaitableEvent();
+    awaitableEvent = new AwaitableEvent();
   });
 
   it("should load initial entities", async () => {

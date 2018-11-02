@@ -15,18 +15,18 @@
   "scripts": {
     "watch": "microbundle watch",
     "build": "microbundle --target browser",
-    "test": "mocha",
+    "test": "mocha test/*.spec.ts",
     "prepublishOnly": "rm -rf dist && microbundle --target browser && mocha"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@types/mocha": "^5.2.5",
     "husky": "^1.0.0-rc.13",
     "lint-staged": "^7.2.0",
     "microbundle": "^0.6.0",
     "mocha": "^5.1.1",
     "prettier": "1.14.0",
-    "reify": "^0.15.1",
     "ts-node": "^7.0.0"
   },
   "files": [

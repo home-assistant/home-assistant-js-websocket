@@ -1,4 +1,3 @@
 -r ts-node/register
--r reify
---recursive
---timeout 10000
+--timeout 100
+--watch-extensions ts
