@@ -65,14 +65,10 @@ const subscribeUpdates = (conn: Connection, store: Store<HassServices>) =>
     )
   ]).then(unsubs => () => unsubs.forEach(fn => fn()));
 
-const coll = (conn: Connection) =>
+const ServicesColl = (conn: Connection) =>
   getCollection(conn, "_srv", fetchServices, subscribeUpdates);
-
-export const refreshServices = (conn: Connection): void => {
-  coll(conn).refresh();
-};
 
 export const subscribeServices = (
   conn: Connection,
   onChange: (state: HassServices) => void
-): UnsubscribeFunc => coll(conn).subscribe(onChange);
+): UnsubscribeFunc => ServicesColl(conn).subscribe(onChange);

@@ -204,9 +204,10 @@ getCollection<State>(
   ) => Promise<() => void>,
 ): Collection<State>
 
+// Returns object with following type
 class Collection<State> {
-  active: boolean;
-  onChange(state: State) => void;
+  state: State;
+  async refresh(): Promise<State>;
   subscribe(subscriber: (state: State) => void): UnsubscribeFunc;
 }
 ```

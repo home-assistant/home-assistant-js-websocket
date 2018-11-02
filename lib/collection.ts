@@ -2,8 +2,9 @@ import { Store, createStore } from "./store";
 import { Connection } from "./connection";
 import { UnsubscribeFunc } from "./types";
 
-type Collection<State> = {
-  refresh(): Promise<void>;
+export type Collection<State> = {
+  state: State;
+  refresh(): Promise<State>;
   subscribe(subscriber: (state: State) => void): UnsubscribeFunc;
 };
 
@@ -24,9 +25,10 @@ export const getCollection = <State>(
   let unsubProm: Promise<UnsubscribeFunc>;
   let store = createStore<State>();
 
-  async function refresh() {
+  // @ts-ignore
+  async function refresh(): Promise<State> {
     try {
-      store.setState(await fetchCollection(conn), true);
+      return store.setState(await fetchCollection(conn), true);
     } catch (err) {
       // Swallow errors if socket is connecting, closing or closed.
       // We will automatically call refresh again when we re-establish the connection.
@@ -38,7 +40,12 @@ export const getCollection = <State>(
   }
 
   conn[key] = {
+    get state() {
+      return store.state;
+    },
+
     refresh,
+
     subscribe(subscriber: (state: State) => void): UnsubscribeFunc {
       if (!active) {
         active++;
