@@ -1,7 +1,7 @@
-import assert from "assert";
+import * as assert from "assert";
 
 import { subscribeConfig } from "../lib/config";
-import { mockConnection, createAwaitableEvent } from "./util";
+import { MockConnection, AwaitableEvent } from "./util";
 
 const MOCK_CONFIG = {
   hello: "bla",
@@ -9,13 +9,13 @@ const MOCK_CONFIG = {
 };
 
 describe("subscribeConfig", () => {
-  let conn;
-  let awaitableEvent;
+  let conn: MockConnection;
+  let awaitableEvent: AwaitableEvent;
 
   beforeEach(() => {
-    conn = mockConnection();
+    conn = new MockConnection();
     conn.mockResponse("get_config", MOCK_CONFIG);
-    awaitableEvent = createAwaitableEvent();
+    awaitableEvent = new AwaitableEvent();
   });
 
   it("should load initial config", async () => {
