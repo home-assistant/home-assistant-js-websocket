@@ -201,7 +201,7 @@ getCollection<State>(
   subscribeUpdates: (
     conn: Connection,
     store: Store<State>
-  ) => Promise<() => void>,
+  ) => Promise<UnsubscribeFunc>,
 ): Collection<State>
 
 // Returns object with following type
