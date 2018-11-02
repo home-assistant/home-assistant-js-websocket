@@ -69,7 +69,7 @@ function redirectAuthorize(
   // Add either ?auth_callback=1 or &auth_callback=1
   redirectUrl += (redirectUrl.includes("?") ? "&" : "?") + "auth_callback=1";
 
-  document.location.href = genAuthorizeUrl(
+  document.location!.href = genAuthorizeUrl(
     hassUrl,
     clientId,
     redirectUrl,
@@ -90,7 +90,7 @@ async function tokenRequest(
 
   const resp = await fetch(`${hassUrl}/auth/token`, {
     method: "POST",
-    credentials: 'same-origin',
+    credentials: "same-origin",
     body: formData
   });
 
@@ -170,7 +170,7 @@ export class Auth {
     // There is no error checking, as revoke will always return 200
     await fetch(`${this.data.hassUrl}/auth/token`, {
       method: "POST",
-      credentials: 'same-origin',
+      credentials: "same-origin",
       body: formData
     });
 
