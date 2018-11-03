@@ -1,41 +1,31 @@
-import { Store } from "./store";
+import { Store, createStore } from "./store";
 import { Connection } from "./connection";
 import { UnsubscribeFunc } from "./types";
 
-// fetchCollection returns promise that resolves to current value of collection.
-// subscribeUpdates(connection, store) returns promise that resolves
-// to an unsubscription function.
+export type Collection<State> = {
+  state: State;
+  refresh(): Promise<void>;
+  subscribe(subscriber: (state: State) => void): UnsubscribeFunc;
+};
 
-export function createCollection<State>(
+export const getCollection = <State>(
+  conn: Connection,
   key: string,
   fetchCollection: (conn: Connection) => Promise<State>,
   subscribeUpdates: (
     conn: Connection,
     store: Store<State>
-  ) => Promise<UnsubscribeFunc>,
-  conn: Connection,
-  onChange: (state: State) => void
-): UnsubscribeFunc {
-  if (key in conn) {
-    return conn[key](onChange);
+  ) => Promise<UnsubscribeFunc>
+): Collection<State> => {
+  if (conn[key]) {
+    return conn[key];
   }
 
+  let active = 0;
   let unsubProm: Promise<UnsubscribeFunc>;
+  let store = createStore<State>();
 
-  const store = new Store<State>(() => {
-    if (unsubProm) unsubProm.then(unsub => unsub());
-    conn.removeEventListener("ready", refresh);
-    delete conn[key];
-  });
-
-  conn[key] = (onChange: (state: State) => void) => store.subscribe(onChange);
-
-  // Subscribe to changes
-  if (subscribeUpdates) {
-    unsubProm = subscribeUpdates(conn, store);
-  }
-
-  const refresh = async () => {
+  async function refresh(): Promise<void> {
     try {
       store.setState(await fetchCollection(conn), true);
     } catch (err) {
@@ -46,12 +36,59 @@ export function createCollection<State>(
         throw err;
       }
     }
+  }
+
+  conn[key] = {
+    get state() {
+      return store.state;
+    },
+
+    refresh,
+
+    subscribe(subscriber: (state: State) => void): UnsubscribeFunc {
+      if (!active) {
+        active++;
+
+        // Subscribe to changes
+        unsubProm = subscribeUpdates(conn, store);
+
+        // Fetch when connection re-established.
+        conn.addEventListener("ready", refresh);
+
+        refresh();
+      }
+
+      const unsub = store.subscribe(subscriber);
+
+      return () => {
+        unsub();
+        active--;
+        if (!active) {
+          // Unsubscribe from changes
+          if (unsubProm)
+            unsubProm.then(unsub => {
+              unsub();
+            });
+          conn.removeEventListener("ready", refresh);
+        }
+      };
+    }
   };
 
-  // Fetch when connection re-established.
-  conn.addEventListener("ready", refresh);
+  return conn[key];
+};
 
-  refresh();
-
-  return store.subscribe(onChange);
-}
+// Legacy name. It gets a collection and subscribes.
+export const createCollection = <State>(
+  key: string,
+  fetchCollection: (conn: Connection) => Promise<State>,
+  subscribeUpdates: (
+    conn: Connection,
+    store: Store<State>
+  ) => Promise<UnsubscribeFunc>,
+  conn: Connection,
+  onChange: (state: State) => void
+): UnsubscribeFunc =>
+  getCollection(conn, key, fetchCollection, subscribeUpdates).subscribe(
+    onChange
+  );
