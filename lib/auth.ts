@@ -34,9 +34,22 @@ type OAuthState = {
   clientId: string;
 };
 
-function genClientId() {
-  return `${location.protocol}//${location.host}/`;
-}
+type AuthorizationCodeRequest = {
+  grant_type: "authorization_code";
+  code: string;
+};
+
+type RefreshTokenRequest = {
+  grant_type: "refresh_token";
+  refresh_token: string;
+};
+
+export const genClientId = (): string =>
+  `${location.protocol}//${location.host}/`;
+
+export const genExpires = (expires_in: number): number => {
+  return expires_in * 1000 + Date.now();
+};
 
 function genRedirectUrl() {
   // Get current url but without # part.
@@ -80,7 +93,7 @@ function redirectAuthorize(
 async function tokenRequest(
   hassUrl: string,
   clientId: string,
-  data: { [key: string]: string }
+  data: AuthorizationCodeRequest | RefreshTokenRequest
 ) {
   const formData = new FormData();
   formData.append("client_id", clientId);
@@ -104,7 +117,7 @@ async function tokenRequest(
   const tokens: AuthData = await resp.json();
   tokens.hassUrl = hassUrl;
   tokens.clientId = clientId;
-  tokens.expires = tokens.expires_in * 1000 + Date.now();
+  tokens.expires = genExpires(tokens.expires_in);
   return tokens;
 }
 
@@ -174,7 +187,9 @@ export class Auth {
       body: formData
     });
 
-    if (this._saveTokens) this._saveTokens(null);
+    if (this._saveTokens) {
+      this._saveTokens(null);
+    }
   }
 }
 
