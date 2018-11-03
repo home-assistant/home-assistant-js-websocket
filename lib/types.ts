@@ -99,3 +99,9 @@ export type HassDomainServices = {
 export type HassServices = {
   [domain: string]: HassDomainServices;
 };
+
+export type HassUser = {
+  id: string;
+  is_owner: boolean;
+  name: string;
+};

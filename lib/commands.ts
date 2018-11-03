@@ -1,6 +1,6 @@
 import { Connection } from "./connection";
 import * as messages from "./messages";
-import { HassEntity, HassServices, HassConfig } from "./types";
+import { HassEntity, HassServices, HassConfig, HassUser } from "./types";
 
 export const getStates = (connection: Connection) =>
   connection.sendMessagePromise<HassEntity[]>(messages.states());
@@ -12,7 +12,7 @@ export const getConfig = (connection: Connection) =>
   connection.sendMessagePromise<HassConfig>(messages.config());
 
 export const getUser = (connection: Connection) =>
-  connection.sendMessagePromise<HassConfig>(messages.user());
+  connection.sendMessagePromise<HassUser>(messages.user());
 
 export const callService = (
   connection: Connection,
