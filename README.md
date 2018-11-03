@@ -269,13 +269,12 @@ const fetchPanels = conn => conn.sendMessagePromise({ type: "get_panels" });
 const subscribeUpdates = (conn, store) =>
   conn.subscribeEvents(store.action(panelRegistered), "panel_registered");
 
-const subscribePanels = (conn, onChange) =>
-  getCollection(conn, "_pnl", fetchPanels, subscribeUpdates).subscribe(
-    onChange
-  );
+const panelsColl = getCollection(conn, "_pnl", fetchPanels, subscribeUpdates);
 
 // Now use collection
-subscribePanels(conn, panels => console.log("New panels!", panels));
+console.log(panelsColl.state);
+await panelsColl.refresh();
+panelsColl.subscribe(panels => console.log("New panels!", panels));
 ```
 
 Collections are useful to define if data is needed for initial data load. You can create a collection and have code on your page call it before you start rendering the UI. By the time UI is loaded, the data will be available to use.
