@@ -199,7 +199,7 @@ The function `subscribeServices` will return an unsubscribe function.
 ```javascript
 import { subscribeServices } from "home-assistant-js-websocket";
 
-// conn
+// conn is the connection from earlier.
 subscribeServices(conn, services => console.log("New services!", services));
 ```
 
