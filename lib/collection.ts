@@ -81,18 +81,12 @@ export const getCollection = <State>(
 export const createCollection = <State>(
   key: string,
   fetchCollection: (conn: Connection) => Promise<State>,
-  subscribeUpdates: (
-    conn: Connection,
-    store: Store<State>
-  ) => Promise<UnsubscribeFunc> | undefined,
+  subscribeUpdates:
+    | ((conn: Connection, store: Store<State>) => Promise<UnsubscribeFunc>)
+    | undefined,
   conn: Connection,
   onChange: (state: State) => void
 ): UnsubscribeFunc =>
-  getCollection(
-    conn,
-    key,
-    fetchCollection,
-    // TypeScript doesn't like it if we pass undefined to an optional param
-    // @ts-ignore
-    subscribeUpdates
-  ).subscribe(onChange);
+  getCollection(conn, key, fetchCollection, subscribeUpdates).subscribe(
+    onChange
+  );
