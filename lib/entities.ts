@@ -34,10 +34,10 @@ const subscribeUpdates = (conn: Connection, store: Store<HassEntities>) =>
     "state_changed"
   );
 
-export const EntitiesColl = (conn: Connection) =>
+export const entitiesColl = (conn: Connection) =>
   getCollection(conn, "_ent", fetchEntities, subscribeUpdates);
 
 export const subscribeEntities = (
   conn: Connection,
   onChange: (state: HassEntities) => void
-): UnsubscribeFunc => EntitiesColl(conn).subscribe(onChange);
+): UnsubscribeFunc => entitiesColl(conn).subscribe(onChange);

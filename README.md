@@ -150,8 +150,19 @@ The function `subscribeEntities` will return an unsubscribe function.
 import { subscribeEntities } from "home-assistant-js-websocket";
 
 // conn is the connection from earlier.
-
 subscribeEntities(conn, entities => console.log("New entities!", entities));
+```
+
+You can also import the collection:
+
+```javascript
+import { entitiesColl } from "home-assistant-js-websocket";
+
+// conn is the connection from earlier.
+const coll = entitiesColl(connection);
+console.log(coll.state);
+await coll.refresh();
+coll.subscribe(entities => console.log(entities));
 ```
 
 ### Config
@@ -164,8 +175,19 @@ The function `subscribeConfig` will return an unsubscribe function.
 import { subscribeConfig } from "home-assistant-js-websocket";
 
 // conn is the connection from earlier.
-
 subscribeConfig(conn, config => console.log("New config!", config));
+```
+
+You can also import the collection:
+
+```javascript
+import { configColl } from "home-assistant-js-websocket";
+
+// conn is the connection from earlier.
+const coll = configColl(connection);
+console.log(coll.state);
+await coll.refresh();
+coll.subscribe(config => console.log(config));
 ```
 
 ### Services
@@ -177,9 +199,20 @@ The function `subscribeServices` will return an unsubscribe function.
 ```javascript
 import { subscribeServices } from "home-assistant-js-websocket";
 
-// conn is the connection from earlier.
-
+// conn
 subscribeServices(conn, services => console.log("New services!", services));
+```
+
+You can also import the collection:
+
+```javascript
+import { servicesColl } from "home-assistant-js-websocket";
+
+// conn is the connection from earlier.
+const coll = servicesColl(connection);
+console.log(coll.state);
+await coll.refresh();
+coll.subscribe(services => console.log(services));
 ```
 
 ### Collections

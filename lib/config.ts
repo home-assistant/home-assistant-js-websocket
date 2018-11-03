@@ -28,10 +28,10 @@ const subscribeUpdates = (conn: Connection, store: Store<HassConfig>) =>
     "component_loaded"
   );
 
-const ConfigColl = (conn: Connection) =>
+const configColl = (conn: Connection) =>
   getCollection(conn, "_cnf", fetchConfig, subscribeUpdates);
 
 export const subscribeConfig = (
   conn: Connection,
   onChange: (state: HassConfig) => void
-): UnsubscribeFunc => ConfigColl(conn).subscribe(onChange);
+): UnsubscribeFunc => configColl(conn).subscribe(onChange);
