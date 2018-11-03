@@ -59,6 +59,10 @@ export const getCollection = <State>(
 
       const unsub = store.subscribe(subscriber);
 
+      if (store.state !== undefined) {
+        subscriber(store.state);
+      }
+
       return () => {
         unsub();
         active--;
