@@ -25,18 +25,8 @@ export const getCollection = <State>(
   let unsubProm: Promise<UnsubscribeFunc>;
   let store = createStore<State>();
 
-  async function refresh(): Promise<void> {
-    try {
-      store.setState(await fetchCollection(conn), true);
-    } catch (err) {
-      // Swallow errors if socket is connecting, closing or closed.
-      // We will automatically call refresh again when we re-establish the connection.
-      // Using conn.socket instead of WebSocket for better node support
-      if (conn.socket.readyState == conn.socket.OPEN) {
-        throw err;
-      }
-    }
-  }
+  const refresh = () =>
+    fetchCollection(conn).then(state => store.setState(state, true));
 
   conn[key] = {
     get state() {
@@ -55,7 +45,14 @@ export const getCollection = <State>(
         // Fetch when connection re-established.
         conn.addEventListener("ready", refresh);
 
-        refresh();
+        refresh().catch((err: unknown) => {
+          // Swallow errors if socket is connecting, closing or closed.
+          // We will automatically call refresh again when we re-establish the connection.
+          // Using conn.socket.OPEN instead of WebSocket for better node support
+          if (conn.socket.readyState == conn.socket.OPEN) {
+            throw err;
+          }
+        });
       }
 
       const unsub = store.subscribe(subscriber);
