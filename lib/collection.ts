@@ -12,7 +12,7 @@ export const getCollection = <State>(
   conn: Connection,
   key: string,
   fetchCollection: (conn: Connection) => Promise<State>,
-  subscribeUpdates: (
+  subscribeUpdates?: (
     conn: Connection,
     store: Store<State>
   ) => Promise<UnsubscribeFunc>
@@ -40,7 +40,9 @@ export const getCollection = <State>(
         active++;
 
         // Subscribe to changes
-        unsubProm = subscribeUpdates(conn, store);
+        if (subscribeUpdates) {
+          unsubProm = subscribeUpdates(conn, store);
+        }
 
         // Fetch when connection re-established.
         conn.addEventListener("ready", refresh);
@@ -82,10 +84,15 @@ export const createCollection = <State>(
   subscribeUpdates: (
     conn: Connection,
     store: Store<State>
-  ) => Promise<UnsubscribeFunc>,
+  ) => Promise<UnsubscribeFunc> | undefined,
   conn: Connection,
   onChange: (state: State) => void
 ): UnsubscribeFunc =>
-  getCollection(conn, key, fetchCollection, subscribeUpdates).subscribe(
-    onChange
-  );
+  getCollection(
+    conn,
+    key,
+    fetchCollection,
+    // TypeScript doesn't like it if we pass undefined to an optional param
+    // @ts-ignore
+    subscribeUpdates
+  ).subscribe(onChange);
