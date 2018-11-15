@@ -6,7 +6,9 @@ This is a websocket client written in JavaScript that allows retrieving authenti
 
 Check [the demo](https://hass-auth-demo.glitch.me/). The repository also includes an [example client](https://github.com/home-assistant/home-assistant-js-websocket/blob/master/example.html):
 
+Clone this repository, then go to home-assistant-js-websocket folder and run the following commands:
 ```bash
+yarn install
 yarn build
 npx http-server -o
 # A browser will open, navigate to example.html
