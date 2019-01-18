@@ -87,7 +87,7 @@ export type HassService = {
   fields: {
     [field_name: string]: {
       description: string;
-      example: string;
+      example: string | boolean | number;
     };
   };
 };
