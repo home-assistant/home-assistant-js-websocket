@@ -63,6 +63,7 @@ export type HassEntityBase = {
   last_changed: string;
   last_updated: string;
   attributes: HassEntityAttributeBase;
+  context: { id: string; user_id: string | null };
 };
 
 export type HassEntityAttributeBase = {
