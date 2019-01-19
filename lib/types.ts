@@ -71,7 +71,7 @@ export type HassEntityAttributeBase = {
   icon?: string;
   entity_picture?: string;
   supported_features?: number;
-  hidden: boolean;
+  hidden?: boolean;
   assumed_state?: boolean;
   device_class?: string;
 };
