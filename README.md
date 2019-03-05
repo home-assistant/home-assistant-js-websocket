@@ -7,6 +7,7 @@ This is a websocket client written in JavaScript that allows retrieving authenti
 Check [the demo](https://hass-auth-demo.glitch.me/). The repository also includes an [example client](https://github.com/home-assistant/home-assistant-js-websocket/blob/master/example.html):
 
 Clone this repository, then go to home-assistant-js-websocket folder and run the following commands:
+
 ```bash
 yarn install
 yarn build
@@ -291,6 +292,10 @@ Subscribe to all or specific events on the Home Assistant bus. Calls `eventCallb
 
 Returns a promise that will resolve to a function that will cancel the subscription once called.
 
+Subscription will be automatically re-established after a reconnect.
+
+Uses `conn.subscribeMessage` under the hood.
+
 ##### `conn.addEventListener(eventType, listener)`
 
 Listen for events on the connection. [See docs.](#automatic-reconnecting)
@@ -298,6 +303,14 @@ Listen for events on the connection. [See docs.](#automatic-reconnecting)
 ##### `conn.sendMessagePromise(message)`
 
 Send a message to the server. Returns a promise that resolves or rejects based on the result of the server. Special case rejection is `ERR_CONNECTION_LOST` if the connection is lost while the command is in progress.
+
+##### `conn.subscribeMessage(callback, subscribeMessage)`
+
+Call an endpoint in Home Assistant that creates a subscription. Calls `callback` for each item that gets received.
+
+Returns a promise that will resolve to a function that will cancel the subscription once called.
+
+Subscription will be automatically re-established after a reconnect.
 
 ## Auth API Reference
 
