@@ -6,7 +6,7 @@ import * as messages from "./messages";
 import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./errors";
 import { ConnectionOptions, HassEvent, MessageBase } from "./types";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export type ConnectionEventListener = (
   conn: Connection,
