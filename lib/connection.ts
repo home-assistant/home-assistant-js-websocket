@@ -118,7 +118,7 @@ export class Connection {
           info.subscribe().then(unsub => {
             info.unsubscribe = unsub;
             // We need to resolve this in case it wasn't resolved yet.
-            // This allows us to call subscribeEvents while we're disconnected
+            // This allows us to subscribe while we're disconnected
             // and recover properly.
             info.resolve();
           });
@@ -164,8 +164,13 @@ export class Connection {
     this.socket.close();
   }
 
-  // callback will be called when a new event fires
-  // Returned promise resolves to an unsubscribe function.
+  /**
+   * Subscribe to a specific or all events.
+   *
+   * @param callback Callback  to be called when a new event fires
+   * @param eventType
+   * @returns promise that resolves to an unsubscribe function
+   */
   async subscribeEvents<EventType>(
     callback: (ev: EventType) => void,
     eventType?: string
@@ -202,7 +207,8 @@ export class Connection {
    * Call a websocket command that starts a subscription on the backend.
    *
    * @param message the message to start the subscription
-   * @param callback the callback to be called with subscription items
+   * @param callback the callback to be called when a new item arrives
+   * @returns promise that resolves to an unsubscribe function
    */
   async subscribeMessage<Result>(
     callback: (result: Result) => void,
