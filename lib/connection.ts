@@ -49,13 +49,15 @@ type WebSocketResponse =
   | WebSocketResultResponse
   | WebSocketResultErrorResponse;
 
-type SubscribeEventCommmandInFlight = {
+type SubscriptionUnsubscribe = () => Promise<void>;
+
+interface SubscribeEventCommmandInFlight<T> {
   resolve: (result?: any) => void;
   reject: (err: any) => void;
-  eventCallback: (ev: any) => void;
-  eventType?: string;
-  unsubscribe: () => Promise<void>;
-};
+  callback: (ev: T) => void;
+  subscribe: () => Promise<SubscriptionUnsubscribe>;
+  unsubscribe: SubscriptionUnsubscribe;
+}
 
 type CommandWithAnswerInFlight = {
   resolve: (result?: any) => void;
@@ -63,7 +65,7 @@ type CommandWithAnswerInFlight = {
 };
 
 type CommandInFlight =
-  | SubscribeEventCommmandInFlight
+  | SubscribeEventCommmandInFlight<any>
   | CommandWithAnswerInFlight;
 
 export class Connection {
@@ -112,16 +114,14 @@ export class Connection {
       Object.keys(oldCommands).forEach(id => {
         const info: CommandInFlight = oldCommands[id];
 
-        if ("eventCallback" in info) {
-          this.subscribeEvents(info.eventCallback, info.eventType).then(
-            unsub => {
-              info.unsubscribe = unsub;
-              // We need to resolve this in case it wasn't resolved yet.
-              // This allows us to call subscribeEvents while we're disconnected
-              // and recover properly.
-              info.resolve();
-            }
-          );
+        if ("subscribe" in info) {
+          info.subscribe().then(unsub => {
+            info.unsubscribe = unsub;
+            // We need to resolve this in case it wasn't resolved yet.
+            // This allows us to subscribe while we're disconnected
+            // and recover properly.
+            info.resolve();
+          });
         }
       });
 
@@ -164,39 +164,18 @@ export class Connection {
     this.socket.close();
   }
 
-  // eventCallback will be called when a new event fires
-  // Returned promise resolves to an unsubscribe function.
+  /**
+   * Subscribe to a specific or all events.
+   *
+   * @param callback Callback  to be called when a new event fires
+   * @param eventType
+   * @returns promise that resolves to an unsubscribe function
+   */
   async subscribeEvents<EventType>(
-    eventCallback: (ev: EventType) => void,
+    callback: (ev: EventType) => void,
     eventType?: string
-  ) {
-    // Command ID that will be used
-    const commandId = this._genCmdId();
-    let info: SubscribeEventCommmandInFlight;
-
-    await new Promise((resolve, reject) => {
-      // We store unsubscribe on info object. That way we can overwrite it in case
-      // we get disconnected and we have to subscribe again.
-      info = this.commands[commandId] = {
-        resolve,
-        reject,
-        eventCallback: eventCallback as (ev: any) => void,
-        eventType,
-        unsubscribe: async () => {
-          await this.sendMessagePromise(messages.unsubscribeEvents(commandId));
-          delete this.commands[commandId];
-        }
-      };
-
-      try {
-        this.sendMessage(messages.subscribeEvents(eventType), commandId);
-      } catch (err) {
-        // Happens when the websocket is already closing.
-        // Don't have to handle the error, reconnect logic will pick it up.
-      }
-    });
-
-    return () => info.unsubscribe();
+  ): Promise<SubscriptionUnsubscribe> {
+    return this.subscribeMessage(callback, messages.subscribeEvents(eventType));
   }
 
   ping() {
@@ -224,6 +203,46 @@ export class Connection {
     });
   }
 
+  /**
+   * Call a websocket command that starts a subscription on the backend.
+   *
+   * @param message the message to start the subscription
+   * @param callback the callback to be called when a new item arrives
+   * @returns promise that resolves to an unsubscribe function
+   */
+  async subscribeMessage<Result>(
+    callback: (result: Result) => void,
+    subscribeMessage: MessageBase
+  ): Promise<SubscriptionUnsubscribe> {
+    // Command ID that will be used
+    const commandId = this._genCmdId();
+    let info: SubscribeEventCommmandInFlight<Result>;
+
+    await new Promise((resolve, reject) => {
+      // We store unsubscribe on info object. That way we can overwrite it in case
+      // we get disconnected and we have to subscribe again.
+      info = this.commands[commandId] = {
+        resolve,
+        reject,
+        callback,
+        subscribe: () => this.subscribeMessage(callback, subscribeMessage),
+        unsubscribe: async () => {
+          await this.sendMessagePromise(messages.unsubscribeEvents(commandId));
+          delete this.commands[commandId];
+        }
+      };
+
+      try {
+        this.sendMessage(subscribeMessage, commandId);
+      } catch (err) {
+        // Happens when the websocket is already closing.
+        // Don't have to handle the error, reconnect logic will pick it up.
+      }
+    });
+
+    return () => info.unsubscribe();
+  }
+
   private _handleMessage(event: MessageEvent) {
     const message: WebSocketResponse = JSON.parse(event.data);
 
@@ -235,8 +254,8 @@ export class Connection {
       case "event":
         const eventInfo = this.commands[
           message.id
-        ] as SubscribeEventCommmandInFlight;
-        eventInfo.eventCallback(message.event);
+        ] as SubscribeEventCommmandInFlight<any>;
+        eventInfo.callback(message.event);
         break;
 
       case "result":
@@ -247,8 +266,8 @@ export class Connection {
           if (message.success) {
             info.resolve(message.result);
 
-            // Don't remove event subscriptions.
-            if (!("eventCallback" in info)) {
+            // Don't remove subscriptions.
+            if (!("subscribe" in info)) {
               delete this.commands[message.id];
             }
           } else {
@@ -278,7 +297,7 @@ export class Connection {
 
       // We don't cancel subscribeEvents commands in flight
       // as we will be able to recover them.
-      if (!("eventCallback" in info)) {
+      if (!("subscribe" in info)) {
         info.reject(messages.error(ERR_CONNECTION_LOST, "Connection lost"));
       }
     });
