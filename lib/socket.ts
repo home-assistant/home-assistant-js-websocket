@@ -20,6 +20,7 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
     throw ERR_HASS_HOST_REQUIRED;
   }
   const auth = options.auth;
+  const wsConstructor = options.WebSocket || WebSocket;
 
   // Convert from http:// -> ws://, https:// -> wss://
   const url = auth.wsUrl;
@@ -37,7 +38,7 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
       console.log("[Auth Phase] New connection", url);
     }
 
-    const socket = new WebSocket(url);
+    const socket = new wsConstructor(url);
 
     // If invalid auth, we will not try to reconnect.
     let invalidAuth = false;
