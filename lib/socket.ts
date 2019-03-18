@@ -21,6 +21,19 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
   }
   const auth = options.auth;
 
+  // Start refreshing expired tokens even before the WS connection is open.
+  // We know that we will need auth anyway.
+  let authRefreshTask = auth.expired
+    ? auth.refreshAccessToken().then(
+        () => {
+          authRefreshTask = undefined;
+        },
+        () => {
+          authRefreshTask = undefined;
+        }
+      )
+    : undefined;
+
   // Convert from http:// -> ws://, https:// -> wss://
   const url = auth.wsUrl;
 
@@ -73,7 +86,9 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
     // Auth is mandatory, so we can send the auth message right away.
     const handleOpen = async (event: MessageEventInit) => {
       try {
-        if (auth.expired) await auth.refreshAccessToken();
+        if (auth.expired) {
+          await (authRefreshTask ? authRefreshTask : auth.refreshAccessToken());
+        }
         socket.send(JSON.stringify(messages.auth(auth.accessToken)));
       } catch (err) {
         // Refresh token failed
