@@ -38,6 +38,7 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
       console.log("[Auth Phase] New connection", url);
     }
 
+    // @ts-ignore
     const socket = new wsConstructor(url);
 
     // If invalid auth, we will not try to reconnect.
