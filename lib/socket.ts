@@ -20,6 +20,7 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
     throw ERR_HASS_HOST_REQUIRED;
   }
   const auth = options.auth;
+  const wsConstructor = options.WebSocket || WebSocket;
 
   // Start refreshing expired tokens even before the WS connection is open.
   // We know that we will need auth anyway.
@@ -50,7 +51,8 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
       console.log("[Auth Phase] New connection", url);
     }
 
-    const socket = new WebSocket(url);
+    // @ts-ignore
+    const socket = new wsConstructor(url);
 
     // If invalid auth, we will not try to reconnect.
     let invalidAuth = false;

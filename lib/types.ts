@@ -1,5 +1,9 @@
 import { Auth } from "./auth";
 
+type Constructor<T> = {
+  new (...args: unknown[]): T;
+};
+
 export type Error = 1 | 2 | 3 | 4;
 
 export type UnsubscribeFunc = () => void;
@@ -8,6 +12,7 @@ export type ConnectionOptions = {
   setupRetry: number;
   auth?: Auth;
   createSocket: (options: ConnectionOptions) => Promise<WebSocket>;
+  WebSocket?: Constructor<WebSocket>;
 };
 
 export type MessageBase = {
