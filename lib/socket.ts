@@ -66,7 +66,7 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
         return;
       }
 
-      if (args.error){
+      if (args && args.error){
         console.error("[Auth phase] Error", args.error);
         promReject(ERR_WEBSOCKET_ERROR);
         return;
