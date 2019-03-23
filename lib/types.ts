@@ -4,7 +4,7 @@ type Constructor<T> = {
   new (...args: unknown[]): T;
 };
 
-export type Error = 1 | 2 | 3 | 4;
+export type Error = 1 | 2 | 3 | 4 | 5;
 
 export type UnsubscribeFunc = () => void;
 
@@ -13,6 +13,7 @@ export type ConnectionOptions = {
   auth?: Auth;
   createSocket: (options: ConnectionOptions) => Promise<WebSocket>;
   WebSocket?: Constructor<WebSocket>;
+  websocketOptions?: any;
 };
 
 export type MessageBase = {

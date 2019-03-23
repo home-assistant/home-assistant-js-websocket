@@ -4,7 +4,8 @@
 import {
   ERR_INVALID_AUTH,
   ERR_CANNOT_CONNECT,
-  ERR_HASS_HOST_REQUIRED
+  ERR_HASS_HOST_REQUIRED,
+  ERR_WEBSOCKET_ERROR
 } from "./errors";
 import { ConnectionOptions, Error } from "./types";
 import * as messages from "./messages";
@@ -52,16 +53,22 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
     }
 
     // @ts-ignore
-    const socket = new wsConstructor(url);
+    const socket = new wsConstructor(url, options.websocketOptions);
 
     // If invalid auth, we will not try to reconnect.
     let invalidAuth = false;
 
-    const closeMessage = () => {
+    const closeMessage = (args: any) => {
       // If we are in error handler make sure close handler doesn't also fire.
       socket.removeEventListener("close", closeMessage);
       if (invalidAuth) {
         promReject(ERR_INVALID_AUTH);
+        return;
+      }
+
+      if (args.error){
+        console.error("[Auth phase] Error", args.error);
+        promReject(ERR_WEBSOCKET_ERROR);
         return;
       }
 
