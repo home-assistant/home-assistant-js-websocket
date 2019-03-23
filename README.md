@@ -102,6 +102,7 @@ createConnection({ auth });
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | auth         | Auth object to use to create a connection.                                                                                                     |
 | createSocket | Override the createSocket method with your own. `(options) => Promise<WebSocket>`. Needs to return a connection that is already authenticated. |
+| WebSocket    | Constructor to use to initialize the WebSocket connection inside the built-in createSocket method.                                             |
 | setupRetry   | Number of times to retry initial connection when it fails. Set to -1 for infinite retries. Default is 0 (no retries)                           |
 
 Currently the following error codes can be raised by createConnection:
@@ -371,20 +372,12 @@ import {
 
 ## Using this in NodeJS
 
-To use this package in NodeJS, you will want to define your own `createSocket` method for `createConnection` to use. Your createSocket function will need to set up the web socket connection with Home Assistant and handle the auth.
+NodeJS does not have a WebSocket client built-in, but there are some good ones on NPM. We recommend `ws`. You can pass the WebSocket constructor to use as part of the options.
 
 ```js
 const WebSocket = require("ws");
 
 createConnection({
-  createSocket() {
-    // Open connection
-    const ws = new WebSocket("ws://localhost:8123");
-
-    // Functions to handle authentication with Home Assistant
-    // Implement yourself :)
-
-    return ws;
-  }
+  WebSocket
 });
 ```
