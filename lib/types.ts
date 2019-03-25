@@ -4,8 +4,6 @@ type Constructor<T> = {
   new (...args: unknown[]): T;
 };
 
-export type Error = 1 | 2 | 3 | 4;
-
 export type UnsubscribeFunc = () => void;
 
 export type ConnectionOptions = {

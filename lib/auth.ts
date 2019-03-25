@@ -1,5 +1,10 @@
 import { parseQuery } from "./util";
-import { ERR_HASS_HOST_REQUIRED, ERR_INVALID_AUTH } from "./errors";
+import {
+  ERR_HASS_HOST_REQUIRED,
+  ERR_INVALID_AUTH,
+  HAWSError,
+  ERR_CANNOT_FETCH_TOKENS
+} from "./errors";
 
 export type AuthData = {
   hassUrl: string;
@@ -108,10 +113,12 @@ async function tokenRequest(
   });
 
   if (!resp.ok) {
-    throw resp.status === 400 /* auth invalid */ ||
-    resp.status === 403 /* user not active */
-      ? ERR_INVALID_AUTH
-      : new Error("Unable to fetch tokens");
+    throw new HAWSError(
+      resp.status === 400 /* auth invalid */ ||
+      resp.status === 403 /* user not active */
+        ? ERR_INVALID_AUTH
+        : ERR_CANNOT_FETCH_TOKENS
+    );
   }
 
   const tokens: AuthData = await resp.json();
@@ -225,7 +232,7 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
   let hassUrl = options.hassUrl;
 
   if (hassUrl === undefined) {
-    throw ERR_HASS_HOST_REQUIRED;
+    throw new HAWSError(ERR_HASS_HOST_REQUIRED);
   }
 
   // Strip trailing slash.

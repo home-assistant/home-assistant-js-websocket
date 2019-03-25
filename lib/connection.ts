@@ -320,7 +320,7 @@ export class Connection {
           const socket = await options.createSocket(options);
           this.setSocket(socket);
         } catch (err) {
-          if (err === ERR_INVALID_AUTH) {
+          if (err.code === ERR_INVALID_AUTH) {
             this.fireEvent("reconnect-error", err);
           } else {
             reconnect(tries + 1);

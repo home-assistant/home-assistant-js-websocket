@@ -34,7 +34,7 @@ async function connect() {
     // Try to pick up authentication after user logs in
     auth = await getAuth();
   } catch (err) {
-    if (err === ERR_HASS_HOST_REQUIRED) {
+    if (err.code === ERR_HASS_HOST_REQUIRED) {
       const hassUrl = prompt(
         "What host to connect to?",
         "http://localhost:8123"
@@ -42,7 +42,7 @@ async function connect() {
       // Redirect user to log in on their instance
       auth = await getAuth({ hassUrl });
     } else {
-      alert(`Unknown error: ${err}`);
+      alert(`Unknown error: ${err.code}`);
       return;
     }
   }
@@ -71,7 +71,7 @@ getAuth({ hassUrl: "http://localhost:8123" });
 | saveTokens  | Function to store an object containing the token information.                                                                                                                                            |
 | loadTokens  | Function that returns a promise that resolves to previously stored token information object or undefined if no info available.                                                                           |
 
-In certain instances `getAuth` will raise an error. These errors can be imported from the package:
+In certain instances `getAuth` will raise an error. Each error raised by Home Assistant JS Websocket will have a `code` property that describes the error that happened. The error codes can be imported from the package:
 
 ```js
 // When bundling your application
@@ -105,7 +105,7 @@ createConnection({ auth });
 | WebSocket    | Constructor to use to initialize the WebSocket connection inside the built-in createSocket method.                                             |
 | setupRetry   | Number of times to retry initial connection when it fails. Set to -1 for infinite retries. Default is 0 (no retries)                           |
 
-Currently the following error codes can be raised by createConnection:
+When an error happens, `createConnection` will raise an error. The error will have a `code` property to describe what went wrong. The following error codes can happen:
 
 | Error              | Description                                               |
 | ------------------ | --------------------------------------------------------- |
@@ -329,7 +329,7 @@ Fetches a new access token from the server.
 
 Makes a request to the server to revoke the refresh and all related access token. Returns a promise that resolves when the request is finished.
 
-**Note:** If you support storing and retrieving tokens, the returned auth object might load tokens from your cache that are no longer valid. If this happens, the promise returned by `createConnection` will reject with `ERR_INVALID_AUTH`. If that happens, clear your tokens with `storeTokens(null`) and call `getAuth` again. This will pick up the auth flow without relying on stored tokens.
+**Note:** If you support storing and retrieving tokens, the returned auth object might load tokens from your cache that are no longer valid. If this happens, the promise returned by `createConnection` will reject with error code `ERR_INVALID_AUTH`. If that happens, clear your tokens with `storeTokens(null`) and call `getAuth` again. This will pick up the auth flow without relying on stored tokens.
 
 ## Other methods
 

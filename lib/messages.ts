@@ -1,5 +1,3 @@
-import { Error } from "./types";
-
 export function auth(accessToken: string) {
   return {
     type: "auth",
@@ -86,7 +84,7 @@ export function ping() {
   };
 }
 
-export function error(code: Error, message: string) {
+export function error(code: string, message: string) {
   return {
     type: "result",
     success: false,

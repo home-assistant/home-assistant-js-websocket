@@ -20,7 +20,7 @@
         try {
           auth = await getAuth();
         } catch (err) {
-          if (err === ERR_HASS_HOST_REQUIRED) {
+          if (err.code === ERR_HASS_HOST_REQUIRED) {
             const hassUrl = prompt(
               "What host to connect to?",
               "http://localhost:8123"

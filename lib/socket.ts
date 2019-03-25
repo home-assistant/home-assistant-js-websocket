@@ -4,9 +4,10 @@
 import {
   ERR_INVALID_AUTH,
   ERR_CANNOT_CONNECT,
-  ERR_HASS_HOST_REQUIRED
+  ERR_HASS_HOST_REQUIRED,
+  HAWSError
 } from "./errors";
-import { ConnectionOptions, Error } from "./types";
+import { ConnectionOptions } from "./types";
 import * as messages from "./messages";
 
 const DEBUG = false;
@@ -17,7 +18,7 @@ const MSG_TYPE_AUTH_OK = "auth_ok";
 
 export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
   if (!options.auth) {
-    throw ERR_HASS_HOST_REQUIRED;
+    throw new HAWSError(ERR_HASS_HOST_REQUIRED);
   }
   const auth = options.auth;
   const wsConstructor = options.WebSocket || WebSocket;
@@ -45,7 +46,7 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
   function connect(
     triesLeft: number,
     promResolve: (socket: WebSocket) => void,
-    promReject: (err: Error) => void
+    promReject: (err: HAWSError) => void
   ) {
     if (DEBUG) {
       console.log("[Auth Phase] New connection", url);
@@ -57,18 +58,18 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
     // If invalid auth, we will not try to reconnect.
     let invalidAuth = false;
 
-    const closeMessage = () => {
+    const closeMessage = (ev: any) => {
       // If we are in error handler make sure close handler doesn't also fire.
       socket.removeEventListener("close", closeMessage);
       if (invalidAuth) {
-        promReject(ERR_INVALID_AUTH);
+        promReject(new HAWSError(ERR_INVALID_AUTH));
         return;
       }
 
       // Reject if we no longer have to retry
       if (triesLeft === 0) {
         // We never were connected and will not retry
-        promReject(ERR_CANNOT_CONNECT);
+        promReject(new HAWSError(ERR_CANNOT_CONNECT));
         return;
       }
 
@@ -94,7 +95,7 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
         socket.send(JSON.stringify(messages.auth(auth.accessToken)));
       } catch (err) {
         // Refresh token failed
-        invalidAuth = err === ERR_INVALID_AUTH;
+        invalidAuth = err && err.code === ERR_INVALID_AUTH;
         socket.close();
       }
     };
