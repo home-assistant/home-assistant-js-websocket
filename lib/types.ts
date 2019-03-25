@@ -13,7 +13,6 @@ export type ConnectionOptions = {
   auth?: Auth;
   createSocket: (options: ConnectionOptions) => Promise<WebSocket>;
   WebSocket?: Constructor<WebSocket>;
-  websocketOptions?: any;
 };
 
 export type MessageBase = {

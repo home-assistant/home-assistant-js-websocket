@@ -53,7 +53,7 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
     }
 
     // @ts-ignore
-    const socket = new wsConstructor(url, options.websocketOptions);
+    const socket = new wsConstructor(url);
 
     // If invalid auth, we will not try to reconnect.
     let invalidAuth = false;
