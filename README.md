@@ -372,12 +372,12 @@ import {
 
 ## Using this in NodeJS
 
-NodeJS does not have a WebSocket client built-in, but there are some good ones on NPM. We recommend `ws`. You can pass the WebSocket constructor to use as part of the options.
+To use this library under NodeJS, you will have to use the `ws` package from NPM. You then have to pass your own WebSocket constructor as part of the connection options.
 
 ```js
 const WebSocket = require("ws");
 
 createConnection({
-  WebSocket
+  constructWebSocket: url => new WebSocket(url)
 });
 ```
