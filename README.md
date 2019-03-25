@@ -84,11 +84,12 @@ import {
 HAWS.ERR_HASS_HOST_REQUIRED;
 ```
 
-| Error                    | Description                                                                                                                                                    |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ERR_HASS_HOST_REQUIRED` | You need to pass in `hassUrl` to `getAuth` to continue getting auth. This option is not needed when the user is redirected back after successfully logging in. |
-| `ERR_INVALID_AUTH`       | This error will be raised if the url contains an authorization code that is no longer valid.                                                                   |
-| Other errors             | Unknown error!                                                                                                                                                 |
+| Error                     | Description                                                                                                                                                    |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ERR_HASS_HOST_REQUIRED`  | You need to pass in `hassUrl` to `getAuth` to continue getting auth. This option is not needed when the user is redirected back after successfully logging in. |
+| `ERR_INVALID_AUTH`        | This error will be raised if the url contains an authorization code that is no longer valid.                                                                   |
+| `ERR_CANNOT_FETCH_TOKENS` | The request to fetch tokens failed.                                                                                                                            |
+| Other errors              | Unknown error!                                                                                                                                                 |
 
 ### `createConnection()`
 
