@@ -55,7 +55,7 @@ connect();
 
 ### `getAuth()`
 
-Use this method to get authentication from a server via OAuth2. This method will handle redirecting to an instance and fetchin the token after the user successful logs in.
+Use this method to get authentication from a server via OAuth2. This method will handle redirecting to an instance and fetching the token after the user successful logs in.
 
 You can pass options using the syntax:
 
