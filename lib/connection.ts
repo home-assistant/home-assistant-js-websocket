@@ -250,19 +250,25 @@ export class Connection {
       console.log("Received", message);
     }
 
+    const info = this.commands[message.id];
+
     switch (message.type) {
       case "event":
-        const eventInfo = this.commands[
-          message.id
-        ] as SubscribeEventCommmandInFlight<any>;
-        eventInfo.callback(message.event);
+        if (info) {
+          (info as SubscribeEventCommmandInFlight<any>).callback(message.event);
+        } else {
+          console.warn(
+            `Received event for unknown subscription ${
+              message.id
+            }. Unsubscribing.`
+          );
+          this.sendMessagePromise(messages.unsubscribeEvents(message.id));
+        }
         break;
 
       case "result":
-        // If just sendMessage is used, we will not store promise for result
-        if (message.id in this.commands) {
-          const info = this.commands[message.id];
-
+        // No info is fine. If just sendMessage is used, we did not store promise for result
+        if (info) {
           if (message.success) {
             info.resolve(message.result);
 
@@ -278,9 +284,12 @@ export class Connection {
         break;
 
       case "pong":
-        const pongInfo = this.commands[message.id] as CommandWithAnswerInFlight;
-        pongInfo.resolve();
-        delete this.commands[message.id];
+        if (info) {
+          info.resolve();
+          delete this.commands[message.id];
+        } else {
+          console.warn(`Received unknown pong response ${message.id}`);
+        }
         break;
 
       default:
