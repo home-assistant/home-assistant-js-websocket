@@ -17,6 +17,7 @@ export type getAuthOptions = {
   hassUrl?: string;
   clientId?: string;
   redirectUrl?: string;
+  authCode?: string;
   saveTokens?: SaveTokensFunc;
   loadTokens?: LoadTokensFunc;
 };
@@ -196,20 +197,45 @@ export class Auth {
 export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
   let data: AuthData | null | undefined;
 
-  // Check if we came back from an authorize redirect
-  const query = parseQuery<QueryCallbackData>(location.search.substr(1));
+  let hassUrl = options.hassUrl;
+  // Strip trailing slash.
+  if (hassUrl && hassUrl[hassUrl.length - 1] === "/") {
+    hassUrl = hassUrl.substr(0, hassUrl.length - 1);
+  }
+  const clientId = options.clientId || genClientId();
 
-  // Check if we got redirected here from authorize page
-  if ("auth_callback" in query) {
-    // Restore state
-    const state = decodeOAuthState(query.state);
+  // Use auth code if it was passed in
+  if (!data && options.authCode && hassUrl && clientId) {
     try {
-      data = await fetchToken(state.hassUrl, state.clientId, query.code);
-      if (options.saveTokens) options.saveTokens(data);
+      data = await fetchToken(hassUrl, clientId, options.authCode);
+      if (options.saveTokens) {
+        options.saveTokens(data);
+      }
     } catch (err) {
       // Do we want to tell user we were unable to fetch tokens?
       // For now we don't do anything, having rest of code pick it up.
       console.log("Unable to fetch access token", err);
+    }
+  }
+
+  // Check if we came back from an authorize redirect
+  if (!data) {
+    const query = parseQuery<QueryCallbackData>(location.search.substr(1));
+
+    // Check if we got redirected here from authorize page
+    if ("auth_callback" in query) {
+      // Restore state
+      const state = decodeOAuthState(query.state);
+      try {
+        data = await fetchToken(state.hassUrl, state.clientId, query.code);
+        if (options.saveTokens) {
+          options.saveTokens(data);
+        }
+      } catch (err) {
+        // Do we want to tell user we were unable to fetch tokens?
+        // For now we don't do anything, having rest of code pick it up.
+        console.log("Unable to fetch access token", err);
+      }
     }
   }
 
@@ -222,24 +248,15 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
     return new Auth(data, options.saveTokens);
   }
 
-  let hassUrl = options.hassUrl;
-
   if (hassUrl === undefined) {
     throw ERR_HASS_HOST_REQUIRED;
   }
-
-  // Strip trailing slash.
-  if (hassUrl[hassUrl.length - 1] === "/") {
-    hassUrl = hassUrl.substr(0, hassUrl.length - 1);
-  }
-  const clientId = options.clientId || genClientId();
-  const redirectUrl = options.redirectUrl || genRedirectUrl();
 
   // If no tokens found but a hassUrl was passed in, let's go get some tokens!
   redirectAuthorize(
     hassUrl,
     clientId,
-    redirectUrl,
+    options.redirectUrl || genRedirectUrl(),
     encodeOAuthState({
       hassUrl,
       clientId
