@@ -70,6 +70,7 @@ getAuth({ hassUrl: "http://localhost:8123" });
 | redirectUrl | The url to redirect back to when the user has logged in. Defaults to current page.                                                                                                                       |
 | saveTokens  | Function to store an object containing the token information.                                                                                                                                            |
 | loadTokens  | Function that returns a promise that resolves to previously stored token information object or undefined if no info available.                                                                           |
+| authCode    | If you have an auth code received via other means, you can pass it in and it will be used to fetch tokens instead of going through the OAuth2 flow.                                                      |
 
 In certain instances `getAuth` will raise an error. These errors can be imported from the package:
 
