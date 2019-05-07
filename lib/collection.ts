@@ -36,10 +36,10 @@ export const getCollection = <State>(
     refresh,
 
     subscribe(subscriber: (state: State) => void): UnsubscribeFunc {
-      if (!active) {
-        active++;
+      active++;
 
-        // Subscribe to changes
+      // If this was the first subscriber, attach collection
+      if (active === 1) {
         if (subscribeUpdates) {
           unsubProm = subscribeUpdates(conn, store);
         }
