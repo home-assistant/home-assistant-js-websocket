@@ -71,12 +71,8 @@ type CommandInFlight =
 export class Connection {
   options: ConnectionOptions;
   commandId: number;
-  commands: {
-    [commandId: number]: CommandInFlight;
-  };
-  eventListeners: {
-    [eventType: string]: ConnectionEventListener[];
-  };
+  commands: Map<number, CommandInFlight>;
+  eventListeners: Map<string, ConnectionEventListener[]>;
   closeRequested: boolean;
   // @ts-ignore: incorrectly claiming it's not set in constructor.
   socket: WebSocket;
@@ -89,9 +85,9 @@ export class Connection {
     // id if next command to send
     this.commandId = 1;
     // info about active subscriptions and commands in flight
-    this.commands = {};
+    this.commands = new Map();
     // map of event listeners
-    this.eventListeners = {};
+    this.eventListeners = new Map();
     // true if a close is requested by the user
     this.closeRequested = false;
 
@@ -109,11 +105,9 @@ export class Connection {
 
       // reset to original state
       this.commandId = 1;
-      this.commands = {};
+      this.commands = new Map();
 
-      Object.keys(oldCommands).forEach(id => {
-        const info: CommandInFlight = oldCommands[id];
-
+      oldCommands.forEach(info => {
         if ("subscribe" in info) {
           info.subscribe().then(unsub => {
             info.unsubscribe = unsub;
@@ -130,17 +124,18 @@ export class Connection {
   }
 
   addEventListener(eventType: Events, callback: ConnectionEventListener) {
-    let listeners = this.eventListeners[eventType];
+    let listeners = this.eventListeners.get(eventType);
 
     if (!listeners) {
-      listeners = this.eventListeners[eventType] = [];
+      listeners = [];
+      this.eventListeners.set(eventType, listeners);
     }
 
     listeners.push(callback);
   }
 
   removeEventListener(eventType: Events, callback: ConnectionEventListener) {
-    const listeners = this.eventListeners[eventType];
+    const listeners = this.eventListeners.get(eventType);
 
     if (!listeners) {
       return;
@@ -154,7 +149,7 @@ export class Connection {
   }
 
   fireEvent(eventType: Events, eventData?: any) {
-    (this.eventListeners[eventType] || []).forEach(callback =>
+    (this.eventListeners.get(eventType) || []).forEach(callback =>
       callback(this, eventData)
     );
   }
@@ -198,7 +193,7 @@ export class Connection {
   sendMessagePromise<Result>(message: MessageBase): Promise<Result> {
     return new Promise((resolve, reject) => {
       const commandId = this._genCmdId();
-      this.commands[commandId] = { resolve, reject };
+      this.commands.set(commandId, { resolve, reject });
       this.sendMessage(message, commandId);
     });
   }
@@ -221,16 +216,17 @@ export class Connection {
     await new Promise((resolve, reject) => {
       // We store unsubscribe on info object. That way we can overwrite it in case
       // we get disconnected and we have to subscribe again.
-      info = this.commands[commandId] = {
+      info = {
         resolve,
         reject,
         callback,
         subscribe: () => this.subscribeMessage(callback, subscribeMessage),
         unsubscribe: async () => {
           await this.sendMessagePromise(messages.unsubscribeEvents(commandId));
-          delete this.commands[commandId];
+          this.commands.delete(commandId);
         }
       };
+      this.commands.set(commandId, info);
 
       try {
         this.sendMessage(subscribeMessage, commandId);
@@ -250,7 +246,7 @@ export class Connection {
       console.log("Received", message);
     }
 
-    const info = this.commands[message.id];
+    const info = this.commands.get(message.id);
 
     switch (message.type) {
       case "event":
@@ -274,11 +270,11 @@ export class Connection {
 
             // Don't remove subscriptions.
             if (!("subscribe" in info)) {
-              delete this.commands[message.id];
+              this.commands.delete(message.id);
             }
           } else {
             info.reject(message.error);
-            delete this.commands[message.id];
+            this.commands.delete(message.id);
           }
         }
         break;
@@ -286,7 +282,7 @@ export class Connection {
       case "pong":
         if (info) {
           info.resolve();
-          delete this.commands[message.id];
+          this.commands.delete(message.id);
         } else {
           console.warn(`Received unknown pong response ${message.id}`);
         }
@@ -301,9 +297,7 @@ export class Connection {
 
   private _handleClose(ev: CloseEvent) {
     // Reject in-flight sendMessagePromise requests
-    Object.keys(this.commands).forEach(id => {
-      const info: CommandInFlight = this.commands[id];
-
+    this.commands.forEach(info => {
       // We don't cancel subscribeEvents commands in flight
       // as we will be able to recover them.
       if (!("subscribe" in info)) {
@@ -318,7 +312,7 @@ export class Connection {
     this.fireEvent("disconnected");
 
     // Disable setupRetry, we control it here with auto-backoff
-    const options = Object.assign({}, this.options, { setupRetry: 0 });
+    const options = { ...this.options, setupRetry: 0 };
 
     const reconnect = (tries: number) => {
       setTimeout(async () => {
