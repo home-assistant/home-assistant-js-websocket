@@ -60,7 +60,9 @@ export const getCollection = <State>(
       const unsub = store.subscribe(subscriber);
 
       if (store.state !== undefined) {
-        subscriber(store.state);
+        // Don't call it right away so that caller has time
+        // to initialize all the things.
+        setTimeout(() => subscriber(store.state!), 0);
       }
 
       return () => {
