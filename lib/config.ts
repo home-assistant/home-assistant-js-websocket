@@ -23,10 +23,16 @@ function processComponentLoaded(
 
 const fetchConfig = (conn: Connection) => getConfig(conn);
 const subscribeUpdates = (conn: Connection, store: Store<HassConfig>) =>
-  conn.subscribeEvents(
-    store.action(processComponentLoaded),
-    "component_loaded"
-  );
+  Promise.all([
+    conn.subscribeEvents(
+      store.action(processComponentLoaded),
+      "component_loaded"
+    ),
+    conn.subscribeEvents(
+      () => fetchConfig(conn).then(config => store.setState(config, true)),
+      "core_config_updated"
+    )
+  ]).then(unsubs => () => unsubs.forEach(unsub => unsub()));
 
 const configColl = (conn: Connection) =>
   getCollection(conn, "_cnf", fetchConfig, subscribeUpdates);
