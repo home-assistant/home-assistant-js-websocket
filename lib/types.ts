@@ -55,6 +55,7 @@ export type HassConfig = {
   config_dir: string;
   whitelist_external_dirs: string[];
   version: string;
+  config_source: string;
 };
 
 export type HassEntityBase = {
