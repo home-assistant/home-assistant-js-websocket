@@ -108,7 +108,7 @@ async function tokenRequest(
     // Ensure that the hassUrl is hosted on https.
     const a = document.createElement("a");
     a.href = hassUrl;
-    if (a.protocol !== "http:" && a.hostname !== "localhost") {
+    if (a.protocol === "http:" && a.hostname !== "localhost") {
       throw ERR_INVALID_HTTPS_TO_HTTP;
     }
   }
@@ -223,15 +223,9 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
 
   // Use auth code if it was passed in
   if (!data && options.authCode && hassUrl && clientId) {
-    try {
-      data = await fetchToken(hassUrl, clientId, options.authCode);
-      if (options.saveTokens) {
-        options.saveTokens(data);
-      }
-    } catch (err) {
-      // Do we want to tell user we were unable to fetch tokens?
-      // For now we don't do anything, having rest of code pick it up.
-      console.log("Unable to fetch access token", err);
+    data = await fetchToken(hassUrl, clientId, options.authCode);
+    if (options.saveTokens) {
+      options.saveTokens(data);
     }
   }
 
@@ -243,15 +237,9 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
     if ("auth_callback" in query) {
       // Restore state
       const state = decodeOAuthState(query.state);
-      try {
-        data = await fetchToken(state.hassUrl, state.clientId, query.code);
-        if (options.saveTokens) {
-          options.saveTokens(data);
-        }
-      } catch (err) {
-        // Do we want to tell user we were unable to fetch tokens?
-        // For now we don't do anything, having rest of code pick it up.
-        console.log("Unable to fetch access token", err);
+      data = await fetchToken(state.hassUrl, state.clientId, query.code);
+      if (options.saveTokens) {
+        options.saveTokens(data);
       }
     }
   }
