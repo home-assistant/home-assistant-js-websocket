@@ -1,5 +1,9 @@
 import { parseQuery } from "./util";
-import { ERR_HASS_HOST_REQUIRED, ERR_INVALID_AUTH } from "./errors";
+import {
+  ERR_HASS_HOST_REQUIRED,
+  ERR_INVALID_AUTH,
+  ERR_INVALID_HTTPS_TO_HTTP
+} from "./errors";
 
 export type AuthData = {
   hassUrl: string;
@@ -96,6 +100,19 @@ async function tokenRequest(
   clientId: string,
   data: AuthorizationCodeRequest | RefreshTokenRequest
 ) {
+  // Browsers don't allow fetching tokens from https -> http.
+  // Throw an error because it's a pain to debug this.
+  // Guard against not working in node.
+  const l = typeof location !== "undefined" && location;
+  if (l && l.protocol === "https:") {
+    // Ensure that the hassUrl is hosted on https.
+    const a = document.createElement("a");
+    a.href = hassUrl;
+    if (a.protocol !== "http:" && a.hostname !== "localhost") {
+      throw ERR_INVALID_HTTPS_TO_HTTP;
+    }
+  }
+
   const formData = new FormData();
   formData.append("client_id", clientId);
   Object.keys(data).forEach(key => {

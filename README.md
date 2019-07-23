@@ -85,11 +85,12 @@ import {
 HAWS.ERR_HASS_HOST_REQUIRED;
 ```
 
-| Error                    | Description                                                                                                                                                    |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ERR_HASS_HOST_REQUIRED` | You need to pass in `hassUrl` to `getAuth` to continue getting auth. This option is not needed when the user is redirected back after successfully logging in. |
-| `ERR_INVALID_AUTH`       | This error will be raised if the url contains an authorization code that is no longer valid.                                                                   |
-| Other errors             | Unknown error!                                                                                                                                                 |
+| Error                       | Description                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ERR_HASS_HOST_REQUIRED`    | You need to pass in `hassUrl` to `getAuth` to continue getting auth. This option is not needed when the user is redirected back after successfully logging in.                                                                                                                                                                                          |
+| `ERR_INVALID_AUTH`          | This error will be raised if the url contains an authorization code that is no longer valid.                                                                                                                                                                                                                                                            |
+| `ERR_INVALID_HTTPS_TO_HTTP` | This error is raised if your code is being run from a secure context (hosted via https) and you're trying to fetch tokens from a Home Assistant instance via a non secure context (http). This is called [mixed active content](https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content#Mixed_active_content) and the browser forbids this. |
+| Other errors                | Unknown error!                                                                                                                                                                                                                                                                                                                                          |
 
 ### `createConnection()`
 
@@ -330,6 +331,16 @@ Fetches a new access token from the server.
 Makes a request to the server to revoke the refresh and all related access token. Returns a promise that resolves when the request is finished.
 
 **Note:** If you support storing and retrieving tokens, the returned auth object might load tokens from your cache that are no longer valid. If this happens, the promise returned by `createConnection` will reject with `ERR_INVALID_AUTH`. If that happens, clear your tokens with `storeTokens(null`) and call `getAuth` again. This will pick up the auth flow without relying on stored tokens.
+
+## Error Reference
+
+| Error constant            | Error number |
+| ------------------------- | ------------ |
+| ERR_CANNOT_CONNECT        | 1            |
+| ERR_INVALID_AUTH          | 2            |
+| ERR_CONNECTION_LOST       | 3            |
+| ERR_HASS_HOST_REQUIRED    | 4            |
+| ERR_INVALID_HTTPS_TO_HTTP | 5            |
 
 ## Other methods
 
