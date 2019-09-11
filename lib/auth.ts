@@ -7,7 +7,7 @@ import {
 
 export type AuthData = {
   hassUrl: string;
-  clientId: string;
+  clientId: string | null;
   expires: number;
   refresh_token: string;
   access_token: string;
@@ -19,7 +19,7 @@ export type LoadTokensFunc = () => Promise<AuthData | null | undefined>;
 
 export type getAuthOptions = {
   hassUrl?: string;
-  clientId?: string;
+  clientId?: string | null;
   redirectUrl?: string;
   authCode?: string;
   saveTokens?: SaveTokensFunc;
@@ -36,7 +36,7 @@ type QueryCallbackData =
 
 type OAuthState = {
   hassUrl: string;
-  clientId: string;
+  clientId: string | null;
 };
 
 type AuthorizationCodeRequest = {
@@ -64,13 +64,17 @@ function genRedirectUrl() {
 
 function genAuthorizeUrl(
   hassUrl: string,
-  clientId: string,
+  clientId: string | null,
   redirectUrl: string,
   state: string
 ) {
-  let authorizeUrl = `${hassUrl}/auth/authorize?response_type=code&client_id=${encodeURIComponent(
-    clientId
-  )}&redirect_uri=${encodeURIComponent(redirectUrl)}`;
+  let authorizeUrl = `${hassUrl}/auth/authorize?response_type=code&redirect_uri=${encodeURIComponent(
+    redirectUrl
+  )}`;
+
+  if (clientId !== null) {
+    authorizeUrl += `&client_id=${encodeURIComponent(clientId)}`;
+  }
 
   if (state) {
     authorizeUrl += `&state=${encodeURIComponent(state)}`;
@@ -80,7 +84,7 @@ function genAuthorizeUrl(
 
 function redirectAuthorize(
   hassUrl: string,
-  clientId: string,
+  clientId: string | null,
   redirectUrl: string,
   state: string
 ) {
@@ -97,7 +101,7 @@ function redirectAuthorize(
 
 async function tokenRequest(
   hassUrl: string,
-  clientId: string,
+  clientId: string | null,
   data: AuthorizationCodeRequest | RefreshTokenRequest
 ) {
   // Browsers don't allow fetching tokens from https -> http.
@@ -114,7 +118,9 @@ async function tokenRequest(
   }
 
   const formData = new FormData();
-  formData.append("client_id", clientId);
+  if (clientId !== null) {
+    formData.append("client_id", clientId);
+  }
   Object.keys(data).forEach(key => {
     formData.append(key, data[key]);
   });
@@ -139,7 +145,7 @@ async function tokenRequest(
   return tokens;
 }
 
-function fetchToken(hassUrl: string, clientId: string, code: string) {
+function fetchToken(hassUrl: string, clientId: string | null, code: string) {
   return tokenRequest(hassUrl, clientId, {
     code,
     grant_type: "authorization_code"
@@ -219,10 +225,11 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
   if (hassUrl && hassUrl[hassUrl.length - 1] === "/") {
     hassUrl = hassUrl.substr(0, hassUrl.length - 1);
   }
-  const clientId = options.clientId || genClientId();
+  const clientId =
+    options.clientId !== undefined ? options.clientId : genClientId();
 
   // Use auth code if it was passed in
-  if (!data && options.authCode && hassUrl && clientId) {
+  if (!data && options.authCode && hassUrl) {
     data = await fetchToken(hassUrl, clientId, options.authCode);
     if (options.saveTokens) {
       options.saveTokens(data);
