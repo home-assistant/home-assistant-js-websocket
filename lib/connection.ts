@@ -5,6 +5,7 @@
 import * as messages from "./messages";
 import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./errors";
 import { ConnectionOptions, HassEvent, MessageBase } from "./types";
+import { HaWebSocket } from "./socket";
 
 const DEBUG = false;
 
@@ -75,9 +76,9 @@ export class Connection {
   eventListeners: Map<string, ConnectionEventListener[]>;
   closeRequested: boolean;
   // @ts-ignore: incorrectly claiming it's not set in constructor.
-  socket: WebSocket;
+  socket: HaWebSocket;
 
-  constructor(socket: WebSocket, options: ConnectionOptions) {
+  constructor(socket: HaWebSocket, options: ConnectionOptions) {
     // connection options
     //  - setupRetry: amount of ms to retry when unable to connect on initial setup
     //  - createSocket: create a new Socket connection
@@ -94,7 +95,11 @@ export class Connection {
     this.setSocket(socket);
   }
 
-  setSocket(socket: WebSocket) {
+  get haVersion() {
+    return this.socket.haVersion;
+  }
+
+  setSocket(socket: HaWebSocket) {
     const oldSocket = this.socket;
     this.socket = socket;
     socket.addEventListener("message", ev => this._handleMessage(ev));
@@ -254,9 +259,7 @@ export class Connection {
           (info as SubscribeEventCommmandInFlight<any>).callback(message.event);
         } else {
           console.warn(
-            `Received event for unknown subscription ${
-              message.id
-            }. Unsubscribing.`
+            `Received event for unknown subscription ${message.id}. Unsubscribing.`
           );
           this.sendMessagePromise(messages.unsubscribeEvents(message.id));
         }

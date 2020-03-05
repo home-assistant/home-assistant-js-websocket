@@ -7,7 +7,7 @@ export type UnsubscribeFunc = () => void;
 export type ConnectionOptions = {
   setupRetry: number;
   auth?: Auth;
-  createSocket: (options: ConnectionOptions) => Promise<WebSocket>;
+  createSocket: (options: ConnectionOptions) => Promise<HaWebSocket>;
 };
 
 export type MessageBase = {

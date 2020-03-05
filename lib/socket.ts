@@ -15,7 +15,11 @@ const MSG_TYPE_AUTH_REQUIRED = "auth_required";
 const MSG_TYPE_AUTH_INVALID = "auth_invalid";
 const MSG_TYPE_AUTH_OK = "auth_ok";
 
-export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
+export interface HaWebSocket extends WebSocket {
+  haVersion: string;
+}
+
+export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
   if (!options.auth) {
     throw ERR_HASS_HOST_REQUIRED;
   }
@@ -43,14 +47,14 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
 
   function connect(
     triesLeft: number,
-    promResolve: (socket: WebSocket) => void,
+    promResolve: (socket: HaWebSocket) => void,
     promReject: (err: Error) => void
   ) {
     if (DEBUG) {
       console.log("[Auth Phase] New connection", url);
     }
 
-    const socket = new WebSocket(url);
+    const socket = new WebSocket(url) as HaWebSocket;
 
     // If invalid auth, we will not try to reconnect.
     let invalidAuth = false;
@@ -72,15 +76,7 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
 
       const newTries = triesLeft === -1 ? -1 : triesLeft - 1;
       // Try again in a second
-      setTimeout(
-        () =>
-          connect(
-            newTries,
-            promResolve,
-            promReject
-          ),
-        1000
-      );
+      setTimeout(() => connect(newTries, promResolve, promReject), 1000);
     };
 
     // Auth is mandatory, so we can send the auth message right away.
@@ -114,12 +110,13 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
           socket.removeEventListener("message", handleMessage);
           socket.removeEventListener("close", closeMessage);
           socket.removeEventListener("error", closeMessage);
+          socket.haVersion = message.ha_version;
           promResolve(socket);
           break;
 
         default:
           if (DEBUG) {
-            // We already send this message when socket opens
+            // We already send response to this message when socket opens
             if (message.type !== MSG_TYPE_AUTH_REQUIRED) {
               console.warn("[Auth phase] Unhandled message", message);
             }
@@ -134,10 +131,6 @@ export function createSocket(options: ConnectionOptions): Promise<WebSocket> {
   }
 
   return new Promise((resolve, reject) =>
-    connect(
-      options.setupRetry,
-      resolve,
-      reject
-    )
+    connect(options.setupRetry, resolve, reject)
   );
 }

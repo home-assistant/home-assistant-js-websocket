@@ -288,6 +288,14 @@ Collections are useful to define if data is needed for initial data load. You ca
 
 A connection object is obtained by calling [`createConnection()`](#createconnection).
 
+##### `conn.haVersion`
+
+String containing the current version of Home Assistant. Examples:
+
+- `0.107.0`
+- `0.107.0b1`
+- `0.107.0.dev0`
+
 ##### `conn.subscribeEvents(eventCallback[, eventType])`
 
 Subscribe to all or specific events on the Home Assistant bus. Calls `eventCallback` for each event that gets received.
