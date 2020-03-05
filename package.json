@@ -15,7 +15,7 @@
   "scripts": {
     "watch": "microbundle watch",
     "build": "microbundle",
-    "test": "mocha test/*.spec.ts",
+    "test": "mocha",
     "prepublishOnly": "rm -rf dist && microbundle && npm test"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
