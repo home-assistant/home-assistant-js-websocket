@@ -15,20 +15,20 @@
   "scripts": {
     "watch": "microbundle watch",
     "build": "microbundle",
-    "test": "mocha test/*.spec.ts",
+    "test": "mocha",
     "prepublishOnly": "rm -rf dist && microbundle && npm test"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@types/mocha": "^5.2.7",
-    "husky": "^3.0.1",
-    "lint-staged": "^9.2.0",
+    "@types/mocha": "^7.0.2",
+    "husky": "^4.2.3",
+    "lint-staged": "^10.0.8",
     "microbundle": "^0.11.0",
-    "mocha": "^6.2.0",
-    "prettier": "^1.18.2",
-    "ts-node": "^8.3.0",
-    "typescript": "^3.5.3"
+    "mocha": "^7.1.0",
+    "prettier": "^1.19.1",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.8.3"
   },
   "files": [
     "dist"
@@ -41,8 +41,7 @@
   },
   "lint-staged": {
     "*.{ts,js,json,css,md}": [
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ]
   }
 }

@@ -1,3 +1,0 @@
--r ts-node/register
---timeout 100
---watch-extensions ts
