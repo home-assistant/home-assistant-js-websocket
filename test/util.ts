@@ -1,4 +1,5 @@
 import { Connection } from "../lib/connection";
+import { HaWebSocket } from "../lib/socket";
 
 class MockWebSocket {
   addEventListener(eventType: string, callback: () => {}) {}
@@ -12,7 +13,7 @@ export class MockConnection extends Connection {
   private _mockResponses: {};
 
   constructor() {
-    super(new MockWebSocket() as WebSocket, {} as any);
+    super(new MockWebSocket() as HaWebSocket, {} as any);
     this._mockListeners = {};
     this._mockResponses = {};
   }
