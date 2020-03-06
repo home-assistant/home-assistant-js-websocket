@@ -398,11 +398,11 @@ const WebSocket = require("ws");
 
 createConnection({
   createSocket() {
-    WebSocket;
     // Open connection
     const ws = new WebSocket("ws://localhost:8123");
-    // Functions to handle authentication with Home Assistant
-    // Implement yourself :)
+
+    // TODO: Handle authentication with Home Assistant yourself :)
+
     return ws;
   }
 });
