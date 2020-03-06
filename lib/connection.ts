@@ -2,10 +2,10 @@
  * Connection that wraps a socket and provides an interface to interact with
  * the Home Assistant websocket API.
  */
-import * as messages from "./messages";
-import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./errors";
-import { ConnectionOptions, HassEvent, MessageBase } from "./types";
-import { HaWebSocket } from "./socket";
+import * as messages from "./messages.js";
+import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./errors.js";
+import { ConnectionOptions, HassEvent, MessageBase } from "./types.js";
+import { HaWebSocket } from "./socket.js";
 
 const DEBUG = false;
 

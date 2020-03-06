@@ -1,6 +1,6 @@
 import * as assert from "assert";
 
-import { subscribeConfig } from "../lib/config";
+import { subscribeConfig } from "../dist/config";
 import { MockConnection, AwaitableEvent } from "./util";
 
 const MOCK_CONFIG = {

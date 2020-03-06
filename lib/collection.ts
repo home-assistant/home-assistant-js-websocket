@@ -1,6 +1,6 @@
-import { Store, createStore } from "./store";
-import { Connection } from "./connection";
-import { UnsubscribeFunc } from "./types";
+import { Store, createStore } from "./store.js";
+import { Connection } from "./connection.js";
+import { UnsubscribeFunc } from "./types.js";
 
 export type Collection<State> = {
   state: State;

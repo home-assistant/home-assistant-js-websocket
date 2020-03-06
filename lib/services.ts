@@ -1,8 +1,8 @@
-import { getCollection } from "./collection";
-import { HassServices, HassDomainServices, UnsubscribeFunc } from "./types";
-import { Connection } from "./connection";
-import { Store } from "./store";
-import { getServices } from "./commands";
+import { getCollection } from "./collection.js";
+import { HassServices, HassDomainServices, UnsubscribeFunc } from "./types.js";
+import { Connection } from "./connection.js";
+import { Store } from "./store.js";
+import { getServices } from "./commands.js";
 
 type ServiceRegisteredEvent = {
   data: {

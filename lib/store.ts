@@ -1,4 +1,4 @@
-import { UnsubscribeFunc } from "./types";
+import { UnsubscribeFunc } from "./types.js";
 
 // (c) Jason Miller
 // Unistore - MIT license
@@ -34,7 +34,7 @@ export const createStore = <State>(state?: State): Store<State> => {
   }
 
   function setState(update: Partial<State>, overwrite: boolean): void {
-    state = overwrite ? (update as State) : Object.assign({}, state, update);
+    state = overwrite ? (update as State) : { ...state!, ...update };
     let currentListeners = listeners;
     for (let i = 0; i < currentListeners.length; i++) {
       currentListeners[i](state);

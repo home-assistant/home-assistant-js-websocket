@@ -1,9 +1,9 @@
-import { parseQuery } from "./util";
+import { parseQuery } from "./util.js";
 import {
   ERR_HASS_HOST_REQUIRED,
   ERR_INVALID_AUTH,
   ERR_INVALID_HTTPS_TO_HTTP
-} from "./errors";
+} from "./errors.js";
 
 export type AuthData = {
   hassUrl: string;
