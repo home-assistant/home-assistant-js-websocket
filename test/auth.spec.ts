@@ -7,7 +7,7 @@ describe("Auth", () => {
     const auth = new Auth({
       hassUrl: "",
       clientId: "",
-      refresh_token: "",
+      refresh_token: "fake token",
       access_token: "",
       expires_in: 3000,
       expires: Date.now() - 1000
@@ -18,7 +18,7 @@ describe("Auth", () => {
     const auth = new Auth({
       hassUrl: "",
       clientId: "",
-      refresh_token: "",
+      refresh_token: "fake token",
       access_token: "",
       expires_in: 3000,
       expires: Date.now() + 1000
