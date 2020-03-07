@@ -1,4 +1,4 @@
-import { Error } from "./types";
+import { Error } from "./types.js";
 
 export function auth(accessToken: string) {
   return {

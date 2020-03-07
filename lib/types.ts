@@ -1,5 +1,5 @@
-import { Auth } from "./auth";
-import { HaWebSocket } from "./socket";
+import { Auth } from "./auth.js";
+import { HaWebSocket } from "./socket.js";
 
 export type Error = 1 | 2 | 3 | 4;
 

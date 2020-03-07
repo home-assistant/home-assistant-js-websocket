@@ -13,7 +13,7 @@
         createConnection,
         subscribeEntities,
         ERR_HASS_HOST_REQUIRED
-      } from "./dist/haws.es.js";
+      } from "./dist/index.js";
 
       (async () => {
         let auth;
@@ -36,11 +36,18 @@
         subscribeEntities(connection, entities =>
           renderEntities(connection, entities)
         );
+        // Clear url if we have been able to establish a connection
+        if (location.search.includes("auth_callback=1")) {
+          history.replaceState(null, "", location.pathname);
+        }
 
         // To play from the console
         window.auth = auth;
         window.connection = connection;
-        getUser(connection).then(user => console.log("Logged in as", user));
+        getUser(connection).then(user => {
+          console.log("Logged in as", user);
+          window.user = user;
+        });
       })();
 
       function renderEntities(connection, entities) {

@@ -5,9 +5,9 @@ import {
   ERR_INVALID_AUTH,
   ERR_CANNOT_CONNECT,
   ERR_HASS_HOST_REQUIRED
-} from "./errors";
-import { ConnectionOptions, Error } from "./types";
-import * as messages from "./messages";
+} from "./errors.js";
+import { ConnectionOptions, Error } from "./types.js";
+import * as messages from "./messages.js";
 
 const DEBUG = false;
 

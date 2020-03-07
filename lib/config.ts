@@ -1,8 +1,8 @@
-import { getCollection } from "./collection";
-import { HassConfig, UnsubscribeFunc } from "./types";
-import { Connection } from "./connection";
-import { Store } from "./store";
-import { getConfig } from "./commands";
+import { getCollection } from "./collection.js";
+import { HassConfig, UnsubscribeFunc } from "./types.js";
+import { Connection } from "./connection.js";
+import { Store } from "./store.js";
+import { getConfig } from "./commands.js";
 
 type ComponentLoadedEvent = {
   data: {

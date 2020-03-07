@@ -1,6 +1,6 @@
 import * as assert from "assert";
 
-import { subscribeEntities } from "../lib/entities";
+import { subscribeEntities } from "../dist/entities";
 import { MockConnection, AwaitableEvent } from "./util";
 
 const MOCK_LIGHT = {

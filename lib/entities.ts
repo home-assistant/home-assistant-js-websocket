@@ -1,8 +1,8 @@
-import { getCollection } from "./collection";
-import { HassEntities, StateChangedEvent, UnsubscribeFunc } from "./types";
-import { Connection } from "./connection";
-import { Store } from "./store";
-import { getStates } from "./commands";
+import { getCollection } from "./collection.js";
+import { HassEntities, StateChangedEvent, UnsubscribeFunc } from "./types.js";
+import { Connection } from "./connection.js";
+import { Store } from "./store.js";
+import { getStates } from "./commands.js";
 
 function processEvent(store: Store<HassEntities>, event: StateChangedEvent) {
   const state = store.state;
@@ -12,7 +12,7 @@ function processEvent(store: Store<HassEntities>, event: StateChangedEvent) {
   if (new_state) {
     store.setState({ [new_state.entity_id]: new_state });
   } else {
-    const newEntities = Object.assign({}, state);
+    const newEntities = { ...state };
     delete newEntities[entity_id];
     store.setState(newEntities, true);
   }

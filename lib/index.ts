@@ -1,28 +1,25 @@
-import { ConnectionOptions } from "./types";
-import { createSocket } from "./socket";
-import { Connection } from "./connection";
+// JS extensions in imports allow tsc output to be consumed by browsers.
+import { ConnectionOptions } from "./types.js";
+import { createSocket } from "./socket.js";
+import { Connection } from "./connection.js";
 
-export * from "./auth";
-export * from "./collection";
-export * from "./connection";
-export * from "./config";
-export * from "./services";
-export * from "./entities";
-export * from "./errors";
-export * from "./types";
-export * from "./commands";
-
-const defaultConnectionOptions: ConnectionOptions = {
-  setupRetry: 0,
-  createSocket
-};
+export * from "./auth.js";
+export * from "./collection.js";
+export * from "./connection.js";
+export * from "./config.js";
+export * from "./services.js";
+export * from "./entities.js";
+export * from "./errors.js";
+export * from "./types.js";
+export * from "./commands.js";
 
 export async function createConnection(options?: Partial<ConnectionOptions>) {
-  const connOptions: ConnectionOptions = Object.assign(
-    {},
-    defaultConnectionOptions,
-    options
-  );
+  const connOptions: ConnectionOptions = {
+    setupRetry: 0,
+    createSocket,
+    ...options
+  };
+
   const socket = await connOptions.createSocket(connOptions);
   const conn = new Connection(socket, connOptions);
   return conn;

@@ -1,6 +1,6 @@
-import { Connection } from "./connection";
-import * as messages from "./messages";
-import { HassEntity, HassServices, HassConfig, HassUser } from "./types";
+import { Connection } from "./connection.js";
+import * as messages from "./messages.js";
+import { HassEntity, HassServices, HassConfig, HassUser } from "./types.js";
 
 export const getStates = (connection: Connection) =>
   connection.sendMessagePromise<HassEntity[]>(messages.states());

@@ -1,6 +1,6 @@
 import * as assert from "assert";
 
-import { Auth } from "../lib/auth";
+import { Auth } from "../dist/auth";
 
 describe("Auth", () => {
   it("should indicate correctly when token expired", () => {
