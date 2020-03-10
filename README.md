@@ -373,16 +373,15 @@ You will need to create your own auth object if you want to use this library wit
 import {
   Auth,
   createConnection,
-  subscribeEntities
+  subscribeEntities,
+  createLongLivedTokenAuth
 } from "home-assistant-js-websocket";
 
 (async () => {
-  let auth = new Auth({
-    access_token: "YOUR ACCESS OTKEN",
-    // Set expires to very far in the future
-    expires: new Date(new Date().getTime() + 1e11),
-    hassUrl: "http://localhost:8123"
-  });
+  const auth = createLongLivedTokenAuth(
+    "http://localhost:8123",
+    "YOUR ACCESS TOKEN"
+  );
 
   const connection = await createConnection({ auth });
   subscribeEntities(connection, entities => console.log(entities));
@@ -391,7 +390,10 @@ import {
 
 ## Using this in NodeJS
 
-NodeJS does not have a WebSocket client built-in, but there are some good ones on NPM. We recommend `ws`. You will need to create your own version of `createSocket` and pass that to the constructor.
+NodeJS does not have a WebSocket client built-in, but there are some good ones on NPM. We recommend ws. You will need to create your own version of createSocket and pass that to the constructor.
+Look at https://github.com/keesschollaart81/vscode-home-assistant/blob/master/src/language-service/src/home-assistant/socket.ts as an example using ws.
+
+If using TypeScript, you will need to add `"skipLibCheck": true` to your tsconfig.json to avoid typing errors.
 
 ```js
 const WebSocket = require("ws");

@@ -11,9 +11,9 @@ import * as messages from "./messages.js";
 
 const DEBUG = false;
 
-const MSG_TYPE_AUTH_REQUIRED = "auth_required";
-const MSG_TYPE_AUTH_INVALID = "auth_invalid";
-const MSG_TYPE_AUTH_OK = "auth_ok";
+export const MSG_TYPE_AUTH_REQUIRED = "auth_required";
+export const MSG_TYPE_AUTH_INVALID = "auth_invalid";
+export const MSG_TYPE_AUTH_OK = "auth_ok";
 
 export interface HaWebSocket extends WebSocket {
   haVersion: string;

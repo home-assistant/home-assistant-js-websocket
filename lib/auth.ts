@@ -186,6 +186,8 @@ export class Auth {
    * Refresh the access token.
    */
   async refreshAccessToken() {
+    if (!this.data.refresh_token) throw new Error("No refresh_token");
+
     const data = await tokenRequest(this.data.hassUrl, this.data.clientId, {
       grant_type: "refresh_token",
       refresh_token: this.data.refresh_token
@@ -200,6 +202,8 @@ export class Auth {
    * Revoke the refresh & access tokens.
    */
   async revoke() {
+    if (!this.data.refresh_token) throw new Error("No refresh_token to revoke");
+
     const formData = new FormData();
     formData.append("action", "revoke");
     formData.append("token", this.data.refresh_token);
@@ -215,6 +219,20 @@ export class Auth {
       this._saveTokens(null);
     }
   }
+}
+
+export function createLongLivedTokenAuth(
+  hassUrl: string,
+  access_token: string
+) {
+  return new Auth({
+    hassUrl,
+    clientId: null,
+    expires: Date.now() + 1e11,
+    refresh_token: "",
+    access_token,
+    expires_in: 1e11
+  });
 }
 
 export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
