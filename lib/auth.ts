@@ -169,17 +169,6 @@ export class Auth {
     this._saveTokens = saveTokens;
   }
 
-  static createLongLived(hassUrl: string, access_token: string) {
-    return new Auth({
-      hassUrl,
-      clientId: null,
-      expires: Date.now() + 1e11,
-      refresh_token: "",
-      access_token,
-      expires_in: 1e11
-    });
-  }
-
   get wsUrl() {
     // Convert from http:// -> ws://, https:// -> wss://
     return `ws${this.data.hassUrl.substr(4)}/api/websocket`;
@@ -190,7 +179,7 @@ export class Auth {
   }
 
   get expired() {
-    return !!this.data.refresh_token && Date.now() > this.data.expires;
+    return Date.now() > this.data.expires;
   }
 
   /**
@@ -230,6 +219,20 @@ export class Auth {
       this._saveTokens(null);
     }
   }
+}
+
+export function createLongLivedTokenAuth(
+  hassUrl: string,
+  access_token: string
+) {
+  return new Auth({
+    hassUrl,
+    clientId: null,
+    expires: Date.now() + 1e11,
+    refresh_token: "",
+    access_token,
+    expires_in: 1e11
+  });
 }
 
 export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {

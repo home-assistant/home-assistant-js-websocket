@@ -373,11 +373,12 @@ You will need to create your own auth object if you want to use this library wit
 import {
   Auth,
   createConnection,
-  subscribeEntities
+  subscribeEntities,
+  createLongLivedTokenAuth
 } from "home-assistant-js-websocket";
 
 (async () => {
-  const auth = Auth.createLongLived(
+  const auth = createLongLivedTokenAuth(
     "http://localhost:8123",
     "YOUR ACCESS TOKEN"
   );
