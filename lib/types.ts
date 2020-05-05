@@ -58,6 +58,8 @@ export type HassConfig = {
   version: string;
   config_source: string;
   safe_mode: boolean;
+  external_url: string | null;
+  internal_url: string | null;
 };
 
 export type HassEntityBase = {
