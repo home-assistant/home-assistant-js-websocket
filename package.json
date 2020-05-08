@@ -8,10 +8,6 @@
   "types": "dist/index.d.ts",
   "main": "dist/haws.umd.js",
   "module": "dist/index.js",
-  "exports": {
-    "import": "dist/index.js",
-    "default": "dist/haws.umd.js"
-  },
   "repository": {
     "url": "https://github.com/home-assistant/home-assistant-js-websocket.git",
     "type": "git"
