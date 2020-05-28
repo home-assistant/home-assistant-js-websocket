@@ -41,3 +41,9 @@ export const subscribeConfig = (
   conn: Connection,
   onChange: (state: HassConfig) => void
 ): UnsubscribeFunc => configColl(conn).subscribe(onChange);
+
+export const STATE_NOT_RUNNING = "NOT_RUNNING";
+export const STATE_STARTING = "STARTING";
+export const STATE_RUNNING = "RUNNING";
+export const STATE_STOPPING = "STOPPING";
+export const STATE_FINAL_WRITE = "FINAL_WRITE";
