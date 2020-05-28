@@ -70,8 +70,7 @@ export const createStore = <State>(state?: State): Store<State> => {
         // @ts-ignore
         let ret = action.apply(this, args);
         if (ret != null) {
-          if (ret.then) return ret.then(apply);
-          return apply(ret);
+          return ret instanceof Promise ? ret.then(apply) : apply(ret);
         }
       };
     },
