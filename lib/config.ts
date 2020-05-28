@@ -17,7 +17,7 @@ function processComponentLoaded(
   if (state === undefined) return null;
 
   return {
-    components: state.components.concat(event.data.component)
+    components: state.components.concat(event.data.component),
   };
 }
 
@@ -29,10 +29,10 @@ const subscribeUpdates = (conn: Connection, store: Store<HassConfig>) =>
       "component_loaded"
     ),
     conn.subscribeEvents(
-      () => fetchConfig(conn).then(config => store.setState(config, true)),
+      () => fetchConfig(conn).then((config) => store.setState(config, true)),
       "core_config_updated"
-    )
-  ]).then(unsubs => () => unsubs.forEach(unsub => unsub()));
+    ),
+  ]).then((unsubs) => () => unsubs.forEach((unsub) => unsub()));
 
 const configColl = (conn: Connection) =>
   getCollection(conn, "_cnf", fetchConfig, subscribeUpdates);
@@ -41,3 +41,9 @@ export const subscribeConfig = (
   conn: Connection,
   onChange: (state: HassConfig) => void
 ): UnsubscribeFunc => configColl(conn).subscribe(onChange);
+
+export const STATE_NOT_RUNNING = "NOT_RUNNING";
+export const STATE_STARTING = "STARTING";
+export const STATE_RUNNING = "RUNNING";
+export const STATE_STOPPING = "STOPPING";
+export const STATE_FINAL_WRITE = "FINAL_WRITE";
