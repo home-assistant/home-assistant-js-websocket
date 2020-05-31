@@ -1,15 +1,9 @@
-import { Auth } from "./auth.js";
-import { HaWebSocket } from "./socket.js";
+// This file has no imports on purpose
+// So it can easily be consumed by other TS projects
 
 export type Error = 1 | 2 | 3 | 4;
 
 export type UnsubscribeFunc = () => void;
-
-export type ConnectionOptions = {
-  setupRetry: number;
-  auth?: Auth;
-  createSocket: (options: ConnectionOptions) => Promise<HaWebSocket>;
-};
 
 export type MessageBase = {
   id?: number;
