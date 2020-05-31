@@ -27,7 +27,7 @@ function processServiceRegistered(
   const { domain, service } = event.data;
 
   const domainInfo = Object.assign({}, state[domain], {
-    [service]: { description: "", fields: {} }
+    [service]: { description: "", fields: {} },
   });
 
   return { [domain]: domainInfo };
@@ -45,7 +45,7 @@ function processServiceRemoved(
   if (!curDomainInfo || !(service in curDomainInfo)) return null;
 
   const domainInfo: HassDomainServices = {};
-  Object.keys(curDomainInfo).forEach(sKey => {
+  Object.keys(curDomainInfo).forEach((sKey) => {
     if (sKey !== service) domainInfo[sKey] = curDomainInfo[sKey];
   });
 
@@ -62,10 +62,10 @@ const subscribeUpdates = (conn: Connection, store: Store<HassServices>) =>
     conn.subscribeEvents<ServiceRemovedEvent>(
       store.action(processServiceRemoved),
       "service_removed"
-    )
-  ]).then(unsubs => () => unsubs.forEach(fn => fn()));
+    ),
+  ]).then((unsubs) => () => unsubs.forEach((fn) => fn()));
 
-const servicesColl = (conn: Connection) =>
+export const servicesColl = (conn: Connection) =>
   getCollection(conn, "_srv", fetchServices, subscribeUpdates);
 
 export const subscribeServices = (
