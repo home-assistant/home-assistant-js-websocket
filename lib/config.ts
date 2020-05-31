@@ -34,7 +34,7 @@ const subscribeUpdates = (conn: Connection, store: Store<HassConfig>) =>
     ),
   ]).then((unsubs) => () => unsubs.forEach((unsub) => unsub()));
 
-const configColl = (conn: Connection) =>
+export const configColl = (conn: Connection) =>
   getCollection(conn, "_cnf", fetchConfig, subscribeUpdates);
 
 export const subscribeConfig = (
