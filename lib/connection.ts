@@ -4,10 +4,17 @@
  */
 import * as messages from "./messages.js";
 import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./errors.js";
-import { ConnectionOptions, HassEvent, MessageBase } from "./types.js";
+import { HassEvent, MessageBase } from "./types.js";
 import { HaWebSocket } from "./socket.js";
+import type { Auth } from "./auth.js";
 
 const DEBUG = false;
+
+export type ConnectionOptions = {
+  setupRetry: number;
+  auth?: Auth;
+  createSocket: (options: ConnectionOptions) => Promise<HaWebSocket>;
+};
 
 export type ConnectionEventListener = (
   conn: Connection,
@@ -102,8 +109,8 @@ export class Connection {
   setSocket(socket: HaWebSocket) {
     const oldSocket = this.socket;
     this.socket = socket;
-    socket.addEventListener("message", ev => this._handleMessage(ev));
-    socket.addEventListener("close", ev => this._handleClose(ev));
+    socket.addEventListener("message", (ev) => this._handleMessage(ev));
+    socket.addEventListener("close", (ev) => this._handleClose(ev));
 
     if (oldSocket) {
       const oldCommands = this.commands;
@@ -112,9 +119,9 @@ export class Connection {
       this.commandId = 1;
       this.commands = new Map();
 
-      oldCommands.forEach(info => {
+      oldCommands.forEach((info) => {
         if ("subscribe" in info) {
-          info.subscribe().then(unsub => {
+          info.subscribe().then((unsub) => {
             info.unsubscribe = unsub;
             // We need to resolve this in case it wasn't resolved yet.
             // This allows us to subscribe while we're disconnected
@@ -154,7 +161,7 @@ export class Connection {
   }
 
   fireEvent(eventType: Events, eventData?: any) {
-    (this.eventListeners.get(eventType) || []).forEach(callback =>
+    (this.eventListeners.get(eventType) || []).forEach((callback) =>
       callback(this, eventData)
     );
   }
@@ -229,7 +236,7 @@ export class Connection {
         unsubscribe: async () => {
           await this.sendMessagePromise(messages.unsubscribeEvents(commandId));
           this.commands.delete(commandId);
-        }
+        },
       };
       this.commands.set(commandId, info);
 
@@ -300,7 +307,7 @@ export class Connection {
 
   private _handleClose(ev: CloseEvent) {
     // Reject in-flight sendMessagePromise requests
-    this.commands.forEach(info => {
+    this.commands.forEach((info) => {
       // We don't cancel subscribeEvents commands in flight
       // as we will be able to recover them.
       if (!("subscribe" in info)) {

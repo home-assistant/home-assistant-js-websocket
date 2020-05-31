@@ -4,9 +4,10 @@
 import {
   ERR_INVALID_AUTH,
   ERR_CANNOT_CONNECT,
-  ERR_HASS_HOST_REQUIRED
+  ERR_HASS_HOST_REQUIRED,
 } from "./errors.js";
-import { ConnectionOptions, Error } from "./types.js";
+import { Error } from "./types.js";
+import type { ConnectionOptions } from "./connection.js";
 import * as messages from "./messages.js";
 
 const DEBUG = false;

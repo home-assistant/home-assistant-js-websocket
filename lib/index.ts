@@ -1,7 +1,6 @@
 // JS extensions in imports allow tsc output to be consumed by browsers.
-import { ConnectionOptions } from "./types.js";
 import { createSocket } from "./socket.js";
-import { Connection } from "./connection.js";
+import { Connection, ConnectionOptions } from "./connection.js";
 
 export * from "./auth.js";
 export * from "./collection.js";
@@ -18,7 +17,7 @@ export async function createConnection(options?: Partial<ConnectionOptions>) {
   const connOptions: ConnectionOptions = {
     setupRetry: 0,
     createSocket,
-    ...options
+    ...options,
   };
 
   const socket = await connOptions.createSocket(connOptions);
