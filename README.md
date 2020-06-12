@@ -25,7 +25,7 @@ import {
   getAuth,
   createConnection,
   subscribeEntities,
-  ERR_HASS_HOST_REQUIRED
+  ERR_HASS_HOST_REQUIRED,
 } from "home-assistant-js-websocket";
 
 async function connect() {
@@ -47,7 +47,7 @@ async function connect() {
     }
   }
   const connection = await createConnection({ auth });
-  subscribeEntities(connection, ent => console.log(ent));
+  subscribeEntities(connection, (ent) => console.log(ent));
 }
 
 connect();
@@ -78,7 +78,7 @@ In certain instances `getAuth` will raise an error. These errors can be imported
 // When bundling your application
 import {
   ERR_HASS_HOST_REQUIRED,
-  ERR_INVALID_AUTH
+  ERR_INVALID_AUTH,
 } from "home-assistant-js-websocket";
 
 // When using the UMD build
@@ -118,13 +118,59 @@ You can import them into your code as follows:
 ```javascript
 import {
   ERR_CANNOT_CONNECT,
-  ERR_INVALID_AUTH
+  ERR_INVALID_AUTH,
 } from "home-assistant-js-websocket";
 ```
 
 ### Automatic reconnecting
 
 The connection object will automatically try to reconnect to the server when the connection gets lost. On reconnect, it will automatically resubscribe the event listeners.
+
+#### Suspend reconnection
+
+If you don't want to automatically try to reconnect to the server when the connection is lost, you can pass a promise to wait for. The connection will try to reconnect after the promise is resolved.
+
+```javascript
+connection.suspendReconnectUntil(
+  new Promise((resolve) => {
+    // When you want to try to reconnect again, resolve the promise.
+    resolve();
+  })
+);
+```
+
+#### Suspend connection
+
+You can also actively close the connection and wait for a promise to resolve to reconnect again. This promise can be passed either with `suspendReconnectUntil` or with the `suspend` command itself.
+
+If you don't provide a promise with either of these functions, an error will be thrown.
+
+```javascript
+connection.suspendReconnectUntil(
+  new Promise((resolve) => {
+    // When you want to try to reconnect again, resolve the promise.
+    resolve();
+  })
+);
+connection.suspend();
+```
+
+or
+
+```javascript
+connection.suspend(
+  new Promise((resolve) => {
+    // When you want to try to reconnect again, resolve the promise.
+    resolve();
+  })
+);
+```
+
+#### Close connection
+
+You can also close the connection, without any reconnect, with `connection.close()`.
+
+#### Events
 
 The `Connection` object implements three events related to the reconnecting logic.
 
@@ -155,7 +201,7 @@ The function `subscribeEntities` will return an unsubscribe function.
 import { subscribeEntities } from "home-assistant-js-websocket";
 
 // conn is the connection from earlier.
-subscribeEntities(conn, entities => console.log("New entities!", entities));
+subscribeEntities(conn, (entities) => console.log("New entities!", entities));
 ```
 
 You can also import the collection:
@@ -167,7 +213,7 @@ import { entitiesColl } from "home-assistant-js-websocket";
 const coll = entitiesColl(connection);
 console.log(coll.state);
 await coll.refresh();
-coll.subscribe(entities => console.log(entities));
+coll.subscribe((entities) => console.log(entities));
 ```
 
 ### Config
@@ -180,7 +226,7 @@ The function `subscribeConfig` will return an unsubscribe function.
 import { subscribeConfig } from "home-assistant-js-websocket";
 
 // conn is the connection from earlier.
-subscribeConfig(conn, config => console.log("New config!", config));
+subscribeConfig(conn, (config) => console.log("New config!", config));
 ```
 
 You can also import the collection:
@@ -192,7 +238,7 @@ import { configColl } from "home-assistant-js-websocket";
 const coll = configColl(connection);
 console.log(coll.state);
 await coll.refresh();
-coll.subscribe(config => console.log(config));
+coll.subscribe((config) => console.log(config));
 ```
 
 ### Services
@@ -205,7 +251,7 @@ The function `subscribeServices` will return an unsubscribe function.
 import { subscribeServices } from "home-assistant-js-websocket";
 
 // conn is the connection from earlier.
-subscribeServices(conn, services => console.log("New services!", services));
+subscribeServices(conn, (services) => console.log("New services!", services));
 ```
 
 You can also import the collection:
@@ -217,7 +263,7 @@ import { servicesColl } from "home-assistant-js-websocket";
 const coll = servicesColl(connection);
 console.log(coll.state);
 await coll.refresh();
-coll.subscribe(services => console.log(services));
+coll.subscribe((services) => console.log(services));
 ```
 
 ### Collections
@@ -266,11 +312,11 @@ function panelRegistered(state, event) {
 
   // This will be merged with the existing state.
   return {
-    panels: state.panels.concat(event.data.panel)
+    panels: state.panels.concat(event.data.panel),
   };
 }
 
-const fetchPanels = conn => conn.sendMessagePromise({ type: "get_panels" });
+const fetchPanels = (conn) => conn.sendMessagePromise({ type: "get_panels" });
 const subscribeUpdates = (conn, store) =>
   conn.subscribeEvents(store.action(panelRegistered), "panel_registered");
 
@@ -279,7 +325,7 @@ const panelsColl = getCollection(conn, "_pnl", fetchPanels, subscribeUpdates);
 // Now use collection
 console.log(panelsColl.state);
 await panelsColl.refresh();
-panelsColl.subscribe(panels => console.log("New panels!", panels));
+panelsColl.subscribe((panels) => console.log("New panels!", panels));
 ```
 
 Collections are useful to define if data is needed for initial data load. You can create a collection and have code on your page call it before you start rendering the UI. By the time UI is loaded, the data will be available to use.
@@ -374,7 +420,7 @@ import {
   Auth,
   createConnection,
   subscribeEntities,
-  createLongLivedTokenAuth
+  createLongLivedTokenAuth,
 } from "home-assistant-js-websocket";
 
 (async () => {
@@ -384,7 +430,7 @@ import {
   );
 
   const connection = await createConnection({ auth });
-  subscribeEntities(connection, entities => console.log(entities));
+  subscribeEntities(connection, (entities) => console.log(entities));
 })();
 ```
 
@@ -406,6 +452,6 @@ createConnection({
     // TODO: Handle authentication with Home Assistant yourself :)
 
     return ws;
-  }
+  },
 });
 ```

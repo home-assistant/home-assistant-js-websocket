@@ -82,6 +82,7 @@ export class Connection {
   commands: Map<number, CommandInFlight>;
   eventListeners: Map<string, ConnectionEventListener[]>;
   closeRequested: boolean;
+  suspendReconnectPromise?: Promise<void>;
   // @ts-ignore: incorrectly claiming it's not set in constructor.
   socket: HaWebSocket;
 
@@ -164,6 +165,20 @@ export class Connection {
     (this.eventListeners.get(eventType) || []).forEach((callback) =>
       callback(this, eventData)
     );
+  }
+
+  suspendReconnectUntil(suspendPromise: Promise<void>) {
+    this.suspendReconnectPromise = suspendPromise;
+  }
+
+  suspend(suspendPromise?: Promise<void>) {
+    if (suspendPromise) {
+      this.suspendReconnectPromise = suspendPromise;
+    }
+    if (!this.suspendReconnectPromise) {
+      throw new Error("Can't suspend without a suspend promise");
+    }
+    this.socket.close();
   }
 
   close() {
@@ -305,7 +320,7 @@ export class Connection {
     }
   }
 
-  private _handleClose(ev: CloseEvent) {
+  private async _handleClose(ev: CloseEvent) {
     // Reject in-flight sendMessagePromise requests
     this.commands.forEach((info) => {
       // We don't cancel subscribeEvents commands in flight
@@ -341,6 +356,11 @@ export class Connection {
         }
       }, Math.min(tries, 5) * 1000);
     };
+
+    if (this.suspendReconnectPromise) {
+      await this.suspendReconnectPromise;
+      this.suspendReconnectPromise = undefined;
+    }
 
     reconnect(0);
   }
