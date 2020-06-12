@@ -82,7 +82,7 @@ export class Connection {
   commands: Map<number, CommandInFlight>;
   eventListeners: Map<string, ConnectionEventListener[]>;
   closeRequested: boolean;
-  suspendPromise?: Promise<void>;
+  suspendReconnectPromise?: Promise<void>;
   // @ts-ignore: incorrectly claiming it's not set in constructor.
   socket: HaWebSocket;
 
@@ -167,8 +167,8 @@ export class Connection {
     );
   }
 
-  suspendUntil(suspendPromise: Promise<void>) {
-    this.suspendPromise = suspendPromise;
+  suspendReconnectUntil(suspendPromise: Promise<void>) {
+    this.suspendReconnectPromise = suspendPromise;
   }
 
   close() {
@@ -320,7 +320,7 @@ export class Connection {
       }
     });
 
-    if (this.closeRequested && !this.suspendUntil) {
+    if (this.closeRequested && !this.suspendReconnectPromise) {
       return;
     }
 
@@ -347,9 +347,9 @@ export class Connection {
       }, Math.min(tries, 5) * 1000);
     };
 
-    if (this.suspendPromise) {
-      await this.suspendPromise;
-      this.suspendPromise = undefined;
+    if (this.suspendReconnectPromise) {
+      await this.suspendReconnectPromise;
+      this.suspendReconnectPromise = undefined;
     }
 
     reconnect(0);
