@@ -171,6 +171,16 @@ export class Connection {
     this.suspendReconnectPromise = suspendPromise;
   }
 
+  suspend(suspendPromise?: Promise<void>) {
+    if (suspendPromise) {
+      this.suspendReconnectPromise = suspendPromise;
+    }
+    if (!this.suspendReconnectPromise) {
+      throw new Error("Can't suspend without a suspend promise");
+    }
+    this.socket.close();
+  }
+
   close() {
     this.closeRequested = true;
     this.socket.close();
@@ -320,7 +330,7 @@ export class Connection {
       }
     });
 
-    if (this.closeRequested && !this.suspendReconnectPromise) {
+    if (this.closeRequested) {
       return;
     }
 
