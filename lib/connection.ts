@@ -91,8 +91,8 @@ export class Connection {
     //  - setupRetry: amount of ms to retry when unable to connect on initial setup
     //  - createSocket: create a new Socket connection
     this.options = options;
-    // id if next command to send
-    this.commandId = 1;
+    // id of next command to send
+    this.commandId = 0;
     // info about active subscriptions and commands in flight
     this.commands = new Map();
     // map of event listeners
