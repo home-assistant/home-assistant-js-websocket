@@ -21,7 +21,7 @@ export type ConnectionEventListener = (
   eventData?: any
 ) => void;
 
-type Events = "ready" | "disconnected" | "reconnect-error";
+type Events = "ready" | "disconnected" | "reconnect-error" | "closed";
 
 type WebSocketPongResponse = {
   id: number;
@@ -184,6 +184,7 @@ export class Connection {
   close() {
     this.closeRequested = true;
     this.socket.close();
+    this.fireEvent("closed");
   }
 
   /**
