@@ -178,6 +178,7 @@ The `Connection` object implements three events related to the reconnecting logi
 | --------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
 | ready           | -          | Fired when authentication is successful and the connection is ready to take commands.                    |
 | disconnected    | -          | Fired when the connection is lost.                                                                       |
+| closed    | -          | Fired when the connection is closed by request(`connection.close()`).                                                                       |
 | reconnect-error | Error code | Fired when we encounter a fatal error when trying to reconnect. Currently limited to `ERR_INVALID_AUTH`. |
 
 You can attach and remove listeners as follows:
