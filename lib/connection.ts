@@ -179,6 +179,7 @@ export class Connection {
       throw new Error("Can't suspend without a suspend promise");
     }
     this.socket.close();
+    this.fireEvent("closed");
   }
 
   close() {
