@@ -83,6 +83,13 @@ export class Connection {
   eventListeners: Map<string, ConnectionEventListener[]>;
   closeRequested: boolean;
   suspendReconnectPromise?: Promise<void>;
+
+  // We use this to queue messages in flight for the first reconnect
+  // after the connection has been suspended.
+  _queuedMessages?: Array<{
+    resolve: () => unknown;
+    reject?: (err: typeof ERR_CONNECTION_LOST) => unknown;
+  }>;
   // @ts-ignore: incorrectly claiming it's not set in constructor.
   socket: HaWebSocket;
 
@@ -132,6 +139,15 @@ export class Connection {
         }
       });
 
+      const queuedMessages = this._queuedMessages;
+
+      if (queuedMessages) {
+        this._queuedMessages = undefined;
+        for (const queuedMsg of queuedMessages) {
+          queuedMsg.resolve();
+        }
+      }
+
       this.fireEvent("ready");
     }
   }
@@ -171,12 +187,9 @@ export class Connection {
     this.suspendReconnectPromise = suspendPromise;
   }
 
-  suspend(suspendPromise?: Promise<void>) {
-    if (suspendPromise) {
-      this.suspendReconnectPromise = suspendPromise;
-    }
+  suspend() {
     if (!this.suspendReconnectPromise) {
-      throw new Error("Can't suspend without a suspend promise");
+      throw new Error("Suspend promise not set");
     }
     this.socket.close();
   }
@@ -209,6 +222,14 @@ export class Connection {
       console.log("Sending", message);
     }
 
+    if (this._queuedMessages) {
+      if (commandId) {
+        throw new Error("Cannot queue with commandId");
+      }
+      this._queuedMessages.push({ resolve: () => this.sendMessage(message) });
+      return;
+    }
+
     if (!commandId) {
       commandId = this._genCmdId();
     }
@@ -219,6 +240,20 @@ export class Connection {
 
   sendMessagePromise<Result>(message: MessageBase): Promise<Result> {
     return new Promise((resolve, reject) => {
+      if (this._queuedMessages) {
+        this._queuedMessages!.push({
+          reject,
+          resolve: async () => {
+            try {
+              resolve(await this.sendMessagePromise(message));
+            } catch (err) {
+              reject(err);
+            }
+          },
+        });
+        return;
+      }
+
       const commandId = this._genCmdId();
       this.commands.set(commandId, { resolve, reject });
       this.sendMessage(message, commandId);
@@ -236,11 +271,18 @@ export class Connection {
     callback: (result: Result) => void,
     subscribeMessage: MessageBase
   ): Promise<SubscriptionUnsubscribe> {
-    // Command ID that will be used
-    const commandId = this._genCmdId();
+    if (this._queuedMessages) {
+      await new Promise((resolve, reject) => {
+        this._queuedMessages!.push({ resolve, reject });
+      });
+    }
+
     let info: SubscribeEventCommmandInFlight<Result>;
 
     await new Promise((resolve, reject) => {
+      // Command ID that will be used
+      const commandId = this._genCmdId();
+
       // We store unsubscribe on info object. That way we can overwrite it in case
       // we get disconnected and we have to subscribe again.
       info = {
@@ -348,6 +390,15 @@ export class Connection {
           const socket = await options.createSocket(options);
           this.setSocket(socket);
         } catch (err) {
+          if (this._queuedMessages) {
+            const queuedMessages = this._queuedMessages;
+            this._queuedMessages = undefined;
+            for (const msg of queuedMessages) {
+              if (msg.reject) {
+                msg.reject(ERR_CONNECTION_LOST);
+              }
+            }
+          }
           if (err === ERR_INVALID_AUTH) {
             this.fireEvent("reconnect-error", err);
           } else {
@@ -360,6 +411,9 @@ export class Connection {
     if (this.suspendReconnectPromise) {
       await this.suspendReconnectPromise;
       this.suspendReconnectPromise = undefined;
+      // For the first retry after suspend, we will queue up
+      // all messages.
+      this._queuedMessages = [];
     }
 
     reconnect(0);
