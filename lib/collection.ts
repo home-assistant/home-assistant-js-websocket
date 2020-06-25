@@ -26,14 +26,13 @@ export const getCollection = <State>(
   let store = createStore<State>();
 
   const refresh = () =>
-    fetchCollection(conn).then(state => store.setState(state, true));
+    fetchCollection(conn).then((state) => store.setState(state, true));
 
   const refreshSwallow = () =>
     refresh().catch((err: unknown) => {
       // Swallow errors if socket is connecting, closing or closed.
       // We will automatically call refresh again when we re-establish the connection.
-      // Using conn.socket.OPEN instead of WebSocket for better node support
-      if (conn.socket.readyState == conn.socket.OPEN) {
+      if (conn.connected) {
         throw err;
       }
     });
@@ -74,13 +73,13 @@ export const getCollection = <State>(
         if (!active) {
           // Unsubscribe from changes
           if (unsubProm)
-            unsubProm.then(unsub => {
+            unsubProm.then((unsub) => {
               unsub();
             });
           conn.removeEventListener("ready", refresh);
         }
       };
-    }
+    },
   };
 
   return conn[key];
