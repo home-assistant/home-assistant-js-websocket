@@ -107,6 +107,11 @@ export class Connection {
     return this.socket.haVersion;
   }
 
+  get connected() {
+    // Using conn.socket.OPEN instead of WebSocket for better node support
+    return this.socket.readyState == this.socket.OPEN;
+  }
+
   setSocket(socket: HaWebSocket) {
     const oldSocket = this.socket;
     this.socket = socket;
@@ -249,6 +254,10 @@ export class Connection {
         callback,
         subscribe: () => this.subscribeMessage(callback, subscribeMessage),
         unsubscribe: async () => {
+          // No need to unsubscribe if we're disconnected
+          if (!this.connected) {
+            return;
+          }
           await this.sendMessagePromise(messages.unsubscribeEvents(commandId));
           this.commands.delete(commandId);
         },
