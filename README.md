@@ -137,7 +137,10 @@ connection.suspendReconnectUntil(
     resolve();
   })
 );
+connection.suspend();
 ```
+
+When the suspend promise resolves until the connection is re-established, all messages being send will be delayed until the connection is established. If the first reconnect fails, the queued messages will be rejected.
 
 #### Suspend connection
 
