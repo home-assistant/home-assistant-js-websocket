@@ -297,10 +297,11 @@ export class Connection {
         subscribe: () => this.subscribeMessage(callback, subscribeMessage),
         unsubscribe: async () => {
           // No need to unsubscribe if we're disconnected
-          if (!this.connected) {
-            return;
+          if (this.connected) {
+            await this.sendMessagePromise(
+              messages.unsubscribeEvents(commandId)
+            );
           }
-          await this.sendMessagePromise(messages.unsubscribeEvents(commandId));
           this.commands.delete(commandId);
         },
       };
