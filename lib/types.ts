@@ -48,7 +48,8 @@ export type HassConfig = {
   time_zone: string;
   components: string[];
   config_dir: string;
-  whitelist_external_dirs: string[];
+  allowlist_external_dirs: string[];
+  allowlist_external_urls: string[];
   version: string;
   config_source: string;
   safe_mode: boolean;
