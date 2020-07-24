@@ -6,7 +6,7 @@
   "description": "Home Assistant websocket client",
   "source": "lib/index.ts",
   "types": "dist/index.d.ts",
-  "main": "dist/haws.umd.js",
+  "main": "dist/haws.umd.cjs",
   "module": "dist/index.js",
   "repository": {
     "url": "https://github.com/home-assistant/home-assistant-js-websocket.git",
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "watch": "tsc --watch",
-    "build": "tsc && rollup dist/index.js --format umd --name HAWS --file dist/haws.umd.js",
+    "build": "tsc && rollup dist/index.js --format umd --name HAWS --file dist/haws.umd.cjs",
     "test": "tsc && mocha",
     "prepublishOnly": "rm -rf dist && yarn build && npm test"
   },
