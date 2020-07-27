@@ -8,13 +8,19 @@
   "types": "dist/index.d.ts",
   "main": "dist/haws.umd.js",
   "module": "dist/index.js",
+  "exports": {
+    "node": {
+      "import": "./dist/index.js",
+      "require": "./dist/haws.cjs"
+    }
+  },
   "repository": {
     "url": "https://github.com/home-assistant/home-assistant-js-websocket.git",
     "type": "git"
   },
   "scripts": {
     "watch": "tsc --watch",
-    "build": "tsc && rollup dist/index.js --format umd --name HAWS --file dist/haws.umd.js",
+    "build": "tsc && rollup -c",
     "test": "tsc && mocha",
     "prepublishOnly": "rm -rf dist && yarn build && npm test"
   },
