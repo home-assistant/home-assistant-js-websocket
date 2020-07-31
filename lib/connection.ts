@@ -276,7 +276,7 @@ export class Connection {
   async subscribeMessage<Result>(
     callback: (result: Result) => void,
     subscribeMessage: MessageBase,
-    resubscribe: boolean = true
+    options?: { resubscribe?: boolean }
   ): Promise<SubscriptionUnsubscribe> {
     if (this._queuedMessages) {
       await new Promise((resolve, reject) => {
@@ -296,7 +296,7 @@ export class Connection {
         resolve,
         reject,
         callback,
-        subscribe: resubscribe
+        subscribe: options?.resubscribe !== false
           ? () => this.subscribeMessage(callback, subscribeMessage)
           : undefined,
         unsubscribe: async () => {
