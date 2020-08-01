@@ -363,13 +363,17 @@ Listen for events on the connection. [See docs.](#automatic-reconnecting)
 
 Send a message to the server. Returns a promise that resolves or rejects based on the result of the server. Special case rejection is `ERR_CONNECTION_LOST` if the connection is lost while the command is in progress.
 
-##### `conn.subscribeMessage(callback, subscribeMessage[, resubscribe = true])`
+##### `conn.subscribeMessage(callback, subscribeMessage[, options])`
 
 Call an endpoint in Home Assistant that creates a subscription. Calls `callback` for each item that gets received.
 
 Returns a promise that will resolve to a function that will cancel the subscription once called.
 
-Subscription will be automatically re-established after a reconnect unless `resubscribe` is false.
+Subscription will be automatically re-established after a reconnect unless `options.resubscribe` is false.
+
+| Option      | Description                                     |
+| ----------- | ----------------------------------------------- |
+| resubscribe | Re-established a subscription after a reconnect |
 
 ## Auth API Reference
 

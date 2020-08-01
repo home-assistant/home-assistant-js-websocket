@@ -270,7 +270,7 @@ export class Connection {
    *
    * @param message the message to start the subscription
    * @param callback the callback to be called when a new item arrives
-   * @param [resubscribe=true] re-established a subscription after a reconnect
+   * @param [options.resubscribe] re-established a subscription after a reconnect
    * @returns promise that resolves to an unsubscribe function
    */
   async subscribeMessage<Result>(
@@ -296,9 +296,10 @@ export class Connection {
         resolve,
         reject,
         callback,
-        subscribe: options?.resubscribe !== false
-          ? () => this.subscribeMessage(callback, subscribeMessage)
-          : undefined,
+        subscribe:
+          options?.resubscribe !== false
+            ? () => this.subscribeMessage(callback, subscribeMessage)
+            : undefined,
         unsubscribe: async () => {
           // No need to unsubscribe if we're disconnected
           if (this.connected) {
