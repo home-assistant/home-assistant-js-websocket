@@ -63,7 +63,7 @@ interface SubscribeEventCommmandInFlight<T> {
   resolve: (result?: any) => void;
   reject: (err: any) => void;
   callback: (ev: T) => void;
-  subscribe: () => Promise<SubscriptionUnsubscribe>;
+  subscribe: (() => Promise<SubscriptionUnsubscribe>) | undefined;
   unsubscribe: SubscriptionUnsubscribe;
 }
 
@@ -133,7 +133,7 @@ export class Connection {
       this.commands = new Map();
 
       oldCommands.forEach((info) => {
-        if ("subscribe" in info) {
+        if ("subscribe" in info && info.subscribe) {
           info.subscribe().then((unsub) => {
             info.unsubscribe = unsub;
             // We need to resolve this in case it wasn't resolved yet.
@@ -270,11 +270,13 @@ export class Connection {
    *
    * @param message the message to start the subscription
    * @param callback the callback to be called when a new item arrives
+   * @param [options.resubscribe] re-established a subscription after a reconnect
    * @returns promise that resolves to an unsubscribe function
    */
   async subscribeMessage<Result>(
     callback: (result: Result) => void,
-    subscribeMessage: MessageBase
+    subscribeMessage: MessageBase,
+    options?: { resubscribe?: boolean }
   ): Promise<SubscriptionUnsubscribe> {
     if (this._queuedMessages) {
       await new Promise((resolve, reject) => {
@@ -294,7 +296,10 @@ export class Connection {
         resolve,
         reject,
         callback,
-        subscribe: () => this.subscribeMessage(callback, subscribeMessage),
+        subscribe:
+          options?.resubscribe !== false
+            ? () => this.subscribeMessage(callback, subscribeMessage)
+            : undefined,
         unsubscribe: async () => {
           // No need to unsubscribe if we're disconnected
           if (this.connected) {
