@@ -9,10 +9,12 @@
   "main": "dist/haws.umd.js",
   "module": "dist/index.js",
   "exports": {
-    "node": {
+    ".": {
       "import": "./dist/index.js",
-      "require": "./dist/haws.cjs"
-    }
+      "require": "./dist/haws.cjs",
+      "default": "./dist/haws.umd.js"
+    },
+    "./dist/": "./dist/"
   },
   "repository": {
     "url": "https://github.com/home-assistant/home-assistant-js-websocket.git",
