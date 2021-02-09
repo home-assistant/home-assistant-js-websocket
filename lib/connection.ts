@@ -87,7 +87,7 @@ export class Connection {
   // We use this to queue messages in flight for the first reconnect
   // after the connection has been suspended.
   _queuedMessages?: Array<{
-    resolve: () => unknown;
+    resolve: (value?: unknown) => unknown;
     reject?: (err: typeof ERR_CONNECTION_LOST) => unknown;
   }>;
   // @ts-ignore: incorrectly claiming it's not set in constructor.
