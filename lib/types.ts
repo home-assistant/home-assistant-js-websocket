@@ -86,10 +86,13 @@ export type HassEntities = { [entity_id: string]: HassEntity };
 
 export type HassService = {
   description: string;
+  target?: { selector?: {} };
   fields: {
     [field_name: string]: {
+      name?: string;
       description: string;
       example: string | boolean | number;
+      selector?: {};
     };
   };
 };
@@ -106,4 +109,10 @@ export type HassUser = {
   id: string;
   is_owner: boolean;
   name: string;
+};
+
+export type HassServiceTarget = {
+  entity_id?: string | string[];
+  device_id?: string | string[];
+  area_id?: string | string[];
 };

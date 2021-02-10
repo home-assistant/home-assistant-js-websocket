@@ -137,7 +137,6 @@ connection.suspendReconnectUntil(
     resolve();
   })
 );
-connection.suspend();
 ```
 
 When the suspend promise resolves until the connection is re-established, all messages being send will be delayed until the connection is established. If the first reconnect fails, the queued messages will be rejected.
@@ -344,6 +343,7 @@ String containing the current version of Home Assistant. Examples:
 - `0.107.0`
 - `0.107.0b1`
 - `0.107.0.dev0`
+- `2021.3.0`
 
 ##### `conn.subscribeEvents(eventCallback[, eventType])`
 
@@ -407,8 +407,8 @@ Makes a request to the server to revoke the refresh and all related access token
 
 The library also contains a few helper method that you can use to ineract with the API.
 
-- `getUser(connection) -> Promise<HassEntity[]>`
-- `callService(connection, domain, service, serviceData?) -> Promise`
+- `getUser(connection) -> Promise<HassUser>`
+- `callService(connection, domain, service, serviceData?, target?) -> Promise` (Support for `target` was added in Home Assistant Core 2021.3)
 
 The following are also available, but it's recommended that you use the subscribe methods documented above.
 
