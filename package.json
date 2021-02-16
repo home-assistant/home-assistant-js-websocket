@@ -2,7 +2,7 @@
   "name": "home-assistant-js-websocket",
   "type": "module",
   "sideEffects": false,
-  "version": "5.8.0",
+  "version": "5.8.1",
   "description": "Home Assistant websocket client",
   "source": "lib/index.ts",
   "types": "dist/index.d.ts",
