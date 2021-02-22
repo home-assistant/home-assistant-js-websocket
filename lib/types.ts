@@ -85,6 +85,7 @@ export type HassEntity = HassEntityBase & {
 export type HassEntities = { [entity_id: string]: HassEntity };
 
 export type HassService = {
+  name?: string;
   description: string;
   target?: {} | null;
   fields: {
