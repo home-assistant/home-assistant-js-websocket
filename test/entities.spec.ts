@@ -5,12 +5,12 @@ import { MockConnection, AwaitableEvent } from "./util";
 
 const MOCK_LIGHT = {
   entity_id: "light.kitchen",
-  state: "on"
+  state: "on",
 };
 
 const MOCK_SWITCH = {
   entity_id: "switch.ac",
-  state: "off"
+  state: "off",
 };
 
 const MOCK_ENTITIES = [MOCK_LIGHT, MOCK_SWITCH];
@@ -32,7 +32,7 @@ describe("subscribeEntities", () => {
     const entities = await awaitableEvent.wait();
     assert.deepStrictEqual(entities, {
       [MOCK_LIGHT.entity_id]: MOCK_LIGHT,
-      [MOCK_SWITCH.entity_id]: MOCK_SWITCH
+      [MOCK_SWITCH.entity_id]: MOCK_SWITCH,
     });
   });
 
@@ -50,9 +50,9 @@ describe("subscribeEntities", () => {
         entity_id: "light.kitchen",
         new_state: {
           entity_id: "light.kitchen",
-          state: "off"
-        }
-      }
+          state: "off",
+        },
+      },
     });
 
     const entities = await awaitableEvent.wait();
@@ -61,8 +61,8 @@ describe("subscribeEntities", () => {
       [MOCK_SWITCH.entity_id]: MOCK_SWITCH,
       "light.kitchen": {
         entity_id: "light.kitchen",
-        state: "off"
-      }
+        state: "off",
+      },
     });
   });
 
@@ -80,9 +80,9 @@ describe("subscribeEntities", () => {
         entity_id: "light.living_room",
         new_state: {
           entity_id: "light.living_room",
-          state: "off"
-        }
-      }
+          state: "off",
+        },
+      },
     });
 
     const entities = await awaitableEvent.wait();
@@ -92,8 +92,8 @@ describe("subscribeEntities", () => {
       [MOCK_LIGHT.entity_id]: MOCK_LIGHT,
       "light.living_room": {
         entity_id: "light.living_room",
-        state: "off"
-      }
+        state: "off",
+      },
     });
   });
 
@@ -109,14 +109,14 @@ describe("subscribeEntities", () => {
     conn.mockEvent("state_changed", {
       data: {
         entity_id: "light.kitchen",
-        new_state: null
-      }
+        new_state: null,
+      },
     });
 
     const entities = await awaitableEvent.wait();
 
     assert.deepEqual(entities, {
-      [MOCK_SWITCH.entity_id]: MOCK_SWITCH
+      [MOCK_SWITCH.entity_id]: MOCK_SWITCH,
     });
   });
 });

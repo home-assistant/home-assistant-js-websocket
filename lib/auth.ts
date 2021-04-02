@@ -2,7 +2,7 @@ import { parseQuery } from "./util.js";
 import {
   ERR_HASS_HOST_REQUIRED,
   ERR_INVALID_AUTH,
-  ERR_INVALID_HTTPS_TO_HTTP
+  ERR_INVALID_HTTPS_TO_HTTP,
 } from "./errors.js";
 
 export type AuthData = {
@@ -121,19 +121,19 @@ async function tokenRequest(
   if (clientId !== null) {
     formData.append("client_id", clientId);
   }
-  Object.keys(data).forEach(key => {
+  Object.keys(data).forEach((key) => {
     formData.append(key, data[key]);
   });
 
   const resp = await fetch(`${hassUrl}/auth/token`, {
     method: "POST",
     credentials: "same-origin",
-    body: formData
+    body: formData,
   });
 
   if (!resp.ok) {
     throw resp.status === 400 /* auth invalid */ ||
-    resp.status === 403 /* user not active */
+      resp.status === 403 /* user not active */
       ? ERR_INVALID_AUTH
       : new Error("Unable to fetch tokens");
   }
@@ -148,7 +148,7 @@ async function tokenRequest(
 function fetchToken(hassUrl: string, clientId: string | null, code: string) {
   return tokenRequest(hassUrl, clientId, {
     code,
-    grant_type: "authorization_code"
+    grant_type: "authorization_code",
   });
 }
 
@@ -190,7 +190,7 @@ export class Auth {
 
     const data = await tokenRequest(this.data.hassUrl, this.data.clientId, {
       grant_type: "refresh_token",
-      refresh_token: this.data.refresh_token
+      refresh_token: this.data.refresh_token,
     });
     // Access token response does not contain refresh token.
     data.refresh_token = this.data.refresh_token;
@@ -212,7 +212,7 @@ export class Auth {
     await fetch(`${this.data.hassUrl}/auth/token`, {
       method: "POST",
       credentials: "same-origin",
-      body: formData
+      body: formData,
     });
 
     if (this._saveTokens) {
@@ -231,7 +231,7 @@ export function createLongLivedTokenAuth(
     expires: Date.now() + 1e11,
     refresh_token: "",
     access_token,
-    expires_in: 1e11
+    expires_in: 1e11,
   });
 }
 
@@ -289,7 +289,7 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
     options.redirectUrl || genRedirectUrl(),
     encodeOAuthState({
       hassUrl,
-      clientId
+      clientId,
     })
   );
   // Just don't resolve while we navigate to next page

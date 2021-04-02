@@ -25,7 +25,8 @@
   "scripts": {
     "watch": "tsc --watch",
     "build": "tsc && rollup -c",
-    "test": "tsc && mocha",
+    "test": "tsc && prettier --check . && mocha",
+    "format": "prettier --write .",
     "prepublishOnly": "rm -rf dist && yarn build && npm test"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",

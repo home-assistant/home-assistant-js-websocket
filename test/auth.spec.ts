@@ -10,7 +10,7 @@ describe("Auth", () => {
       refresh_token: "",
       access_token: "",
       expires_in: 3000,
-      expires: Date.now() - 1000
+      expires: Date.now() - 1000,
     });
     assert.strictEqual(auth.expired, true);
   });
@@ -21,7 +21,7 @@ describe("Auth", () => {
       refresh_token: "",
       access_token: "",
       expires_in: 3000,
-      expires: Date.now() + 1000
+      expires: Date.now() + 1000,
     });
     assert.strictEqual(auth.expired, false);
   });

@@ -34,7 +34,7 @@ export class MockConnection extends Connection {
   }
 
   mockEvent(event: any, data: any) {
-    this._mockListeners[event].forEach(cb => cb(data));
+    this._mockListeners[event].forEach((cb) => cb(data));
   }
 
   mockResponse(type: any, data: any) {
@@ -62,7 +62,7 @@ export class AwaitableEvent {
   }
 
   prime(): void {
-    this.curPromise = new Promise(resolve => {
+    this.curPromise = new Promise((resolve) => {
       this.curResolve = resolve;
     });
   }

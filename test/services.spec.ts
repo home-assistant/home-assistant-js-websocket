@@ -10,11 +10,11 @@ const MOCK_SERVICES = {
       fields: {
         entity_id: {
           description: "Entity ID to turn on",
-          example: "light.kitchen"
-        }
-      }
-    }
-  }
+          example: "light.kitchen",
+        },
+      },
+    },
+  },
 };
 
 describe("subscribeServices", () => {
@@ -45,8 +45,8 @@ describe("subscribeServices", () => {
     conn.mockEvent("service_registered", {
       data: {
         domain: "light",
-        service: "toggle"
-      }
+        service: "toggle",
+      },
     });
 
     const services = await awaitableEvent.wait();
@@ -58,15 +58,15 @@ describe("subscribeServices", () => {
           fields: {
             entity_id: {
               description: "Entity ID to turn on",
-              example: "light.kitchen"
-            }
-          }
+              example: "light.kitchen",
+            },
+          },
         },
         toggle: {
           description: "",
-          fields: {}
-        }
-      }
+          fields: {},
+        },
+      },
     });
   });
 
@@ -80,8 +80,8 @@ describe("subscribeServices", () => {
     conn.mockEvent("service_registered", {
       data: {
         domain: "switch",
-        service: "turn_on"
-      }
+        service: "turn_on",
+      },
     });
 
     const services = await awaitableEvent.wait();
@@ -93,17 +93,17 @@ describe("subscribeServices", () => {
           fields: {
             entity_id: {
               description: "Entity ID to turn on",
-              example: "light.kitchen"
-            }
-          }
-        }
+              example: "light.kitchen",
+            },
+          },
+        },
       },
       switch: {
         turn_on: {
           description: "",
-          fields: {}
-        }
-      }
+          fields: {},
+        },
+      },
     });
   });
 
@@ -117,14 +117,14 @@ describe("subscribeServices", () => {
     conn.mockEvent("service_removed", {
       data: {
         domain: "light",
-        service: "turn_on"
-      }
+        service: "turn_on",
+      },
     });
 
     const services = await awaitableEvent.wait();
 
     assert.deepEqual(services, {
-      light: {}
+      light: {},
     });
   });
 });
