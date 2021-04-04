@@ -12,7 +12,7 @@
         callService,
         createConnection,
         subscribeEntities,
-        ERR_HASS_HOST_REQUIRED
+        ERR_HASS_HOST_REQUIRED,
       } from "./dist/index.js";
 
       (async () => {
@@ -33,7 +33,7 @@
           }
         }
         const connection = await createConnection({ auth });
-        subscribeEntities(connection, entities =>
+        subscribeEntities(connection, (entities) =>
           renderEntities(connection, entities)
         );
         // Clear url if we have been able to establish a connection
@@ -44,7 +44,7 @@
         // To play from the console
         window.auth = auth;
         window.connection = connection;
-        getUser(connection).then(user => {
+        getUser(connection).then((user) => {
           console.log("Logged in as", user);
           window.user = user;
         });
@@ -56,7 +56,7 @@
 
         Object.keys(entities)
           .sort()
-          .forEach(entId => {
+          .forEach((entId) => {
             const tr = document.createElement("tr");
 
             const tdName = document.createElement("td");
@@ -76,7 +76,7 @@
               button.innerHTML = "toggle";
               button.onclick = () =>
                 callService(connection, "homeassistant", "toggle", {
-                  entity_id: entId
+                  entity_id: entId,
                 });
               tdState.appendChild(button);
             }

@@ -5,7 +5,7 @@ import { MockConnection, AwaitableEvent } from "./util";
 
 const MOCK_CONFIG = {
   hello: "bla",
-  components: ["frontend"]
+  components: ["frontend"],
 };
 
 describe("subscribeConfig", () => {
@@ -37,15 +37,15 @@ describe("subscribeConfig", () => {
 
     conn.mockEvent("component_loaded", {
       data: {
-        component: "api"
-      }
+        component: "api",
+      },
     });
 
     const config = await awaitableEvent.wait();
 
     assert.deepEqual(config, {
       hello: "bla",
-      components: ["frontend", "api"]
+      components: ["frontend", "api"],
     });
   });
 });

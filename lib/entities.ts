@@ -30,7 +30,7 @@ async function fetchEntities(conn: Connection): Promise<HassEntities> {
 
 const subscribeUpdates = (conn: Connection, store: Store<HassEntities>) =>
   conn.subscribeEvents<StateChangedEvent>(
-    ev => processEvent(store, ev as StateChangedEvent),
+    (ev) => processEvent(store, ev as StateChangedEvent),
     "state_changed"
   );
 

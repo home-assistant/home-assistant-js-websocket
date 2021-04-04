@@ -64,7 +64,7 @@ export const createStore = <State>(state?: State): Store<State> => {
       }
 
       // Note: perf tests verifying this implementation: https://esbench.com/bench/5a295e6299634800a0349500
-      return function() {
+      return function () {
         let args = [state];
         for (let i = 0; i < arguments.length; i++) args.push(arguments[i]);
         // @ts-ignore
@@ -92,7 +92,7 @@ export const createStore = <State>(state?: State): Store<State> => {
       return () => {
         unsubscribe(listener);
       };
-    }
+    },
 
     // /**
     //  * Remove a previously-registered listener function.
