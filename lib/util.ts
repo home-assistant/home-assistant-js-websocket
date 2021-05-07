@@ -26,7 +26,6 @@ export const debounce = <T extends (...args: any[]) => unknown>(
   // @ts-ignore
   return function (...args) {
     // @ts-ignore
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const context = this;
     const later = () => {
       timeout = undefined;
