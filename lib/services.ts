@@ -3,6 +3,7 @@ import { HassServices, HassDomainServices, UnsubscribeFunc } from "./types.js";
 import { Connection } from "./connection.js";
 import { Store } from "./store.js";
 import { getServices } from "./commands.js";
+import { debounce } from "./util.js";
 
 type ServiceRegisteredEvent = {
   data: {
@@ -19,18 +20,23 @@ type ServiceRemovedEvent = {
 };
 
 function processServiceRegistered(
-  state: HassServices,
+  conn: Connection,
+  store: Store<HassServices>,
   event: ServiceRegisteredEvent
 ) {
-  if (state === undefined) return null;
+  const state = store.state;
+  if (state === undefined) return;
 
   const { domain, service } = event.data;
 
-  const domainInfo = Object.assign({}, state[domain], {
-    [service]: { description: "", fields: {} },
-  });
-
-  return { [domain]: domainInfo };
+  if (!state.domain?.service) {
+    const domainInfo = {
+      ...state[domain],
+      [service]: { description: "", fields: {} },
+    };
+    store.setState({ [domain]: domainInfo });
+  }
+  debouncedFetchServices(conn, store);
 }
 
 function processServiceRemoved(
@@ -52,11 +58,18 @@ function processServiceRemoved(
   return { [domain]: domainInfo };
 }
 
+const debouncedFetchServices = debounce(
+  (conn: Connection, store: Store<HassServices>) =>
+    fetchServices(conn).then((services) => store.setState(services, true)),
+  5000
+);
+
 const fetchServices = (conn: Connection) => getServices(conn);
 const subscribeUpdates = (conn: Connection, store: Store<HassServices>) =>
   Promise.all([
     conn.subscribeEvents<ServiceRegisteredEvent>(
-      store.action(processServiceRegistered),
+      (ev) =>
+        processServiceRegistered(conn, store, ev as ServiceRegisteredEvent),
       "service_registered"
     ),
     conn.subscribeEvents<ServiceRemovedEvent>(
