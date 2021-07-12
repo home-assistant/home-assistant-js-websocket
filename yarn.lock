@@ -24,9 +24,9 @@
     js-tokens "^4.0.0"
 
 "@types/assert@^1.4.7":
-  version "1.5.4"
-  resolved "https://registry.yarnpkg.com/@types/assert/-/assert-1.5.4.tgz#87ebe83645631e188e8ec2de4f173dc39ab6f77d"
-  integrity sha512-CaFVW21Ulu0J9sUaEWJjwmhkDkeoxa4fniVSERzZC13sU9v8NNM2lMlkfZZv60j47D+qDt0Lyo8skVP3CTXUdA==
+  version "1.5.5"
+  resolved "https://registry.yarnpkg.com/@types/assert/-/assert-1.5.5.tgz#b2f7b92c7228058a0f3deed962a521ce4539136b"
+  integrity sha512-myz5KWf6ox66Ou1m0KiLZpitk7W6Vly2LFRx7AXHSLeMUM6bmDIStIBk0xd7I2vXcAQEuhegdpjPuypmP5ui0Q==
 
 "@types/mocha@^8.0.0":
   version "8.2.2"
