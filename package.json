@@ -33,7 +33,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@types/assert": "^1.4.7",
-    "@types/mocha": "^8.0.0",
+    "@types/mocha": "^9.0.0",
     "assert": "^2.0.0",
     "husky": "^4.2.5",
     "lint-staged": "^11.0.0",
