@@ -56,6 +56,7 @@ export type HassConfig = {
   state: "NOT_RUNNING" | "STARTING" | "RUNNING" | "STOPPING" | "FINAL_WRITE";
   external_url: string | null;
   internal_url: string | null;
+  currency: string | null;
 };
 
 export type HassEntityBase = {
