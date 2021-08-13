@@ -391,7 +391,7 @@ Fetches a new access token from the server.
 
 Makes a request to the server to revoke the refresh and all related access token. Returns a promise that resolves when the request is finished.
 
-**Note:** If you support storing and retrieving tokens, the returned auth object might load tokens from your cache that are no longer valid. If this happens, the promise returned by `createConnection` will reject with `ERR_INVALID_AUTH`. If that happens, clear your tokens with `storeTokens(null`) and call `getAuth` again. This will pick up the auth flow without relying on stored tokens.
+**Note:** If you support storing and retrieving tokens, the returned auth object might load tokens from your cache that are no longer valid. If this happens, the promise returned by `createConnection` will reject with `ERR_INVALID_AUTH`. If that happens, clear your tokens with `storeTokens(null)` and call `getAuth` again. This will pick up the auth flow without relying on stored tokens.
 
 ## Error Reference
 
