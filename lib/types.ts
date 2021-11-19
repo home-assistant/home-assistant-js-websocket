@@ -43,6 +43,9 @@ export type HassConfig = {
     mass: string;
     volume: string;
     temperature: string;
+    pressure: string;
+    wind_speed: string;
+    accumulated_precipitation: string;
   };
   location_name: string;
   time_zone: string;
