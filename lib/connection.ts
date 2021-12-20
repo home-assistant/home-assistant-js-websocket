@@ -122,8 +122,8 @@ export class Connection {
   setSocket(socket: HaWebSocket) {
     const oldSocket = this.socket;
     this.socket = socket;
-    socket.addEventListener("message", (ev) => this._handleMessage(ev));
-    socket.addEventListener("close", (ev) => this._handleClose(ev));
+    socket.addEventListener("message", this._handleMessage);
+    socket.addEventListener("close", this._handleClose);
 
     if (oldSocket) {
       const oldCommands = this.commands;
@@ -197,6 +197,21 @@ export class Connection {
       throw new Error("Suspend promise not set");
     }
     this.socket.close();
+  }
+
+  /**
+   * Reconnect the websocket connection.
+   * @param force discard old socket instead of gracefully closing it.
+   */
+  reconnect(force = false) {
+    if (!force) {
+      this.socket.close();
+      return;
+    }
+    this.socket.removeEventListener("message", this._handleMessage);
+    this.socket.removeEventListener("close", this._handleClose);
+    this.socket.close();
+    this._handleClose();
   }
 
   close() {
@@ -323,7 +338,7 @@ export class Connection {
     return () => info.unsubscribe();
   }
 
-  private _handleMessage(event: MessageEvent) {
+  private _handleMessage = (event: MessageEvent) => {
     const message: WebSocketResponse = JSON.parse(event.data);
 
     if (DEBUG) {
@@ -375,9 +390,9 @@ export class Connection {
           console.warn("Unhandled message", message);
         }
     }
-  }
+  };
 
-  private async _handleClose(ev: CloseEvent) {
+  private _handleClose = async () => {
     // Reject in-flight sendMessagePromise requests
     this.commands.forEach((info) => {
       // We don't cancel subscribeEvents commands in flight
@@ -432,7 +447,7 @@ export class Connection {
     }
 
     reconnect(0);
-  }
+  };
 
   private _genCmdId() {
     return ++this.commandId;
