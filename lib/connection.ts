@@ -84,14 +84,20 @@ export class Connection {
   closeRequested: boolean;
   suspendReconnectPromise?: Promise<void>;
 
+  oldSubscriptions?: Map<number, CommandInFlight>;
+
   // We use this to queue messages in flight for the first reconnect
   // after the connection has been suspended.
   _queuedMessages?: Array<{
     resolve: (value?: unknown) => unknown;
     reject?: (err: typeof ERR_CONNECTION_LOST) => unknown;
   }>;
+  socket?: HaWebSocket;
+  /**
+   * Version string of the Home Assistant instance. Set to version of last connection while reconnecting.
+   */
   // @ts-ignore: incorrectly claiming it's not set in constructor.
-  socket: HaWebSocket;
+  haVersion: string;
 
   constructor(socket: HaWebSocket, options: ConnectionOptions) {
     // connection options
@@ -107,32 +113,26 @@ export class Connection {
     // true if a close is requested by the user
     this.closeRequested = false;
 
-    this.setSocket(socket);
-  }
-
-  get haVersion() {
-    return this.socket.haVersion;
+    this._setSocket(socket);
   }
 
   get connected() {
     // Using conn.socket.OPEN instead of WebSocket for better node support
-    return this.socket.readyState == this.socket.OPEN;
+    return (
+      this.socket !== undefined && this.socket.readyState == this.socket.OPEN
+    );
   }
 
-  setSocket(socket: HaWebSocket) {
-    const oldSocket = this.socket;
+  private _setSocket(socket: HaWebSocket) {
     this.socket = socket;
+    this.haVersion = socket.haVersion;
     socket.addEventListener("message", this._handleMessage);
     socket.addEventListener("close", this._handleClose);
 
-    if (oldSocket) {
-      const oldCommands = this.commands;
-
-      // reset to original state
-      this.commandId = 1;
-      this.commands = new Map();
-
-      oldCommands.forEach((info) => {
+    const oldSubscriptions = this.oldSubscriptions;
+    if (oldSubscriptions) {
+      this.oldSubscriptions = undefined;
+      oldSubscriptions.forEach((info) => {
         if ("subscribe" in info && info.subscribe) {
           info.subscribe().then((unsub) => {
             info.unsubscribe = unsub;
@@ -143,18 +143,17 @@ export class Connection {
           });
         }
       });
-
-      const queuedMessages = this._queuedMessages;
-
-      if (queuedMessages) {
-        this._queuedMessages = undefined;
-        for (const queuedMsg of queuedMessages) {
-          queuedMsg.resolve();
-        }
-      }
-
-      this.fireEvent("ready");
     }
+    const queuedMessages = this._queuedMessages;
+
+    if (queuedMessages) {
+      this._queuedMessages = undefined;
+      for (const queuedMsg of queuedMessages) {
+        queuedMsg.resolve();
+      }
+    }
+
+    this.fireEvent("ready");
   }
 
   addEventListener(eventType: Events, callback: ConnectionEventListener) {
@@ -196,7 +195,9 @@ export class Connection {
     if (!this.suspendReconnectPromise) {
       throw new Error("Suspend promise not set");
     }
-    this.socket.close();
+    if (this.socket) {
+      this.socket.close();
+    }
   }
 
   /**
@@ -204,6 +205,9 @@ export class Connection {
    * @param force discard old socket instead of gracefully closing it.
    */
   reconnect(force = false) {
+    if (!this.socket) {
+      return;
+    }
     if (!force) {
       this.socket.close();
       return;
@@ -216,7 +220,9 @@ export class Connection {
 
   close() {
     this.closeRequested = true;
-    this.socket.close();
+    if (this.socket) {
+      this.socket.close();
+    }
   }
 
   /**
@@ -238,6 +244,10 @@ export class Connection {
   }
 
   sendMessage(message: MessageBase, commandId?: number): void {
+    if (!this.connected) {
+      throw ERR_CONNECTION_LOST;
+    }
+
     if (DEBUG) {
       console.log("Sending", message);
     }
@@ -255,7 +265,7 @@ export class Connection {
     }
     message.id = commandId;
 
-    this.socket.send(JSON.stringify(message));
+    this.socket!.send(JSON.stringify(message));
   }
 
   sendMessagePromise<Result>(message: MessageBase): Promise<Result> {
@@ -393,8 +403,15 @@ export class Connection {
   };
 
   private _handleClose = async () => {
+    const oldCommands = this.commands;
+
+    // reset to original state except haVersion
+    this.commandId = 1;
+    this.commands = new Map();
+    this.socket = undefined;
+
     // Reject in-flight sendMessagePromise requests
-    this.commands.forEach((info) => {
+    oldCommands.forEach((info) => {
       // We don't cancel subscribeEvents commands in flight
       // as we will be able to recover them.
       if (!("subscribe" in info)) {
@@ -413,12 +430,15 @@ export class Connection {
 
     const reconnect = (tries: number) => {
       setTimeout(async () => {
+        if (this.closeRequested) {
+          return;
+        }
         if (DEBUG) {
           console.log("Trying to reconnect");
         }
         try {
           const socket = await options.createSocket(options);
-          this.setSocket(socket);
+          this._setSocket(socket);
         } catch (err) {
           if (this._queuedMessages) {
             const queuedMessages = this._queuedMessages;
