@@ -407,6 +407,7 @@ export class Connection {
 
     // reset to original state except haVersion
     this.commandId = 1;
+    this.oldSubscriptions = this.commands;
     this.commands = new Map();
     this.socket = undefined;
 
