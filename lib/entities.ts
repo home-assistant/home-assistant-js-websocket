@@ -141,7 +141,7 @@ async function legacyFetchEntities(conn: Connection): Promise<HassEntities> {
 
 const legacySubscribeUpdates = (conn: Connection, store: Store<HassEntities>) =>
   conn.subscribeEvents<StateChangedEvent>(
-    (ev) => processEvent(store, ev as StateChangedEvent),
+    (ev) => legacyProcessEvent(store, ev as StateChangedEvent),
     "state_changed"
   );
 
