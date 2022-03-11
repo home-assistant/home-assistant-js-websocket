@@ -295,7 +295,7 @@ export class Connection {
    *
    * @param message the message to start the subscription
    * @param callback the callback to be called when a new item arrives
-   * @param [options.resubscribe] re-established a subscription after a reconnect
+   * @param [options.resubscribe] re-established a subscription after a reconnect. Defaults to true.
    * @returns promise that resolves to an unsubscribe function
    */
   async subscribeMessage<Result>(
