@@ -18,9 +18,9 @@ interface EntityState {
   /** context */
   c: Context;
   /** last_changed; if set, also applies to lu */
-  lc: string;
+  lc: number;
   /** last_updated */
-  lu: string;
+  lu: number;
 }
 
 interface EntityDiff {
@@ -40,13 +40,14 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
   if (updates.add) {
     for (const entityId in updates.add) {
       const newState = updates.add[entityId];
+      let last_changed = new Date(newState.lc * 1000).toISOString();
       state[entityId] = {
         entity_id: entityId,
         state: newState.s,
         attributes: newState.a,
-        context: newState.c,
-        last_changed: newState.lc,
-        last_updated: newState.lu,
+        context: (typeof newState.c === 'string') ? {"id": newState.c, "parent_id": null, "user_id": null} : newState.c,
+        last_changed: last_changed,
+        last_updated: newState.lu ? new Date(newState.lu * 1000).toISOString() : last_changed,
       };
     }
   }
@@ -70,36 +71,31 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
 
       const { "+": toAdd, "-": toRemove } = updates.changed[entityId];
 
-      const attributes =
-        toAdd?.a || toRemove?.a
-          ? { ...entityState.attributes }
-          : entityState.attributes;
-
       if (toAdd) {
         if (toAdd.s) {
           entityState.state = toAdd.s;
         }
         if (toAdd.c) {
-          entityState.context = toAdd.c;
+          entityState.context = { ...entityState.context, ...toAdd.c };
         }
         if (toAdd.lc) {
-          entityState.last_changed = toAdd.lc;
-          entityState.last_updated = toAdd.lc;
-        } else if (toAdd.lu) {
-          entityState.last_updated = toAdd.lu;
+          entityState.last_updated = entityState.last_changed = new Date(toAdd.lc * 1000).toISOString();
         }
-
+        else if (toAdd.lu) {
+          entityState.last_updated = new Date(toAdd.lu * 1000).toISOString();
+        }
         if (toAdd.a) {
-          Object.assign(attributes, toAdd.a);
+          entityState.attributes = { ...entityState.attributes, ...toAdd.a }
         }
       }
       if (toRemove) {
+        const attributes = { ...entityState.attributes };
         for (const key in toRemove.a) {
           delete attributes[key];
         }
+        entityState.attributes = attributes;
       }
 
-      entityState.attributes = attributes;
       state[entityId] = entityState;
     }
   }
