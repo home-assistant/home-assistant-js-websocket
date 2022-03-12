@@ -23,11 +23,16 @@ interface EntityState {
   lu: number;
 }
 
+interface EntityStateRemove {
+  /** attributes */
+  a: string[];
+}
+
 interface EntityDiff {
   /** additions */
   "+"?: Partial<EntityState>;
   /** subtractions */
-  "-"?: Pick<EntityState, "a">;
+  "-"?: EntityStateRemove;
 }
 
 interface StatesUpdates {
@@ -80,6 +85,10 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
       entityState = { ...entityState };
 
       const { "+": toAdd, "-": toRemove } = updates.c[entityId];
+      const attributesChanged = toAdd?.a || toRemove?.a;
+      const attributes = attributesChanged
+        ? { ...entityState.attributes }
+        : entityState.attributes;
 
       if (toAdd) {
         if (toAdd.s) {
@@ -100,17 +109,17 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
           entityState.last_updated = new Date(toAdd.lu * 1000).toISOString();
         }
         if (toAdd.a) {
-          entityState.attributes = { ...entityState.attributes, ...toAdd.a };
+          Object.assign(attributes, toAdd.a);
         }
       }
-      if (toRemove) {
-        const attributes = { ...entityState.attributes };
-        for (const key in toRemove.a) {
+      if (toRemove?.a) {
+        for (const key of toRemove.a) {
           delete attributes[key];
         }
+      }
+      if (attributesChanged) {
         entityState.attributes = attributes;
       }
-
       state[entityId] = entityState;
     }
   }
