@@ -113,7 +113,9 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
         }
       }
       if (toRemove?.a) {
-        toRemove.a.forEach((key) => delete attributes[key]);
+        for (const key of toRemove.a) {
+          delete attributes[key];
+        }
       }
       if (attributesChanged) {
         entityState.attributes = attributes;
