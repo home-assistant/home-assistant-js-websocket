@@ -16,7 +16,7 @@ interface EntityState {
   /** attributes */
   a: { [key: string]: any };
   /** context */
-  c: Context;
+  c: Context | string;
   /** last_changed; if set, also applies to lu */
   lc: number;
   /** last_updated */
@@ -76,7 +76,11 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
           entityState.state = toAdd.s;
         }
         if (toAdd.c) {
-          entityState.context = { ...entityState.context, ...toAdd.c };
+          if (typeof toAdd.c === 'string') {
+            entityState.context = { ...entityState.context, "id": toAdd.c }
+          } else {
+            entityState.context = { ...entityState.context, ...toAdd.c }
+          }
         }
         if (toAdd.lc) {
           entityState.last_updated = entityState.last_changed = new Date(toAdd.lc * 1000).toISOString();
