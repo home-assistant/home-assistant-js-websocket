@@ -11,13 +11,16 @@ export type MessageBase = {
   [key: string]: any;
 };
 
+export type Context = {
+  id: string;
+  user_id: string | null;
+  parent_id: string | null;
+};
+
 export type HassEventBase = {
   origin: string;
   time_fired: string;
-  context: {
-    id: string;
-    user_id: string;
-  };
+  context: Context;
 };
 
 export type HassEvent = HassEventBase & {
@@ -68,7 +71,7 @@ export type HassEntityBase = {
   last_changed: string;
   last_updated: string;
   attributes: HassEntityAttributeBase;
-  context: { id: string; user_id: string | null };
+  context: Context;
 };
 
 export type HassEntityAttributeBase = {

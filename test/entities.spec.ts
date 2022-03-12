@@ -15,12 +15,13 @@ const MOCK_SWITCH = {
 
 const MOCK_ENTITIES = [MOCK_LIGHT, MOCK_SWITCH];
 
-describe("subscribeEntities", () => {
+describe("subscribeEntities legacy", () => {
   let conn: MockConnection;
   let awaitableEvent: AwaitableEvent;
 
   beforeEach(() => {
     conn = new MockConnection();
+    conn.haVersion = "2022.3.0";
     conn.mockResponse("get_states", MOCK_ENTITIES);
     awaitableEvent = new AwaitableEvent();
   });
