@@ -24,22 +24,27 @@ interface EntityState {
 }
 
 interface EntityDiff {
+  /** additions */
   "+"?: Partial<EntityState>;
+  /** subtractions */
   "-"?: Pick<EntityState, "a">;
 }
 
 interface StatesUpdates {
-  add?: Record<string, EntityState>;
-  removed?: string[];
-  changed: Record<string, EntityDiff>;
+  /** add */
+  a?: Record<string, EntityState>;
+  /** remove */
+  r?: string[]; // remove
+  /** change */
+  c: Record<string, EntityDiff>;
 }
 
 function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
   const state = { ...store.state };
 
-  if (updates.add) {
-    for (const entityId in updates.add) {
-      const newState = updates.add[entityId];
+  if (updates.a) {
+    for (const entityId in updates.a) {
+      const newState = updates.a[entityId];
       let last_changed = new Date(newState.lc * 1000).toISOString();
       state[entityId] = {
         entity_id: entityId,
@@ -52,14 +57,14 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
     }
   }
 
-  if (updates.removed) {
-    for (const entityId of updates.removed) {
+  if (updates.r) {
+    for (const entityId of updates.r) {
       delete state[entityId];
     }
   }
 
-  if (updates.changed) {
-    for (const entityId in updates.changed) {
+  if (updates.c) {
+    for (const entityId in updates.c) {
       let entityState = state[entityId];
 
       if (!entityState) {
@@ -69,7 +74,7 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
 
       entityState = { ...entityState };
 
-      const { "+": toAdd, "-": toRemove } = updates.changed[entityId];
+      const { "+": toAdd, "-": toRemove } = updates.c[entityId];
 
       if (toAdd) {
         if (toAdd.s) {
