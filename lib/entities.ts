@@ -50,9 +50,14 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
         entity_id: entityId,
         state: newState.s,
         attributes: newState.a,
-        context: (typeof newState.c === 'string') ? {"id": newState.c, "parent_id": null, "user_id": null} : newState.c,
+        context:
+          typeof newState.c === "string"
+            ? { id: newState.c, parent_id: null, user_id: null }
+            : newState.c,
         last_changed: last_changed,
-        last_updated: newState.lu ? new Date(newState.lu * 1000).toISOString() : last_changed,
+        last_updated: newState.lu
+          ? new Date(newState.lu * 1000).toISOString()
+          : last_changed,
       };
     }
   }
@@ -81,20 +86,21 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
           entityState.state = toAdd.s;
         }
         if (toAdd.c) {
-          if (typeof toAdd.c === 'string') {
-            entityState.context = { ...entityState.context, "id": toAdd.c }
+          if (typeof toAdd.c === "string") {
+            entityState.context = { ...entityState.context, id: toAdd.c };
           } else {
-            entityState.context = { ...entityState.context, ...toAdd.c }
+            entityState.context = { ...entityState.context, ...toAdd.c };
           }
         }
         if (toAdd.lc) {
-          entityState.last_updated = entityState.last_changed = new Date(toAdd.lc * 1000).toISOString();
-        }
-        else if (toAdd.lu) {
+          entityState.last_updated = entityState.last_changed = new Date(
+            toAdd.lc * 1000
+          ).toISOString();
+        } else if (toAdd.lu) {
           entityState.last_updated = new Date(toAdd.lu * 1000).toISOString();
         }
         if (toAdd.a) {
-          entityState.attributes = { ...entityState.attributes, ...toAdd.a }
+          entityState.attributes = { ...entityState.attributes, ...toAdd.a };
         }
       }
       if (toRemove) {
