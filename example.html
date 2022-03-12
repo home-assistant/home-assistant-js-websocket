@@ -82,6 +82,14 @@
             const tdState = document.createElement("td");
             const text = document.createTextNode(entities[entId].state);
             tdState.appendChild(text);
+            const attr_last_updated = document.createTextNode(entities[entId].last_updated);
+            tdState.appendChild(attr_last_updated);       
+            const attr_last_changed = document.createTextNode(entities[entId].last_changed);
+            tdState.appendChild(attr_last_changed);                           
+            const attr_text = document.createTextNode(JSON.stringify(entities[entId].attributes));
+            tdState.appendChild(attr_text);
+            const context_text = document.createTextNode(JSON.stringify(entities[entId].context));
+            tdState.appendChild(context_text);
 
             if (
               ["switch", "light", "input_boolean"].includes(
