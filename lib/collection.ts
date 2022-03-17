@@ -66,10 +66,9 @@ export const getCollection = <State>(
           unsubProm = subscribeUpdates(conn, store);
         }
 
-        // Fetch when connection re-established.
-        conn.addEventListener("ready", refreshSwallow);
-
         if (fetchCollection) {
+          // Fetch when connection re-established.
+          conn.addEventListener("ready", refreshSwallow);
           refreshSwallow();
         }
       }
