@@ -8,10 +8,18 @@ export type Collection<State> = {
   subscribe(subscriber: (state: State) => void): UnsubscribeFunc;
 };
 
+/**
+ *
+ * @param conn connection
+ * @param key the key to store it on the connection. Must be unique for each collection.
+ * @param fetchCollection fetch the current state. If undefined assumes subscribeUpdates receives current state
+ * @param subscribeUpdates subscribe to updates on the current state
+ * @returns
+ */
 export const getCollection = <State>(
   conn: Connection,
   key: string,
-  fetchCollection: (conn: Connection) => Promise<State>,
+  fetchCollection: ((conn: Connection) => Promise<State>) | undefined,
   subscribeUpdates?: (
     conn: Connection,
     store: Store<State>
@@ -25,8 +33,13 @@ export const getCollection = <State>(
   let unsubProm: Promise<UnsubscribeFunc>;
   let store = createStore<State>();
 
-  const refresh = () =>
-    fetchCollection(conn).then((state) => store.setState(state, true));
+  const refresh = (): Promise<void> => {
+    if (!fetchCollection) {
+      throw new Error("Collection does not support refresh");
+    }
+
+    return fetchCollection(conn).then((state) => store.setState(state, true));
+  };
 
   const refreshSwallow = () =>
     refresh().catch((err: unknown) => {
@@ -56,7 +69,9 @@ export const getCollection = <State>(
         // Fetch when connection re-established.
         conn.addEventListener("ready", refreshSwallow);
 
-        refreshSwallow();
+        if (fetchCollection) {
+          refreshSwallow();
+        }
       }
 
       const unsub = store.subscribe(subscriber);

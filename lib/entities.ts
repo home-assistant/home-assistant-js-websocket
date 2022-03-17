@@ -167,7 +167,7 @@ const legacySubscribeUpdates = (conn: Connection, store: Store<HassEntities>) =>
 
 export const entitiesColl = (conn: Connection) =>
   atLeastHaVersion(conn.haVersion, 2022, 4, 0)
-    ? getCollection(conn, "_ent", () => Promise.resolve({}), subscribeUpdates)
+    ? getCollection(conn, "_ent", undefined, subscribeUpdates)
     : getCollection(conn, "_ent", legacyFetchEntities, legacySubscribeUpdates);
 
 export const subscribeEntities = (
