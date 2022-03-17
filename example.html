@@ -1,7 +1,9 @@
+<!DOCTYPE html>
 <html>
   <!-- To try locally, run: `yarn build` and then `npx http-server -o` -->
 
   <body>
+    <button onclick="connection.reconnect()">Reconnect</button>
     <table>
       <tbody></tbody>
     </table>
@@ -48,6 +50,9 @@
           }
         }
         const connection = await createConnection({ auth });
+        for (const ev of ["disconnected", "ready", "reconnect-error"]) {
+          connection.addEventListener(ev, () => console.log(`Event: ${ev}`));
+        }
         subscribeEntities(connection, (entities) =>
           renderEntities(connection, entities)
         );
