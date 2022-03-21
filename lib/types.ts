@@ -116,6 +116,7 @@ export type HassServices = {
 
 export type HassUser = {
   id: string;
+  is_admin: boolean;
   is_owner: boolean;
   name: string;
 };
