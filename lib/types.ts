@@ -84,6 +84,7 @@ export type HassEntityAttributeBase = {
   assumed_state?: boolean;
   device_class?: string;
   state_class?: string;
+  restored?: boolean;
 };
 
 export type HassEntity = HassEntityBase & {
