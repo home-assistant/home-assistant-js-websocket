@@ -91,7 +91,7 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
         : entityState.attributes;
 
       if (toAdd) {
-        if (toAdd.s) {
+        if (toAdd.s !== undefined) {
           entityState.state = toAdd.s;
         }
         if (toAdd.c) {
