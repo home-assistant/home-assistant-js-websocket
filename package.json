@@ -16,7 +16,7 @@
     },
     "./haws.cjs": "./dist/haws.cjs",
     "./haws.umd.js": "./dist/haws.umd.js",
-    "./dist/": "./dist/"
+    "./dist/": "./dist/*"
   },
   "repository": {
     "url": "https://github.com/home-assistant/home-assistant-js-websocket.git",
