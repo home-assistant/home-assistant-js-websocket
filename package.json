@@ -2,7 +2,7 @@
   "name": "home-assistant-js-websocket",
   "type": "module",
   "sideEffects": false,
-  "version": "7.0.4",
+  "version": "7.0.5",
   "description": "Home Assistant websocket client",
   "source": "lib/index.ts",
   "types": "dist/index.d.ts",
@@ -16,7 +16,7 @@
     },
     "./haws.cjs": "./dist/haws.cjs",
     "./haws.umd.js": "./dist/haws.umd.js",
-    "./dist/": "./dist/*"
+    "./dist/*": "./dist/*"
   },
   "repository": {
     "url": "https://github.com/home-assistant/home-assistant-js-websocket.git",
