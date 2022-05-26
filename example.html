@@ -4,6 +4,7 @@
 
   <body>
     <button onclick="connection.reconnect()">Reconnect</button>
+    <button onclick="setupEntitiesSubscription()">Re-subscribe</button>
     <table>
       <tbody></tbody>
     </table>
@@ -53,9 +54,7 @@
         for (const ev of ["disconnected", "ready", "reconnect-error"]) {
           connection.addEventListener(ev, () => console.log(`Event: ${ev}`));
         }
-        subscribeEntities(connection, (entities) =>
-          renderEntities(connection, entities)
-        );
+
         // Clear url if we have been able to establish a connection
         if (location.search.includes("auth_callback=1")) {
           history.replaceState(null, "", location.pathname);
@@ -68,7 +67,22 @@
           console.log("Logged in as", user);
           window.user = user;
         });
+
+        setupEntitiesSubscription();
       })();
+
+      let unsubEntities;
+
+      window.setupEntitiesSubscription = async () => {
+        if (unsubEntities) {
+          unsubEntities();
+          console.log("Sleeping");
+          await new Promise((resolve) => setTimeout(resolve, 4000));
+        }
+        unsubEntities = subscribeEntities(connection, (entities) =>
+          renderEntities(connection, entities)
+        );
+      };
 
       function renderEntities(connection, entities) {
         window.entities = entities;

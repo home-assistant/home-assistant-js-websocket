@@ -8,6 +8,10 @@ export type Collection<State> = {
   subscribe(subscriber: (state: State) => void): UnsubscribeFunc;
 };
 
+// Time to wait to unsubscribe from updates after last subscriber unsubscribes
+const UNSUB_GRACE_PERIOD = 5000; // 5 seconds
+const DEBUG = false;
+
 /**
  *
  * @param conn connection
@@ -31,6 +35,7 @@ export const getCollection = <State>(
 
   let active = 0;
   let unsubProm: Promise<UnsubscribeFunc>;
+  let unsubTimer: number | undefined;
   let store = createStore<State>();
 
   const refresh = (): Promise<void> => {
@@ -50,6 +55,64 @@ export const getCollection = <State>(
       }
     });
 
+  const setupUpdateSubscription = () => {
+    if (unsubTimer !== undefined) {
+      if (DEBUG) {
+        console.log(`Prevented unsubscribe for ${key}`);
+      }
+      clearTimeout(unsubTimer);
+      unsubTimer = undefined;
+      return;
+    }
+
+    if (DEBUG) {
+      console.log(`Subscribing to ${key}`);
+    }
+
+    if (subscribeUpdates) {
+      unsubProm = subscribeUpdates(conn, store);
+    }
+
+    if (fetchCollection) {
+      // Fetch when connection re-established.
+      conn.addEventListener("ready", refreshSwallow);
+      refreshSwallow();
+    }
+
+    conn.addEventListener("disconnected", handleDisconnect);
+  };
+
+  const teardownUpdateSubscription = () => {
+    if (DEBUG) {
+      console.log(`Unsubscribing from ${key}`);
+    }
+    unsubTimer = undefined;
+
+    // Unsubscribe from changes
+    if (unsubProm)
+      unsubProm.then((unsub) => {
+        unsub();
+      });
+    conn.removeEventListener("ready", refresh);
+    conn.removeEventListener("disconnected", handleDisconnect);
+  };
+
+  const scheduleTeardownUpdateSubscription = () => {
+    if (DEBUG) {
+      console.log(`Scheduling unsubscribing from ${key}`);
+    }
+    unsubTimer = setTimeout(teardownUpdateSubscription, UNSUB_GRACE_PERIOD);
+  };
+
+  const handleDisconnect = () => {
+    // If we're going to unsubscribe and then lose connection,
+    // just unsubscribe immediately.
+    if (unsubTimer) {
+      clearTimeout(unsubTimer);
+      teardownUpdateSubscription();
+    }
+  };
+
   conn[key] = {
     get state() {
       return store.state;
@@ -60,17 +123,13 @@ export const getCollection = <State>(
     subscribe(subscriber: (state: State) => void): UnsubscribeFunc {
       active++;
 
+      if (DEBUG) {
+        console.log(`New subscriber for ${key}. Active subscribers: ${active}`);
+      }
+
       // If this was the first subscriber, attach collection
       if (active === 1) {
-        if (subscribeUpdates) {
-          unsubProm = subscribeUpdates(conn, store);
-        }
-
-        if (fetchCollection) {
-          // Fetch when connection re-established.
-          conn.addEventListener("ready", refreshSwallow);
-          refreshSwallow();
-        }
+        setupUpdateSubscription();
       }
 
       const unsub = store.subscribe(subscriber);
@@ -84,13 +143,13 @@ export const getCollection = <State>(
       return () => {
         unsub();
         active--;
+
+        if (DEBUG) {
+          console.log(`Unsubscribe for ${key}. Active subscribers: ${active}`);
+        }
+
         if (!active) {
-          // Unsubscribe from changes
-          if (unsubProm)
-            unsubProm.then((unsub) => {
-              unsub();
-            });
-          conn.removeEventListener("ready", refresh);
+          scheduleTeardownUpdateSubscription();
         }
       };
     },
