@@ -446,15 +446,15 @@ import {
 NodeJS does not have a WebSocket client built-in, but there are some good ones on NPM. We recommend ws. The easiest way to enable WebSocket is to polyfill it into the global namespace.
 Look at https://github.com/keesschollaart81/vscode-home-assistant/blob/master/src/language-service/src/home-assistant/socket.ts as an example using ws.
 
-If using TypeScript, you will need to install `@types/ws` as well. 
+If using TypeScript, you will need to install `@types/ws` as well.
 
 ```js
-globalThis.WebSocket = require("ws")
+globalThis.WebSocket = require("ws");
 ```
 
 or in TypeScript:
 
 ```ts
-const wnd = globalThis
-wnd.WebSocket = require("ws")
+const wnd = globalThis;
+wnd.WebSocket = require("ws");
 ```
