@@ -443,22 +443,18 @@ import {
 
 ## Using this in NodeJS
 
-NodeJS does not have a WebSocket client built-in, but there are some good ones on NPM. We recommend ws. You will need to create your own version of createSocket and pass that to the constructor.
+NodeJS does not have a WebSocket client built-in, but there are some good ones on NPM. We recommend ws. The easiest way to enable WebSocket is to polyfill it into the global namespace.
 Look at https://github.com/keesschollaart81/vscode-home-assistant/blob/master/src/language-service/src/home-assistant/socket.ts as an example using ws.
 
-If using TypeScript, you will need to add `"skipLibCheck": true` to your tsconfig.json to avoid typing errors.
+If using TypeScript, you will need to install `@types/ws` as well.
 
 ```js
-const WebSocket = require("ws");
+globalThis.WebSocket = require("ws");
+```
 
-createConnection({
-  createSocket() {
-    // Open connection
-    const ws = new WebSocket("ws://localhost:8123");
+or in TypeScript:
 
-    // TODO: Handle authentication with Home Assistant yourself :)
-
-    return ws;
-  },
-});
+```ts
+const wnd = globalThis;
+wnd.WebSocket = require("ws");
 ```
