@@ -205,11 +205,10 @@ export class Auth {
     if (!this.data.refresh_token) throw new Error("No refresh_token to revoke");
 
     const formData = new FormData();
-    formData.append("action", "revoke");
     formData.append("token", this.data.refresh_token);
 
     // There is no error checking, as revoke will always return 200
-    await fetch(`${this.data.hassUrl}/auth/token`, {
+    await fetch(`${this.data.hassUrl}/auth/revoke`, {
       method: "POST",
       credentials: "same-origin",
       body: formData,
