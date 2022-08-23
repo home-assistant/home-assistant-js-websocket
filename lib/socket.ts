@@ -16,6 +16,22 @@ export const MSG_TYPE_AUTH_REQUIRED = "auth_required";
 export const MSG_TYPE_AUTH_INVALID = "auth_invalid";
 export const MSG_TYPE_AUTH_OK = "auth_ok";
 
+type WebSocketAuthOKMessage = {
+  type: "auth_ok";
+  ha_version: string;
+};
+
+
+type WebSocketAuthRequiredMessage = {
+  type: "auth_required";
+};
+
+type WebSocketAuthInvalidMessage = {
+  type: "auth_invalid";
+};
+
+type WebSocketAuthMessage = WebSocketAuthOKMessage | WebSocketAuthRequiredMessage | WebSocketAuthInvalidMessage;
+
 export interface HaWebSocket extends WebSocket {
   haVersion: string;
 }
@@ -95,34 +111,38 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
     };
 
     const handleMessage = async (event: MessageEvent) => {
-      const message = JSON.parse(event.data);
-
-      if (DEBUG) {
-        console.log("[Auth phase] Received", message);
+      let messages: WebSocketAuthMessage | [WebSocketAuthMessage] = JSON.parse(event.data);
+      if (!Array.isArray(messages)) {
+        messages = [messages];
       }
-      switch (message.type) {
-        case MSG_TYPE_AUTH_INVALID:
-          invalidAuth = true;
-          socket.close();
-          break;
+      messages.forEach((message) => {
+        if (DEBUG) {
+          console.log("[Auth phase] Received", message);
+        }
+        switch (message.type) {
+          case MSG_TYPE_AUTH_INVALID:
+            invalidAuth = true;
+            socket.close();
+            break;
 
-        case MSG_TYPE_AUTH_OK:
-          socket.removeEventListener("open", handleOpen);
-          socket.removeEventListener("message", handleMessage);
-          socket.removeEventListener("close", closeMessage);
-          socket.removeEventListener("error", closeMessage);
-          socket.haVersion = message.ha_version;
-          promResolve(socket);
-          break;
+          case MSG_TYPE_AUTH_OK:
+            socket.removeEventListener("open", handleOpen);
+            socket.removeEventListener("message", handleMessage);
+            socket.removeEventListener("close", closeMessage);
+            socket.removeEventListener("error", closeMessage);
+            socket.haVersion = message.ha_version;
+            promResolve(socket);
+            break;
 
-        default:
-          if (DEBUG) {
-            // We already send response to this message when socket opens
-            if (message.type !== MSG_TYPE_AUTH_REQUIRED) {
-              console.warn("[Auth phase] Unhandled message", message);
+          default:
+            if (DEBUG) {
+              // We already send response to this message when socket opens
+              if (message.type !== MSG_TYPE_AUTH_REQUIRED) {
+                console.warn("[Auth phase] Unhandled message", message);
+              }
             }
-          }
-      }
+        }
+      )
     };
 
     socket.addEventListener("open", handleOpen);
