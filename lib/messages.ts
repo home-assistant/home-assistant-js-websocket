@@ -11,7 +11,7 @@ export function supported_features() {
   return {
     type: "supported_features",
     id: 1, // Always the first message after auth
-    features: { coalesce_messages: 1.0 },
+    features: { coalesce_messages: 1 },
   };
 }
 
