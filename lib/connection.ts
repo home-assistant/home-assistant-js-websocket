@@ -349,13 +349,15 @@ export class Connection {
   }
 
   private _handleMessage = (event: MessageEvent) => {
-    let message_group: WebSocketResponse | WebSocketResponse[] = JSON.parse(event.data);
+    let message_group: WebSocketResponse | WebSocketResponse[] = JSON.parse(
+      event.data
+    );
 
     if (!Array.isArray(message_group)) {
       message_group = [message_group];
     }
 
-    message_group.forEach((message) =>  {
+    message_group.forEach((message) => {
       if (DEBUG) {
         console.log("Received", message);
       }
@@ -365,7 +367,9 @@ export class Connection {
       switch (message.type) {
         case "event":
           if (info) {
-            (info as SubscribeEventCommmandInFlight<any>).callback(message.event);
+            (info as SubscribeEventCommmandInFlight<any>).callback(
+              message.event
+            );
           } else {
             console.warn(
               `Received event for unknown subscription ${message.id}. Unsubscribing.`
