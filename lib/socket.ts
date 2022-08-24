@@ -111,11 +111,11 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
     };
 
     const handleMessage = async (event: MessageEvent) => {
-      let messages: WebSocketAuthMessage | [WebSocketAuthMessage] = JSON.parse(event.data);
-      if (!Array.isArray(messages)) {
-        messages = [messages];
+      let message_group: WebSocketAuthMessage | [WebSocketAuthMessage] = JSON.parse(event.data);
+      if (!Array.isArray(message_group)) {
+        message_group = [message_group];
       }
-      messages.forEach((message) => {
+      message_group.forEach((message) => {
         if (DEBUG) {
           console.log("[Auth phase] Received", message);
         }
@@ -142,7 +142,7 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
               }
             }
         }
-      )
+      });
     };
 
     socket.addEventListener("open", handleOpen);

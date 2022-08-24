@@ -349,13 +349,13 @@ export class Connection {
   }
 
   private _handleMessage = (event: MessageEvent) => {
-    let messages: WebSocketResponse | [WebSocketResponse] = JSON.parse(event.data);
+    let message_group: WebSocketResponse | [WebSocketResponse] = JSON.parse(event.data);
 
-    if (!Array.isArray(messages)) {
-      messages = [messages]
+    if (!Array.isArray(message_group)) {
+      message_group = [message_group];
     }
 
-    messages.forEach((message) =>  {
+    message_group.forEach((message) =>  {
       if (DEBUG) {
         console.log("Received", message);
       }
@@ -405,7 +405,7 @@ export class Connection {
             console.warn("Unhandled message", message);
           }
       }
-    })
+    });
   };
 
   private _handleClose = async () => {
