@@ -16,22 +16,6 @@ export const MSG_TYPE_AUTH_REQUIRED = "auth_required";
 export const MSG_TYPE_AUTH_INVALID = "auth_invalid";
 export const MSG_TYPE_AUTH_OK = "auth_ok";
 
-type WebSocketAuthOKMessage = {
-  type: "auth_ok";
-  ha_version: string;
-};
-
-
-type WebSocketAuthRequiredMessage = {
-  type: "auth_required";
-};
-
-type WebSocketAuthInvalidMessage = {
-  type: "auth_invalid";
-};
-
-type WebSocketAuthMessage = WebSocketAuthOKMessage | WebSocketAuthRequiredMessage | WebSocketAuthInvalidMessage;
-
 export interface HaWebSocket extends WebSocket {
   haVersion: string;
 }
@@ -111,7 +95,8 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
     };
 
     const handleMessage = async (event: MessageEvent) => {
-      const message: WebSocketAuthMessage = JSON.parse(event.data);
+      const message = JSON.parse(event.data);
+
       if (DEBUG) {
         console.log("[Auth phase] Received", message);
       }
