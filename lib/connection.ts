@@ -349,7 +349,7 @@ export class Connection {
   }
 
   private _handleMessage = (event: MessageEvent) => {
-    let message_group: WebSocketResponse | [WebSocketResponse] = JSON.parse(event.data);
+    let message_group: WebSocketResponse | WebSocketResponse[] = JSON.parse(event.data);
 
     if (!Array.isArray(message_group)) {
       message_group = [message_group];
