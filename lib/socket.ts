@@ -111,38 +111,33 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
     };
 
     const handleMessage = async (event: MessageEvent) => {
-      let message_group: WebSocketAuthMessage | [WebSocketAuthMessage] = JSON.parse(event.data);
-      if (!Array.isArray(message_group)) {
-        message_group = [message_group];
+      const message: WebSocketAuthMessage = JSON.parse(event.data);
+      if (DEBUG) {
+        console.log("[Auth phase] Received", message);
       }
-      message_group.forEach((message) => {
-        if (DEBUG) {
-          console.log("[Auth phase] Received", message);
-        }
-        switch (message.type) {
-          case MSG_TYPE_AUTH_INVALID:
-            invalidAuth = true;
-            socket.close();
-            break;
+      switch (message.type) {
+        case MSG_TYPE_AUTH_INVALID:
+          invalidAuth = true;
+          socket.close();
+          break;
 
-          case MSG_TYPE_AUTH_OK:
-            socket.removeEventListener("open", handleOpen);
-            socket.removeEventListener("message", handleMessage);
-            socket.removeEventListener("close", closeMessage);
-            socket.removeEventListener("error", closeMessage);
-            socket.haVersion = message.ha_version;
-            promResolve(socket);
-            break;
+        case MSG_TYPE_AUTH_OK:
+          socket.removeEventListener("open", handleOpen);
+          socket.removeEventListener("message", handleMessage);
+          socket.removeEventListener("close", closeMessage);
+          socket.removeEventListener("error", closeMessage);
+          socket.haVersion = message.ha_version;
+          promResolve(socket);
+          break;
 
-          default:
-            if (DEBUG) {
-              // We already send response to this message when socket opens
-              if (message.type !== MSG_TYPE_AUTH_REQUIRED) {
-                console.warn("[Auth phase] Unhandled message", message);
-              }
+        default:
+          if (DEBUG) {
+            // We already send response to this message when socket opens
+            if (message.type !== MSG_TYPE_AUTH_REQUIRED) {
+              console.warn("[Auth phase] Unhandled message", message);
             }
-        }
-      });
+          }
+      }
     };
 
     socket.addEventListener("open", handleOpen);
