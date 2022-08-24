@@ -9,6 +9,7 @@ import {
 import { Error } from "./types.js";
 import type { ConnectionOptions } from "./connection.js";
 import * as messages from "./messages.js";
+import { atLeastHaVersion } from "./util.js";
 
 const DEBUG = false;
 
@@ -112,6 +113,10 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
           socket.removeEventListener("close", closeMessage);
           socket.removeEventListener("error", closeMessage);
           socket.haVersion = message.ha_version;
+          if (atLeastHaVersion(socket.haVersion, 2022, 9, 0)) {
+            socket.send(JSON.stringify(messages.supported_features()));
+          }
+
           promResolve(socket);
           break;
 

@@ -7,6 +7,14 @@ export function auth(accessToken: string) {
   };
 }
 
+export function supported_features() {
+  return {
+    type: "supported_features",
+    id: 1, // Always the first message after auth
+    features: { coalesce_messages: 1.0 },
+  };
+}
+
 export function states() {
   return {
     type: "get_states",

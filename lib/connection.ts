@@ -105,7 +105,7 @@ export class Connection {
     //  - createSocket: create a new Socket connection
     this.options = options;
     // id if next command to send
-    this.commandId = 1;
+    this.commandId = 2; // socket may send 1 at the start to enable features
     // info about active subscriptions and commands in flight
     this.commands = new Map();
     // map of event listeners
