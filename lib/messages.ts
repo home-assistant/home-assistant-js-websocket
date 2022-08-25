@@ -7,7 +7,7 @@ export function auth(accessToken: string) {
   };
 }
 
-export function supported_features() {
+export function supportedFeatures() {
   return {
     type: "supported_features",
     id: 1, // Always the first message after auth
