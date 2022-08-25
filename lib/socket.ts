@@ -114,7 +114,7 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
           socket.removeEventListener("error", closeMessage);
           socket.haVersion = message.ha_version;
           if (atLeastHaVersion(socket.haVersion, 2022, 9)) {
-            socket.send(JSON.stringify(messages.supported_features()));
+            socket.send(JSON.stringify(messages.supportedFeatures()));
           }
 
           promResolve(socket);
