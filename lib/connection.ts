@@ -105,7 +105,7 @@ export class Connection {
     //  - createSocket: create a new Socket connection
     this.options = options;
     // id if next command to send
-    this.commandId = 1;
+    this.commandId = 2; // socket may send 1 at the start to enable features
     // info about active subscriptions and commands in flight
     this.commands = new Map();
     // map of event listeners
@@ -349,57 +349,67 @@ export class Connection {
   }
 
   private _handleMessage = (event: MessageEvent) => {
-    const message: WebSocketResponse = JSON.parse(event.data);
+    let messageGroup: WebSocketResponse | WebSocketResponse[] = JSON.parse(
+      event.data
+    );
 
-    if (DEBUG) {
-      console.log("Received", message);
+    if (!Array.isArray(messageGroup)) {
+      messageGroup = [messageGroup];
     }
 
-    const info = this.commands.get(message.id);
+    messageGroup.forEach((message) => {
+      if (DEBUG) {
+        console.log("Received", message);
+      }
 
-    switch (message.type) {
-      case "event":
-        if (info) {
-          (info as SubscribeEventCommmandInFlight<any>).callback(message.event);
-        } else {
-          console.warn(
-            `Received event for unknown subscription ${message.id}. Unsubscribing.`
-          );
-          this.sendMessagePromise(messages.unsubscribeEvents(message.id));
-        }
-        break;
+      const info = this.commands.get(message.id);
 
-      case "result":
-        // No info is fine. If just sendMessage is used, we did not store promise for result
-        if (info) {
-          if (message.success) {
-            info.resolve(message.result);
+      switch (message.type) {
+        case "event":
+          if (info) {
+            (info as SubscribeEventCommmandInFlight<any>).callback(
+              message.event
+            );
+          } else {
+            console.warn(
+              `Received event for unknown subscription ${message.id}. Unsubscribing.`
+            );
+            this.sendMessagePromise(messages.unsubscribeEvents(message.id));
+          }
+          break;
 
-            // Don't remove subscriptions.
-            if (!("subscribe" in info)) {
+        case "result":
+          // No info is fine. If just sendMessage is used, we did not store promise for result
+          if (info) {
+            if (message.success) {
+              info.resolve(message.result);
+
+              // Don't remove subscriptions.
+              if (!("subscribe" in info)) {
+                this.commands.delete(message.id);
+              }
+            } else {
+              info.reject(message.error);
               this.commands.delete(message.id);
             }
-          } else {
-            info.reject(message.error);
-            this.commands.delete(message.id);
           }
-        }
-        break;
+          break;
 
-      case "pong":
-        if (info) {
-          info.resolve();
-          this.commands.delete(message.id);
-        } else {
-          console.warn(`Received unknown pong response ${message.id}`);
-        }
-        break;
+        case "pong":
+          if (info) {
+            info.resolve();
+            this.commands.delete(message.id);
+          } else {
+            console.warn(`Received unknown pong response ${message.id}`);
+          }
+          break;
 
-      default:
-        if (DEBUG) {
-          console.warn("Unhandled message", message);
-        }
-    }
+        default:
+          if (DEBUG) {
+            console.warn("Unhandled message", message);
+          }
+      }
+    });
   };
 
   private _handleClose = async () => {
