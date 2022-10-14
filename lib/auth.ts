@@ -226,7 +226,7 @@ export function createLongLivedTokenAuth(
   access_token: string
 ) {
   // Strip trailing slash.
-  if (hassUrl && hassUrl[hassUrl.length - 1] === "/") {
+  if (hassUrl[hassUrl.length - 1] === "/") {
     hassUrl = hassUrl.substr(0, hassUrl.length - 1);
   }
   
