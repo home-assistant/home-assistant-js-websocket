@@ -63,6 +63,8 @@ export type HassConfig = {
   external_url: string | null;
   internal_url: string | null;
   currency: string;
+  country: string | null;
+  language: string;
 };
 
 export type HassEntityBase = {
