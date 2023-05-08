@@ -27,7 +27,8 @@ export const getCollection = <State>(
   subscribeUpdates?: (
     conn: Connection,
     store: Store<State>
-  ) => Promise<UnsubscribeFunc>
+  ) => Promise<UnsubscribeFunc>,
+  unsubGrace = true
 ): Collection<State> => {
   if (conn[key]) {
     return conn[key];
@@ -93,6 +94,7 @@ export const getCollection = <State>(
       unsubProm.then((unsub) => {
         unsub();
       });
+    store.clearState();
     conn.removeEventListener("ready", refresh);
     conn.removeEventListener("disconnected", handleDisconnect);
   };
@@ -149,7 +151,9 @@ export const getCollection = <State>(
         }
 
         if (!active) {
-          scheduleTeardownUpdateSubscription();
+          unsubGrace
+            ? scheduleTeardownUpdateSubscription()
+            : teardownUpdateSubscription();
         }
       };
     },

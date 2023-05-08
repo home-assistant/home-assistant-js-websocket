@@ -15,6 +15,7 @@ export type Store<State> = {
   state: State | undefined;
   action(action: Action<State>): BoundAction<State>;
   setState(update: Partial<State>, overwrite?: boolean): void;
+  clearState(): void;
   subscribe(listener: Listener<State>): UnsubscribeFunc;
 };
 
@@ -82,12 +83,16 @@ export const createStore = <State>(state?: State): Store<State> => {
      */
     setState,
 
+    clearState() {
+      state = undefined;
+    },
+
     /**
      * Register a listener function to be called whenever state is changed. Returns an `unsubscribe()` function.
      * @param {Function} listener	A function to call when state changes. Gets passed the new state.
      * @returns {Function} unsubscribe()
      */
-    subscribe(listener: Listener<State>) {
+    subscribe(listener: Listener<State>): UnsubscribeFunc {
       listeners.push(listener);
       return () => {
         unsubscribe(listener);
