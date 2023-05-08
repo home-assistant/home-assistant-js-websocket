@@ -1,7 +1,7 @@
 import { getCollection } from "./collection.js";
 import {
   Context,
-  HassEntities,
+  HassEntityStates,
   StateChangedEvent,
   UnsubscribeFunc,
 } from "./types.js";
@@ -44,7 +44,7 @@ interface StatesUpdates {
   c: Record<string, EntityDiff>;
 }
 
-function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
+function processEvent(store: Store<HassEntityStates>, updates: StatesUpdates) {
   const state = { ...store.state };
 
   if (updates.a) {
@@ -127,13 +127,13 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
   store.setState(state, true);
 }
 
-const subscribeUpdates = (conn: Connection, store: Store<HassEntities>) =>
+const subscribeUpdates = (conn: Connection, store: Store<HassEntityStates>) =>
   conn.subscribeMessage<StatesUpdates>((ev) => processEvent(store, ev), {
     type: "subscribe_entities",
   });
 
 function legacyProcessEvent(
-  store: Store<HassEntities>,
+  store: Store<HassEntityStates>,
   event: StateChangedEvent
 ) {
   const state = store.state;
@@ -143,34 +143,44 @@ function legacyProcessEvent(
   if (new_state) {
     store.setState({ [new_state.entity_id]: new_state });
   } else {
-    const newEntities = { ...state };
-    delete newEntities[entity_id];
-    store.setState(newEntities, true);
+    const newStates = { ...state };
+    delete newStates[entity_id];
+    store.setState(newStates, true);
   }
 }
 
-async function legacyFetchEntities(conn: Connection): Promise<HassEntities> {
+async function legacyFetchEntityStates(
+  conn: Connection
+): Promise<HassEntityStates> {
   const states = await getStates(conn);
-  const entities: HassEntities = {};
+  const entityStates: HassEntityStates = {};
   for (let i = 0; i < states.length; i++) {
     const state = states[i];
-    entities[state.entity_id] = state;
+    entityStates[state.entity_id] = state;
   }
-  return entities;
+  return entityStates;
 }
 
-const legacySubscribeUpdates = (conn: Connection, store: Store<HassEntities>) =>
+const legacySubscribeUpdates = (
+  conn: Connection,
+  store: Store<HassEntityStates>
+) =>
   conn.subscribeEvents<StateChangedEvent>(
     (ev) => legacyProcessEvent(store, ev as StateChangedEvent),
     "state_changed"
   );
 
-export const entitiesColl = (conn: Connection) =>
+export const entityStatesColl = (conn: Connection) =>
   atLeastHaVersion(conn.haVersion, 2022, 4, 0)
     ? getCollection(conn, "_ent", undefined, subscribeUpdates)
-    : getCollection(conn, "_ent", legacyFetchEntities, legacySubscribeUpdates);
+    : getCollection(
+        conn,
+        "_ent",
+        legacyFetchEntityStates,
+        legacySubscribeUpdates
+      );
 
-export const subscribeEntities = (
+export const subscribeEntityStates = (
   conn: Connection,
-  onChange: (state: HassEntities) => void
-): UnsubscribeFunc => entitiesColl(conn).subscribe(onChange);
+  onChange: (state: HassEntityStates) => void
+): UnsubscribeFunc => entityStatesColl(conn).subscribe(onChange);
