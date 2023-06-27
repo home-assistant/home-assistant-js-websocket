@@ -107,6 +107,7 @@ export type HassService = {
       selector?: {};
     };
   };
+  response?: { optional: boolean };
 };
 
 export type HassDomainServices = {
