@@ -28,7 +28,7 @@ export const getCollection = <State>(
     conn: Connection,
     store: Store<State>
   ) => Promise<UnsubscribeFunc>,
-  unsubGrace = true
+  options: { unsubGrace: boolean } = { unsubGrace: true }
 ): Collection<State> => {
   if (conn[key]) {
     return conn[key];
@@ -151,7 +151,7 @@ export const getCollection = <State>(
         }
 
         if (!active) {
-          unsubGrace
+          options.unsubGrace
             ? scheduleTeardownUpdateSubscription()
             : teardownUpdateSubscription();
         }
