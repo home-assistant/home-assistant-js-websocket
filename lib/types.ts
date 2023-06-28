@@ -32,8 +32,8 @@ export type StateChangedEvent = HassEventBase & {
   event_type: "state_changed";
   data: {
     entity_id: string;
-    new_state: HassEntity | null;
-    old_state: HassEntity | null;
+    new_state: HassEntityState | null;
+    old_state: HassEntityState | null;
   };
 };
 
@@ -67,16 +67,16 @@ export type HassConfig = {
   language: string;
 };
 
-export type HassEntityBase = {
+export type HassEntityStateBase = {
   entity_id: string;
   state: string;
   last_changed: string;
   last_updated: string;
-  attributes: HassEntityAttributeBase;
+  attributes: HassEntityStateAttributeBase;
   context: Context;
 };
 
-export type HassEntityAttributeBase = {
+export type HassEntityStateAttributeBase = {
   friendly_name?: string;
   unit_of_measurement?: string;
   icon?: string;
@@ -89,11 +89,11 @@ export type HassEntityAttributeBase = {
   restored?: boolean;
 };
 
-export type HassEntity = HassEntityBase & {
+export type HassEntityState = HassEntityStateBase & {
   attributes: { [key: string]: any };
 };
 
-export type HassEntities = { [entity_id: string]: HassEntity };
+export type HassEntityStates = { [entity_id: string]: HassEntityState };
 
 export type HassService = {
   name?: string;

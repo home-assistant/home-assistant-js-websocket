@@ -1,6 +1,6 @@
 import * as assert from "assert";
 
-import { subscribeEntities } from "../dist/entities";
+import { subscribeEntityStates } from "../dist/states";
 import { MockConnection, AwaitableEvent } from "./util";
 
 const MOCK_LIGHT = {
@@ -28,7 +28,7 @@ describe("subscribeEntities legacy", () => {
 
   it("should load initial entities", async () => {
     awaitableEvent.prime();
-    subscribeEntities(conn, awaitableEvent.set);
+    subscribeEntityStates(conn, awaitableEvent.set);
 
     const entities = await awaitableEvent.wait();
     assert.deepStrictEqual(entities, {
@@ -38,7 +38,7 @@ describe("subscribeEntities legacy", () => {
   });
 
   it("should handle state changed with updated state", async () => {
-    subscribeEntities(conn, awaitableEvent.set);
+    subscribeEntityStates(conn, awaitableEvent.set);
 
     await 0;
     await 0;
@@ -68,7 +68,7 @@ describe("subscribeEntities legacy", () => {
   });
 
   it("should handle state changed with new state", async () => {
-    subscribeEntities(conn, awaitableEvent.set);
+    subscribeEntityStates(conn, awaitableEvent.set);
 
     await 0;
     await 0;
@@ -99,7 +99,7 @@ describe("subscribeEntities legacy", () => {
   });
 
   it("should handle state changed with removed state", async () => {
-    subscribeEntities(conn, awaitableEvent.set);
+    subscribeEntityStates(conn, awaitableEvent.set);
 
     await 0;
     await 0;
