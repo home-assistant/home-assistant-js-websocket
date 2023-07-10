@@ -2,6 +2,7 @@ import { parseQuery } from "./util.js";
 import {
   ERR_HASS_HOST_REQUIRED,
   ERR_INVALID_AUTH,
+  ERR_INVALID_AUTH_CALLBACK,
   ERR_INVALID_HTTPS_TO_HTTP,
 } from "./errors.js";
 
@@ -24,6 +25,7 @@ export type getAuthOptions = {
   authCode?: string;
   saveTokens?: SaveTokensFunc;
   loadTokens?: LoadTokensFunc;
+  limitHassInstance?: boolean;
 };
 
 type QueryCallbackData =
@@ -244,9 +246,10 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
   }
   const clientId =
     options.clientId !== undefined ? options.clientId : genClientId();
+  const limitHassInstance = options.limitHassInstance === true;
 
   // Use auth code if it was passed in
-  if (!data && options.authCode && hassUrl) {
+  if (options.authCode && hassUrl) {
     data = await fetchToken(hassUrl, clientId, options.authCode);
     if (options.saveTokens) {
       options.saveTokens(data);
@@ -261,6 +264,14 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
     if ("auth_callback" in query) {
       // Restore state
       const state = decodeOAuthState(query.state);
+
+      if (
+        limitHassInstance &&
+        (state.hassUrl !== hassUrl || state.clientId !== clientId)
+      ) {
+        throw ERR_INVALID_AUTH_CALLBACK;
+      }
+
       data = await fetchToken(state.hassUrl, state.clientId, query.code);
       if (options.saveTokens) {
         options.saveTokens(data);
