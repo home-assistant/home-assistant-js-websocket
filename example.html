@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <!-- To try locally, run: `yarn build` and then `npx http-server -o` -->
 
@@ -41,7 +41,7 @@
           if (err === ERR_HASS_HOST_REQUIRED) {
             authOptions.hassUrl = prompt(
               "What host to connect to?",
-              "http://localhost:8123"
+              "http://localhost:8123",
             );
             if (!authOptions.hassUrl) return;
             auth = await getAuth(authOptions);
@@ -80,7 +80,7 @@
           await new Promise((resolve) => setTimeout(resolve, 4000));
         }
         unsubEntities = subscribeEntities(connection, (entities) =>
-          renderEntities(connection, entities)
+          renderEntities(connection, entities),
         );
       };
 
@@ -104,7 +104,7 @@
 
             if (
               ["switch", "light", "input_boolean"].includes(
-                entId.split(".", 1)[0]
+                entId.split(".", 1)[0],
               )
             ) {
               const button = document.createElement("button");

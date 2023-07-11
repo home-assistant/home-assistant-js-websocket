@@ -37,7 +37,7 @@ async function connect() {
     if (err === ERR_HASS_HOST_REQUIRED) {
       const hassUrl = prompt(
         "What host to connect to?",
-        "http://localhost:8123"
+        "http://localhost:8123",
       );
       // Redirect user to log in on their instance
       auth = await getAuth({ hassUrl });
@@ -137,7 +137,7 @@ connection.suspendReconnectUntil(
   new Promise((resolve) => {
     // When you want to try to reconnect again, resolve the promise.
     resolve();
-  })
+  }),
 );
 ```
 
@@ -154,7 +154,7 @@ connection.suspendReconnectUntil(
   new Promise((resolve) => {
     // When you want to try to reconnect again, resolve the promise.
     resolve();
-  })
+  }),
 );
 connection.suspend();
 ```
@@ -166,7 +166,7 @@ connection.suspend(
   new Promise((resolve) => {
     // When you want to try to reconnect again, resolve the promise.
     resolve();
-  })
+  }),
 );
 ```
 
@@ -435,7 +435,7 @@ import {
 (async () => {
   const auth = createLongLivedTokenAuth(
     "http://localhost:8123",
-    "YOUR ACCESS TOKEN"
+    "YOUR ACCESS TOKEN",
   );
 
   const connection = await createConnection({ auth });
