@@ -26,9 +26,9 @@ export const getCollection = <State>(
   fetchCollection: ((conn: Connection) => Promise<State>) | undefined,
   subscribeUpdates?: (
     conn: Connection,
-    store: Store<State>
+    store: Store<State>,
   ) => Promise<UnsubscribeFunc>,
-  options: { unsubGrace: boolean } = { unsubGrace: true }
+  options: { unsubGrace: boolean } = { unsubGrace: true },
 ): Collection<State> => {
   if (conn[key]) {
     return conn[key];
@@ -170,8 +170,8 @@ export const createCollection = <State>(
     | ((conn: Connection, store: Store<State>) => Promise<UnsubscribeFunc>)
     | undefined,
   conn: Connection,
-  onChange: (state: State) => void
+  onChange: (state: State) => void,
 ): UnsubscribeFunc =>
   getCollection(conn, key, fetchCollection, subscribeUpdates).subscribe(
-    onChange
+    onChange,
   );

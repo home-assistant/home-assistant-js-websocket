@@ -51,7 +51,7 @@ export function callService(
   domain: string,
   service: string,
   serviceData?: object,
-  target?: HassServiceTarget
+  target?: HassServiceTarget,
 ) {
   const message: ServiceCallMessage = {
     type: "call_service",

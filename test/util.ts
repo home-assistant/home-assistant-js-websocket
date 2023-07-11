@@ -21,7 +21,7 @@ export class MockConnection extends Connection {
   // hass events
   async subscribeEvents<EventType>(
     eventCallback: (ev: EventType) => void,
-    eventType?: string
+    eventType?: string,
   ) {
     if (!eventType) {
       throw new Error("mock all events not implemented");

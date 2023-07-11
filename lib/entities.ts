@@ -103,7 +103,7 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
         }
         if (toAdd.lc) {
           entityState.last_updated = entityState.last_changed = new Date(
-            toAdd.lc * 1000
+            toAdd.lc * 1000,
           ).toISOString();
         } else if (toAdd.lu) {
           entityState.last_updated = new Date(toAdd.lu * 1000).toISOString();
@@ -134,7 +134,7 @@ const subscribeUpdates = (conn: Connection, store: Store<HassEntities>) =>
 
 function legacyProcessEvent(
   store: Store<HassEntities>,
-  event: StateChangedEvent
+  event: StateChangedEvent,
 ) {
   const state = store.state;
   if (state === undefined) return;
@@ -162,7 +162,7 @@ async function legacyFetchEntities(conn: Connection): Promise<HassEntities> {
 const legacySubscribeUpdates = (conn: Connection, store: Store<HassEntities>) =>
   conn.subscribeEvents<StateChangedEvent>(
     (ev) => legacyProcessEvent(store, ev as StateChangedEvent),
-    "state_changed"
+    "state_changed",
   );
 
 export const entitiesColl = (conn: Connection) =>
@@ -172,5 +172,5 @@ export const entitiesColl = (conn: Connection) =>
 
 export const subscribeEntities = (
   conn: Connection,
-  onChange: (state: HassEntities) => void
+  onChange: (state: HassEntities) => void,
 ): UnsubscribeFunc => entitiesColl(conn).subscribe(onChange);

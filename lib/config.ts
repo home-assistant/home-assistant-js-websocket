@@ -12,7 +12,7 @@ type ComponentLoadedEvent = {
 
 function processComponentLoaded(
   state: HassConfig,
-  event: ComponentLoadedEvent
+  event: ComponentLoadedEvent,
 ): Partial<HassConfig> | null {
   if (state === undefined) return null;
 
@@ -26,11 +26,11 @@ const subscribeUpdates = (conn: Connection, store: Store<HassConfig>) =>
   Promise.all([
     conn.subscribeEvents(
       store.action(processComponentLoaded),
-      "component_loaded"
+      "component_loaded",
     ),
     conn.subscribeEvents(
       () => fetchConfig(conn).then((config) => store.setState(config, true)),
-      "core_config_updated"
+      "core_config_updated",
     ),
   ]).then((unsubs) => () => unsubs.forEach((unsub) => unsub()));
 
@@ -39,7 +39,7 @@ export const configColl = (conn: Connection) =>
 
 export const subscribeConfig = (
   conn: Connection,
-  onChange: (state: HassConfig) => void
+  onChange: (state: HassConfig) => void,
 ): UnsubscribeFunc => configColl(conn).subscribe(onChange);
 
 export const STATE_NOT_RUNNING = "NOT_RUNNING";

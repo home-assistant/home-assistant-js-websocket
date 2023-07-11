@@ -20,7 +20,7 @@ export function parseQuery<T>(queryString: string) {
 export const debounce = <T extends (...args: any[]) => unknown>(
   func: T,
   wait: number,
-  immediate = false
+  immediate = false,
 ): T => {
   let timeout: number | undefined;
   // @ts-ignore
@@ -46,7 +46,7 @@ export const atLeastHaVersion = (
   version: string,
   major: number,
   minor: number,
-  patch?: number
+  patch?: number,
 ): boolean => {
   const [haMajor, haMinor, haPatch] = version.split(".", 3);
 

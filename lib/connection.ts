@@ -18,7 +18,7 @@ export type ConnectionOptions = {
 
 export type ConnectionEventListener = (
   conn: Connection,
-  eventData?: any
+  eventData?: any,
 ) => void;
 
 type Events = "ready" | "disconnected" | "reconnect-error";
@@ -183,7 +183,7 @@ export class Connection {
 
   fireEvent(eventType: Events, eventData?: any) {
     (this.eventListeners.get(eventType) || []).forEach((callback) =>
-      callback(this, eventData)
+      callback(this, eventData),
     );
   }
 
@@ -234,7 +234,7 @@ export class Connection {
    */
   async subscribeEvents<EventType>(
     callback: (ev: EventType) => void,
-    eventType?: string
+    eventType?: string,
   ): Promise<SubscriptionUnsubscribe> {
     return this.subscribeMessage(callback, messages.subscribeEvents(eventType));
   }
@@ -301,7 +301,7 @@ export class Connection {
   async subscribeMessage<Result>(
     callback: (result: Result) => void,
     subscribeMessage: MessageBase,
-    options?: { resubscribe?: boolean }
+    options?: { resubscribe?: boolean },
   ): Promise<SubscriptionUnsubscribe> {
     if (this._queuedMessages) {
       await new Promise((resolve, reject) => {
@@ -329,7 +329,7 @@ export class Connection {
           // No need to unsubscribe if we're disconnected
           if (this.connected) {
             await this.sendMessagePromise(
-              messages.unsubscribeEvents(commandId)
+              messages.unsubscribeEvents(commandId),
             );
           }
           this.commands.delete(commandId);
@@ -350,7 +350,7 @@ export class Connection {
 
   private _handleMessage = (event: MessageEvent) => {
     let messageGroup: WebSocketResponse | WebSocketResponse[] = JSON.parse(
-      event.data
+      event.data,
     );
 
     if (!Array.isArray(messageGroup)) {
@@ -368,11 +368,11 @@ export class Connection {
         case "event":
           if (info) {
             (info as SubscribeEventCommmandInFlight<any>).callback(
-              message.event
+              message.event,
             );
           } else {
             console.warn(
-              `Received event for unknown subscription ${message.id}. Unsubscribing.`
+              `Received event for unknown subscription ${message.id}. Unsubscribing.`,
             );
             this.sendMessagePromise(messages.unsubscribeEvents(message.id));
           }
@@ -440,33 +440,36 @@ export class Connection {
     const options = { ...this.options, setupRetry: 0 };
 
     const reconnect = (tries: number) => {
-      setTimeout(async () => {
-        if (this.closeRequested) {
-          return;
-        }
-        if (DEBUG) {
-          console.log("Trying to reconnect");
-        }
-        try {
-          const socket = await options.createSocket(options);
-          this._setSocket(socket);
-        } catch (err) {
-          if (this._queuedMessages) {
-            const queuedMessages = this._queuedMessages;
-            this._queuedMessages = undefined;
-            for (const msg of queuedMessages) {
-              if (msg.reject) {
-                msg.reject(ERR_CONNECTION_LOST);
+      setTimeout(
+        async () => {
+          if (this.closeRequested) {
+            return;
+          }
+          if (DEBUG) {
+            console.log("Trying to reconnect");
+          }
+          try {
+            const socket = await options.createSocket(options);
+            this._setSocket(socket);
+          } catch (err) {
+            if (this._queuedMessages) {
+              const queuedMessages = this._queuedMessages;
+              this._queuedMessages = undefined;
+              for (const msg of queuedMessages) {
+                if (msg.reject) {
+                  msg.reject(ERR_CONNECTION_LOST);
+                }
               }
             }
+            if (err === ERR_INVALID_AUTH) {
+              this.fireEvent("reconnect-error", err);
+            } else {
+              reconnect(tries + 1);
+            }
           }
-          if (err === ERR_INVALID_AUTH) {
-            this.fireEvent("reconnect-error", err);
-          } else {
-            reconnect(tries + 1);
-          }
-        }
-      }, Math.min(tries, 5) * 1000);
+        },
+        Math.min(tries, 5) * 1000,
+      );
     };
 
     if (this.suspendReconnectPromise) {

@@ -22,7 +22,7 @@ type ServiceRemovedEvent = {
 function processServiceRegistered(
   conn: Connection,
   store: Store<HassServices>,
-  event: ServiceRegisteredEvent
+  event: ServiceRegisteredEvent,
 ) {
   const state = store.state;
   if (state === undefined) return;
@@ -41,7 +41,7 @@ function processServiceRegistered(
 
 function processServiceRemoved(
   state: HassServices,
-  event: ServiceRemovedEvent
+  event: ServiceRemovedEvent,
 ) {
   if (state === undefined) return null;
 
@@ -61,7 +61,7 @@ function processServiceRemoved(
 const debouncedFetchServices = debounce(
   (conn: Connection, store: Store<HassServices>) =>
     fetchServices(conn).then((services) => store.setState(services, true)),
-  5000
+  5000,
 );
 
 const fetchServices = (conn: Connection) => getServices(conn);
@@ -70,11 +70,11 @@ const subscribeUpdates = (conn: Connection, store: Store<HassServices>) =>
     conn.subscribeEvents<ServiceRegisteredEvent>(
       (ev) =>
         processServiceRegistered(conn, store, ev as ServiceRegisteredEvent),
-      "service_registered"
+      "service_registered",
     ),
     conn.subscribeEvents<ServiceRemovedEvent>(
       store.action(processServiceRemoved),
-      "service_removed"
+      "service_removed",
     ),
   ]).then((unsubs) => () => unsubs.forEach((fn) => fn()));
 
@@ -83,5 +83,5 @@ export const servicesColl = (conn: Connection) =>
 
 export const subscribeServices = (
   conn: Connection,
-  onChange: (state: HassServices) => void
+  onChange: (state: HassServices) => void,
 ): UnsubscribeFunc => servicesColl(conn).subscribe(onChange);
