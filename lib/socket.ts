@@ -36,7 +36,7 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
         },
         () => {
           authRefreshTask = undefined;
-        }
+        },
       )
     : undefined;
 
@@ -50,7 +50,7 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
   function connect(
     triesLeft: number,
     promResolve: (socket: HaWebSocket) => void,
-    promReject: (err: Error) => void
+    promReject: (err: Error) => void,
   ) {
     if (DEBUG) {
       console.log("[Auth Phase] New connection", url);
@@ -137,6 +137,6 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
   }
 
   return new Promise((resolve, reject) =>
-    connect(options.setupRetry, resolve, reject)
+    connect(options.setupRetry, resolve, reject),
   );
 }
