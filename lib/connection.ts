@@ -80,6 +80,10 @@ type CommandInFlight =
   | SubscribeEventCommmandInFlight<any>
   | CommandWithAnswerInFlight;
 
+type PingTimerData = {
+  timerRef?: number;
+  executing: boolean;
+};
 export class Connection {
   options: ConnectionOptions;
   commandId: number;
@@ -91,6 +95,9 @@ export class Connection {
   oldSubscriptions?: Map<number, CommandInFlight>;
 
   pingTimeout: number;
+  pingInterval: number;
+
+  pingTimer: PingTimerData;
 
   // We use this to queue messages in flight for the first reconnect
   // after the connection has been suspended.
@@ -120,8 +127,14 @@ export class Connection {
     this.closeRequested = false;
     // Ping timeout in ms
     this.pingTimeout = 5 * 1000;
+    // Ping interval in ms
+    this.pingInterval = 60 * 1000;
+    // Object holding state of current ping timer
+    this.pingTimer = { executing: false };
 
     this._setSocket(socket);
+
+    this._scheduledPing();
   }
 
   get connected() {
@@ -368,6 +381,8 @@ export class Connection {
       event.data,
     );
 
+    this._scheduledPing();
+
     if (!Array.isArray(messageGroup)) {
       messageGroup = [messageGroup];
     }
@@ -497,6 +512,32 @@ export class Connection {
 
     reconnect(0);
   };
+
+  private _scheduledPing() {
+    // Reset timer before before scheduling a new one
+    if (this.pingTimer.timerRef && !this.pingTimer.executing) {
+      clearInterval(this.pingTimer.timerRef);
+    }
+
+    const pingLoop = () => {
+      this.pingTimer.timerRef = setTimeout(() => {
+        this.pingTimer.executing = true;
+        if (this.connected && this.closeRequested!) {
+          try {
+            this.ping();
+          } catch (error) {
+            if (error !== ERR_CONNECTION_TIMEOUT) {
+              this.reconnect();
+            }
+          }
+        }
+        pingLoop();
+        this.pingTimer.executing = false;
+      }, this.pingInterval);
+    };
+
+    pingLoop();
+  }
 
   private _genCmdId() {
     return ++this.commandId;
