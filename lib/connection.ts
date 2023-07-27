@@ -3,7 +3,11 @@
  * the Home Assistant websocket API.
  */
 import * as messages from "./messages.js";
-import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./errors.js";
+import {
+  ERR_INVALID_AUTH,
+  ERR_CONNECTION_LOST,
+  ERR_CONNECTION_TIMEOUT,
+} from "./errors.js";
 import { HassEvent, MessageBase } from "./types.js";
 import { HaWebSocket } from "./socket.js";
 import type { Auth } from "./auth.js";
@@ -86,6 +90,8 @@ export class Connection {
 
   oldSubscriptions?: Map<number, CommandInFlight>;
 
+  pingTimeout: number;
+
   // We use this to queue messages in flight for the first reconnect
   // after the connection has been suspended.
   _queuedMessages?: Array<{
@@ -112,6 +118,8 @@ export class Connection {
     this.eventListeners = new Map();
     // true if a close is requested by the user
     this.closeRequested = false;
+    // Ping timeout in ms
+    this.pingTimeout = 5 * 1000;
 
     this._setSocket(socket);
   }
@@ -240,7 +248,14 @@ export class Connection {
   }
 
   ping() {
-    return this.sendMessagePromise(messages.ping());
+    // create a promise that rejects in milliseconds
+    const timeout = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(ERR_CONNECTION_TIMEOUT);
+      }, this.pingTimeout);
+    });
+    const pingRequest = this.sendMessagePromise(messages.ping());
+    return Promise.race([pingRequest, timeout]);
   }
 
   sendMessage(message: MessageBase, commandId?: number): void {
