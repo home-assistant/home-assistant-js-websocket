@@ -522,7 +522,7 @@ export class Connection {
     const pingLoop = () => {
       this.pingTimer.timerRef = setTimeout(() => {
         this.pingTimer.executing = true;
-        if (this.connected && this.closeRequested!) {
+        if (this.connected && !this.closeRequested) {
           try {
             this.ping();
           } catch (error) {
