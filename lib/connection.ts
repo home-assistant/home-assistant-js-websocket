@@ -374,7 +374,14 @@ export class Connection {
             console.warn(
               `Received event for unknown subscription ${message.id}. Unsubscribing.`,
             );
-            this.sendMessagePromise(messages.unsubscribeEvents(message.id));
+            this.sendMessagePromise(
+              messages.unsubscribeEvents(message.id),
+            ).catch((err) => {
+              console.warn(
+                `Error unsubsribing from unknown subscription ${message.id}`,
+                err,
+              );
+            });
           }
           break;
 
