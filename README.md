@@ -15,6 +15,16 @@ npx http-server -o
 # A browser will open, navigate to example.html
 ```
 
+## Installation
+
+```bash
+# With npm
+npm i home-assistant-js-websocket
+
+# With yarn
+yarn add home-assistant-js-websocket
+```
+
 ## Usage
 
 To initialize a connection, you need an authentication token for the instance that you want to connect to. This library implements the necessary steps to guide the user to authenticate your website with their Home Assistant instance and give you a token. All you need from the user is the url of their instance.
