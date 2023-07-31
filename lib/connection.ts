@@ -262,12 +262,12 @@ export class Connection {
 
   ping() {
     // create a promise that rejects in milliseconds
+    const pingRequest = this.sendMessagePromise(messages.ping());
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(() => {
         reject(ERR_CONNECTION_TIMEOUT);
       }, this.pingTimeout);
     });
-    const pingRequest = this.sendMessagePromise(messages.ping());
     return Promise.race([pingRequest, timeout]);
   }
 
@@ -514,8 +514,11 @@ export class Connection {
   };
 
   private _scheduledPing() {
+    if (this.pingTimer.executing) {
+      return;
+    }
     // Reset timer before before scheduling a new one
-    if (this.pingTimer.timerRef && !this.pingTimer.executing) {
+    if (this.pingTimer.timerRef) {
       clearInterval(this.pingTimer.timerRef);
     }
 
