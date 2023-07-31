@@ -520,14 +520,15 @@ export class Connection {
     }
 
     const pingLoop = () => {
-      this.pingTimer.timerRef = setTimeout(() => {
+      this.pingTimer.timerRef = setTimeout(async () => {
         this.pingTimer.executing = true;
         if (this.connected && !this.closeRequested) {
           try {
-            this.ping();
+            await this.ping();
           } catch (error) {
-            if (error !== ERR_CONNECTION_TIMEOUT) {
-              this.reconnect();
+            if (error === ERR_CONNECTION_TIMEOUT) {
+              // Reconnect needs to be forced since no events are triggered when websocket is broken
+              this.reconnect(true);
             }
           }
         }
