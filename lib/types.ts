@@ -59,6 +59,7 @@ export type HassConfig = {
   version: string;
   config_source: string;
   recovery_mode: boolean;
+  safe_mode: boolean;
   state: "NOT_RUNNING" | "STARTING" | "RUNNING" | "STOPPING" | "FINAL_WRITE";
   external_url: string | null;
   internal_url: string | null;
