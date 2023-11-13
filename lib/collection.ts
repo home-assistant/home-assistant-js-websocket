@@ -30,7 +30,9 @@ export const getCollection = <State>(
   ) => Promise<UnsubscribeFunc>,
   options: { unsubGrace: boolean } = { unsubGrace: true },
 ): Collection<State> => {
+  // @ts-ignore
   if (conn[key]) {
+    // @ts-ignore
     return conn[key];
   }
 
@@ -115,6 +117,7 @@ export const getCollection = <State>(
     }
   };
 
+  // @ts-ignore
   conn[key] = {
     get state() {
       return store.state;
@@ -159,6 +162,7 @@ export const getCollection = <State>(
     },
   };
 
+  // @ts-ignore
   return conn[key];
 };
 
