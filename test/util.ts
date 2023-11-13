@@ -38,11 +38,13 @@ export class MockConnection extends Connection {
   }
 
   mockResponse(type: any, data: any) {
+    // @ts-ignore
     this._mockResponses[type] = data;
   }
 
   async sendMessagePromise(message: any) {
     if (message.type in this._mockResponses) {
+      // @ts-ignore
       return this._mockResponses[message.type];
     }
     throw new Error("Unexpected type");
