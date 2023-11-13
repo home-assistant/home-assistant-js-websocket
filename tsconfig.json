@@ -8,8 +8,7 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "suppressImplicitAnyIndexErrors": true
+    "strict": true
   },
   "include": ["lib/*"]
 }

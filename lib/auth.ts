@@ -124,6 +124,7 @@ async function tokenRequest(
     formData.append("client_id", clientId);
   }
   Object.keys(data).forEach((key) => {
+    // @ts-ignore
     formData.append(key, data[key]);
   });
 
