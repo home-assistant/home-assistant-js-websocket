@@ -102,10 +102,21 @@ export type HassService = {
   target?: {} | null;
   fields: {
     [field_name: string]: {
+      example?: string | boolean | number;
+      default?: unknown;
+      required?: boolean;
+      advanced?: boolean;
+      selector?: {};
+      filter?:
+        | {
+            attribute?: Record<string, string>;
+          }
+        | {
+            supported_features?: Record<string, string>;
+          };
+      // Custom integrations don't use translations and still have name/description
       name?: string;
       description: string;
-      example: string | boolean | number;
-      selector?: {};
     };
   };
   response?: { optional: boolean };
