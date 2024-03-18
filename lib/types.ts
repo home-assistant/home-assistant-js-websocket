@@ -142,4 +142,5 @@ export type HassServiceTarget = {
   device_id?: string | string[];
   area_id?: string | string[];
   floor_id?: string | string[];
+  label_id?: string | string[];
 };
