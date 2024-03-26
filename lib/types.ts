@@ -107,13 +107,10 @@ export type HassService = {
       required?: boolean;
       advanced?: boolean;
       selector?: {};
-      filter?:
-        | {
-            attribute?: Record<string, string>;
-          }
-        | {
-            supported_features?: Record<string, string>;
-          };
+      filter?: {
+        supported_features?: number[];
+        attribute?: Record<string, any[]>;
+      };
       // Custom integrations don't use translations and still have name/description
       name?: string;
       description: string;
