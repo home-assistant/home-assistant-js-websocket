@@ -26,7 +26,8 @@ export const callService = (
   service: string,
   serviceData?: object,
   target?: HassServiceTarget,
+  returnResponse?: boolean,
 ) =>
   connection.sendMessagePromise(
-    messages.callService(domain, service, serviceData, target),
+    messages.callService(domain, service, serviceData, target, returnResponse),
   );
