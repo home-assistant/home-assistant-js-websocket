@@ -45,6 +45,7 @@ type ServiceCallMessage = {
   service: string;
   service_data?: object;
   target?: HassServiceTarget;
+  return_response?: boolean;
 };
 
 export function callService(
@@ -52,12 +53,14 @@ export function callService(
   service: string,
   serviceData?: object,
   target?: HassServiceTarget,
+  returnResponse?: boolean
 ) {
   const message: ServiceCallMessage = {
     type: "call_service",
     domain,
     service,
     target,
+    return_response: returnResponse,
   };
 
   if (serviceData) {
