@@ -53,7 +53,7 @@ export function callService(
   service: string,
   serviceData?: object,
   target?: HassServiceTarget,
-  returnResponse?: boolean
+  returnResponse?: boolean,
 ) {
   const message: ServiceCallMessage = {
     type: "call_service",
