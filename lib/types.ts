@@ -41,6 +41,7 @@ export type HassConfig = {
   latitude: number;
   longitude: number;
   elevation: number;
+  radius: number;
   unit_system: {
     length: string;
     mass: string;
