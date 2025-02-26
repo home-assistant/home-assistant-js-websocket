@@ -12,6 +12,7 @@ export * from "./errors.js";
 export * from "./socket.js";
 export * from "./types.js";
 export * from "./commands.js";
+export * from "./store.js";
 
 export async function createConnection(options?: Partial<ConnectionOptions>) {
   const connOptions: ConnectionOptions = {
