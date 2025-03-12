@@ -47,7 +47,6 @@
   "files": [
     "dist"
   ],
-  "dependencies": {},
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged"
@@ -57,5 +56,6 @@
     "*.{ts,js,json,css,md}": [
       "prettier --write"
     ]
-  }
+  },
+  "packageManager": "yarn@4.7.0"
 }
