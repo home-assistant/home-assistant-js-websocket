@@ -1,8 +1,17 @@
-npm-debug.log
-node_modules
 dist
 .reify-cache
-yarn-error.log
 .rpt2_cache
 .rts2_cache*
 .vscode/settings.json
+
+# yarn
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+/node_modules/
+yarn-error.log
+npm-debug.log
