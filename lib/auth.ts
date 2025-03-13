@@ -285,7 +285,8 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
     data = await options.loadTokens();
   }
 
-  if (data) {
+  // If the token is for another url, ignore it
+  if (data && (hassUrl === undefined || data.hassUrl === hassUrl)) {
     return new Auth(data, options.saveTokens);
   }
 
