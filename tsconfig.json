@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["mocha"],
     "lib": ["es2015", "dom"],
     "target": "es2017",
     "outDir": "dist",
@@ -9,7 +10,7 @@
     "noUnusedLocals": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "module": "ESNext",
+    "module": "ES2015",
     "moduleResolution": "Bundler"
   },
   "include": ["lib/*"]
