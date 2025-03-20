@@ -1,6 +1,6 @@
-import * as assert from "assert";
+import { strictEqual } from "assert";
 
-import { Auth } from "../dist/auth";
+import { Auth } from "../dist/auth.js";
 
 describe("Auth", () => {
   it("should indicate correctly when token expired", () => {
@@ -12,7 +12,7 @@ describe("Auth", () => {
       expires_in: 3000,
       expires: Date.now() - 1000,
     });
-    assert.strictEqual(auth.expired, true);
+    strictEqual(auth.expired, true);
   });
   it("should indicate correctly when token not expired", () => {
     const auth = new Auth({
@@ -23,6 +23,6 @@ describe("Auth", () => {
       expires_in: 3000,
       expires: Date.now() + 1000,
     });
-    assert.strictEqual(auth.expired, false);
+    strictEqual(auth.expired, false);
   });
 });
