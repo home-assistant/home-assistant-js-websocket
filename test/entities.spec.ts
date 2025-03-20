@@ -1,7 +1,7 @@
 import * as assert from "assert";
 
-import { subscribeEntities } from "../dist/entities";
-import { MockConnection, AwaitableEvent } from "./util";
+import { subscribeEntities } from "../dist/entities.js";
+import { MockConnection, AwaitableEvent } from "./util.js";
 
 const MOCK_LIGHT = {
   entity_id: "light.kitchen",

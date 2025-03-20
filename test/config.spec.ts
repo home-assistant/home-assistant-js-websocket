@@ -1,7 +1,7 @@
 import * as assert from "assert";
 
-import { subscribeConfig } from "../dist/config";
-import { MockConnection, AwaitableEvent } from "./util";
+import { subscribeConfig } from "../dist/config.js";
+import { MockConnection, AwaitableEvent } from "./util.js";
 
 const MOCK_CONFIG = {
   hello: "bla",

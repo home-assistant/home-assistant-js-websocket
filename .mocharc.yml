@@ -1,7 +1,4 @@
 # https://github.com/mochajs/mocha/blob/master/example/config/.mocharc.yml
-require:
-  - ts-node/register
-  - reify
 timeout: 100
 watch-files:
   - "lib/*.ts"

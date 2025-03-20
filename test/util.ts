@@ -1,5 +1,5 @@
-import { Connection } from "../dist/connection";
-import { HaWebSocket } from "../dist/socket";
+import { Connection } from "../dist/connection.js";
+import { HaWebSocket } from "../dist/socket.js";
 
 class MockWebSocket {
   addEventListener(eventType: string, callback: () => {}) {}

@@ -8,7 +8,9 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": true
+    "strict": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
   },
   "include": ["lib/*"]
 }
