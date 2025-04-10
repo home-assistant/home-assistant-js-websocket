@@ -301,12 +301,19 @@ export class Connection {
   async subscribeMessage<Result>(
     callback: (result: Result) => void,
     subscribeMessage: MessageBase,
-    options?: { resubscribe?: boolean },
+    options?: { resubscribe?: boolean; preCheck?: () => Promise<boolean> },
   ): Promise<SubscriptionUnsubscribe> {
     if (this._queuedMessages) {
       await new Promise((resolve, reject) => {
         this._queuedMessages!.push({ resolve, reject });
       });
+    }
+
+    if (options?.preCheck) {
+      const precheck = await options.preCheck();
+      if (!precheck) {
+        throw new Error("Pre-check failed");
+      }
     }
 
     let info: SubscribeEventCommmandInFlight<Result>;
@@ -323,7 +330,7 @@ export class Connection {
         callback,
         subscribe:
           options?.resubscribe !== false
-            ? () => this.subscribeMessage(callback, subscribeMessage)
+            ? () => this.subscribeMessage(callback, subscribeMessage, options)
             : undefined,
         unsubscribe: async () => {
           // No need to unsubscribe if we're disconnected
