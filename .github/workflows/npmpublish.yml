@@ -15,8 +15,8 @@ jobs:
       - uses: actions/setup-node@v4.3.0
         with:
           node-version-file: ".nvmrc"
-      - run: npm install
-      - run: npm test
+      - run: yarn install --immutable
+      - run: yarn test
 
   publish-npm:
     needs: build
@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 18
           registry-url: https://registry.npmjs.org/
-      - run: npm install
+      - run: yarn install --immutable
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}

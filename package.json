@@ -27,7 +27,7 @@
     "build": "tsc && rollup -c",
     "test": "tsc && prettier --check . && mocha --loader=ts-node/esm",
     "format": "prettier --write .",
-    "prepublishOnly": "rm -rf dist && yarn build && npm test"
+    "prepublishOnly": "rm -rf dist && yarn build && yarn test"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
   "license": "Apache-2.0",
