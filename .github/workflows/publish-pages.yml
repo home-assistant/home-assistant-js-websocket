@@ -29,11 +29,17 @@ jobs:
       - name: Build
         run: yarn build
 
+      - name: Prepare artifact for GitHub Pages
+        run: |
+          mkdir ./gh-pages-artifact
+          cp ./index.html ./gh-pages-artifact/
+          cp -r ./dist ./gh-pages-artifact/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: "."
+          # Upload the specific directory
+          path: "./gh-pages-artifact"
 
   deploy:
     needs: build
