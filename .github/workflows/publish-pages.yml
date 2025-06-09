@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc' # Read version from .nvmrc
+          node-version-file: ".nvmrc" # Read version from .nvmrc
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -33,7 +33,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
-          path: '.'
+          path: "."
 
   deploy:
     needs: build
