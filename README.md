@@ -224,7 +224,7 @@ You can also import the collection:
 import { entitiesColl } from "home-assistant-js-websocket";
 
 // conn is the connection from earlier.
-const coll = entitiesColl(connection);
+const coll = entitiesColl(conn);
 console.log(coll.state);
 await coll.refresh();
 coll.subscribe((entities) => console.log(entities));
