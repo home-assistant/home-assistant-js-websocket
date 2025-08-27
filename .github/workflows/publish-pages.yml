@@ -36,7 +36,7 @@ jobs:
           cp -r ./dist ./gh-pages-artifact/
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           # Upload the specific directory
           path: "./gh-pages-artifact"
