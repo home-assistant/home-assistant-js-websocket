@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4.4.0
+      - uses: actions/setup-node@v5
         with:
           node-version-file: ".nvmrc"
       - run: yarn install --immutable
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4.4.0
+      - uses: actions/setup-node@v5
         with:
           node-version: 18
           registry-url: https://registry.npmjs.org/
