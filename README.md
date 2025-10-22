@@ -420,7 +420,7 @@ Makes a request to the server to revoke the refresh and all related access token
 The library also contains a few helper method that you can use to ineract with the API.
 
 - `getUser(connection) -> Promise<HassUser>`
-- `callService(connection, domain, service, serviceData?, target?) -> Promise` (Support for `target` was added in Home Assistant Core 2021.3)
+- `callService(connection, domain, service, serviceData?, target?, returnResponse?) -> Promise` (Support for `target` was added in Home Assistant Core 2021.3)
 
 The following are also available, but it's recommended that you use the subscribe methods documented above.
 
