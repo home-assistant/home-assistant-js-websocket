@@ -99,7 +99,7 @@ export type HassEntities = { [entity_id: string]: HassEntity };
 
 export type HassService = {
   name?: string;
-  description: string;
+  description?: string;
   target?: {} | null;
   fields: {
     [field_name: string]: {
@@ -114,7 +114,7 @@ export type HassService = {
       };
       // Custom integrations don't use translations and still have name/description
       name?: string;
-      description: string;
+      description?: string;
     };
   };
   response?: { optional: boolean };
