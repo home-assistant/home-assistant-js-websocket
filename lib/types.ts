@@ -100,6 +100,7 @@ export type HassEntities = { [entity_id: string]: HassEntity };
 export type HassService = {
   name?: string;
   description?: string;
+  description_placeholders?: { [placeholder: string]: string };
   target?: {} | null;
   fields: {
     [field_name: string]: {
