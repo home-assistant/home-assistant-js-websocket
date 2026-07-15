@@ -1,6 +1,7 @@
 import * as assert from "assert";
 
-import { subscribeEntities } from "../dist/entities.js";
+import { processEvent, subscribeEntities } from "../dist/entities.js";
+import { createStore } from "../dist/store.js";
 import { MockConnection, AwaitableEvent } from "./util.js";
 
 const MOCK_LIGHT = {
@@ -118,6 +119,76 @@ describe("subscribeEntities legacy", () => {
 
     assert.deepEqual(entities, {
       [MOCK_SWITCH.entity_id]: MOCK_SWITCH,
+    });
+  });
+});
+
+describe("subscribeEntities incremental updates", () => {
+  it("preserves unchanged entities while applying adds, changes, and removals", () => {
+    const unchanged = {
+      entity_id: "sensor.unchanged",
+      state: "1",
+      attributes: { unit_of_measurement: "kW" },
+      context: { id: "unchanged" },
+      last_changed: "2026-01-01T00:00:00.000Z",
+      last_updated: "2026-01-01T00:00:00.000Z",
+    };
+    const changed = {
+      entity_id: "light.kitchen",
+      state: "off",
+      attributes: { brightness: 10 },
+      context: { id: "changed" },
+      last_changed: "2026-01-01T00:00:00.000Z",
+      last_updated: "2026-01-01T00:00:00.000Z",
+    };
+    const removed = {
+      entity_id: "switch.garage",
+      state: "on",
+      attributes: {},
+      context: { id: "removed" },
+      last_changed: "2026-01-01T00:00:00.000Z",
+      last_updated: "2026-01-01T00:00:00.000Z",
+    };
+    const store = createStore({
+      [unchanged.entity_id]: unchanged,
+      [changed.entity_id]: changed,
+      [removed.entity_id]: removed,
+    });
+
+    processEvent(store, {
+      a: {
+        "binary_sensor.new": {
+          s: "on",
+          a: {},
+          c: "new",
+          lc: 1767225600,
+          lu: 1767225600,
+        },
+      },
+      r: [removed.entity_id],
+      c: {
+        [changed.entity_id]: {
+          "+": { s: "on", a: { brightness: 100 } },
+          "-": { a: ["brightness"] },
+        },
+      },
+    });
+
+    assert.deepStrictEqual(store.state, {
+      [unchanged.entity_id]: unchanged,
+      [changed.entity_id]: {
+        ...changed,
+        state: "on",
+        attributes: {},
+      },
+      "binary_sensor.new": {
+        entity_id: "binary_sensor.new",
+        state: "on",
+        attributes: {},
+        context: { id: "new", parent_id: null, user_id: null },
+        last_changed: "2026-01-01T00:00:00.000Z",
+        last_updated: "2026-01-01T00:00:00.000Z",
+      },
     });
   });
 });

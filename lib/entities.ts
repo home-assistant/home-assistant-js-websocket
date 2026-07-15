@@ -44,8 +44,13 @@ interface StatesUpdates {
   c: Record<string, EntityDiff>;
 }
 
-function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
-  const state = { ...store.state };
+export function processEvent(
+  store: Store<HassEntities>,
+  updates: StatesUpdates,
+) {
+  // Entity updates are incremental. Reuse the cached map instead of copying
+  // every entity before applying each update.
+  const state = store.state || {};
 
   if (updates.a) {
     for (const entityId in updates.a) {
