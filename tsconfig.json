@@ -3,6 +3,7 @@
     "types": ["mocha"],
     "lib": ["es2015", "dom"],
     "target": "es2017",
+    "rootDir": "lib",
     "outDir": "dist",
     "declaration": true,
     "noFallthroughCasesInSwitch": true,

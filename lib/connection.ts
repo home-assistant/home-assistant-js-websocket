@@ -73,8 +73,7 @@ type CommandWithAnswerInFlight = {
 };
 
 type CommandInFlight =
-  | SubscribeEventCommmandInFlight<any>
-  | CommandWithAnswerInFlight;
+  SubscribeEventCommmandInFlight<any> | CommandWithAnswerInFlight;
 
 export class Connection {
   options: ConnectionOptions;
