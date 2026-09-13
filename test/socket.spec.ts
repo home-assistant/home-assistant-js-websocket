@@ -61,15 +61,15 @@ describe("createSocket connect timeout", () => {
   });
 
   it("should close and reject a socket that never opens", async () => {
-    const promise = createSocket(options(10));
+    const promise = createSocket(options(100));
 
     await assert.rejects(promise, (err: any) => err === ERR_CANNOT_CONNECT);
     assert.strictEqual(StalledWebSocket.instances.length, 1);
     assert.strictEqual(StalledWebSocket.instances[0].closeCalled, true);
-  });
+  }).timeout(500);
 
   it("should not close a socket that opened", async () => {
-    const promise = createSocket(options(10));
+    const promise = createSocket(options(100));
     const socket = StalledWebSocket.instances[0];
 
     socket.fire("open", {});
@@ -79,15 +79,15 @@ describe("createSocket connect timeout", () => {
     });
 
     await promise;
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    await new Promise((resolve) => setTimeout(resolve, 200));
     assert.strictEqual(socket.closeCalled, false);
-  });
+  }).timeout(500);
 
   it("should wait indefinitely when the timeout is disabled", async () => {
     const promise = createSocket(options(0));
     promise.catch(() => {});
 
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    await new Promise((resolve) => setTimeout(resolve, 200));
     assert.strictEqual(StalledWebSocket.instances[0].closeCalled, false);
-  });
+  }).timeout(500);
 });
