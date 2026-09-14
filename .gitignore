@@ -15,3 +15,6 @@ dist
 /node_modules/
 yarn-error.log
 npm-debug.log
+
+# This project uses Yarn; npm lockfiles are not tracked
+package-lock.json
