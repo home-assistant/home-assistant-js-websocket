@@ -14,6 +14,13 @@ export type ConnectionOptions = {
   setupRetry: number;
   auth?: Auth;
   createSocket: (options: ConnectionOptions) => Promise<HaWebSocket>;
+  /**
+   * Milliseconds to wait for a socket to open before closing it, after which
+   * the configured retry policy applies. Only used by the built-in
+   * createSocket; a custom one has to implement its own timeout.
+   * Set to 0 to wait indefinitely. Defaults to 10000.
+   */
+  connectTimeout?: number;
 };
 
 export type ConnectionEventListener = (

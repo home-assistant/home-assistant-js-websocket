@@ -13,6 +13,10 @@ import { atLeastHaVersion } from "./util.js";
 
 const DEBUG = false;
 
+// A stalled connection can emit neither open nor close, which leaves the
+// retry below unreachable. Bound how long we wait for the open event.
+const DEFAULT_CONNECT_TIMEOUT = 10000;
+
 export const MSG_TYPE_AUTH_REQUIRED = "auth_required";
 export const MSG_TYPE_AUTH_INVALID = "auth_invalid";
 export const MSG_TYPE_AUTH_OK = "auth_ok";
@@ -43,6 +47,8 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
   // Convert from http:// -> ws://, https:// -> wss://
   const url = auth.wsUrl;
 
+  const connectTimeout = options.connectTimeout ?? DEFAULT_CONNECT_TIMEOUT;
+
   if (DEBUG) {
     console.log("[Auth phase] Initializing", url);
   }
@@ -61,7 +67,26 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
     // If invalid auth, we will not try to reconnect.
     let invalidAuth = false;
 
+    // Closing a socket that is still connecting fires close, so whatever
+    // retry policy applies below takes it from here.
+    const connectTimer =
+      connectTimeout > 0
+        ? setTimeout(() => {
+            if (DEBUG) {
+              console.log("[Auth phase] Connect timed out", url);
+            }
+            socket.close();
+          }, connectTimeout)
+        : undefined;
+
+    const clearConnectTimer = () => {
+      if (connectTimer !== undefined) {
+        clearTimeout(connectTimer);
+      }
+    };
+
     const closeMessage = () => {
+      clearConnectTimer();
       // If we are in error handler make sure close handler doesn't also fire.
       socket.removeEventListener("close", closeMessage);
       if (invalidAuth) {
@@ -83,6 +108,7 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
 
     // Auth is mandatory, so we can send the auth message right away.
     const handleOpen = async (event: MessageEventInit) => {
+      clearConnectTimer();
       try {
         if (auth.expired) {
           await (authRefreshTask ? authRefreshTask : auth.refreshAccessToken());
