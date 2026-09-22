@@ -33,6 +33,17 @@ export class MockConnection extends Connection {
     return () => Promise.resolve();
   }
 
+  async subscribeMessage<Result>(
+    eventCallback: (result: Result) => void,
+    subscribeMessage: { type: string },
+  ) {
+    if (!(subscribeMessage.type in this._mockListeners)) {
+      this._mockListeners[subscribeMessage.type] = [];
+    }
+    this._mockListeners[subscribeMessage.type].push(eventCallback);
+    return () => Promise.resolve();
+  }
+
   mockEvent(event: any, data: any) {
     this._mockListeners[event].forEach((cb) => cb(data));
   }
