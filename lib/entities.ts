@@ -135,25 +135,32 @@ const subscribeUpdates = async (
   conn: Connection,
   store: Store<HassEntities>,
 ) => {
-  let replace = false;
-  const unsub = await conn.subscribeMessage<StatesUpdates>(
-    (ev) => {
-      processEvent(store, ev, replace);
-      replace = false;
-    },
-    {
-      type: "subscribe_entities",
-    },
-    {
-      subscriptionStarted: () => {
-        replace = true;
-      },
-    },
-  );
-
-  return () => {
-    void unsub();
+  let replace = true;
+  const markReplace = () => {
+    replace = true;
   };
+
+  conn.addEventListener("ready", markReplace);
+
+  try {
+    const unsub = await conn.subscribeMessage<StatesUpdates>(
+      (ev) => {
+        processEvent(store, ev, replace);
+        replace = false;
+      },
+      {
+        type: "subscribe_entities",
+      },
+    );
+
+    return () => {
+      conn.removeEventListener("ready", markReplace);
+      void unsub();
+    };
+  } catch (err) {
+    conn.removeEventListener("ready", markReplace);
+    throw err;
+  }
 };
 
 function legacyProcessEvent(
