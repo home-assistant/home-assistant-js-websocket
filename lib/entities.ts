@@ -136,14 +136,8 @@ const subscribeUpdates = async (
   store: Store<HassEntities>,
 ) => {
   let replace = true;
-  let subscribed = false;
-  let resubscribePending = false;
   const markReplace = () => {
-    if (subscribed) {
-      replace = true;
-    } else {
-      resubscribePending = true;
-    }
+    replace = true;
   };
 
   conn.addEventListener("ready", markReplace);
@@ -159,15 +153,7 @@ const subscribeUpdates = async (
       },
     );
 
-    subscribed = true;
-    if (resubscribePending) {
-      replace = true;
-      resubscribePending = false;
-    }
-
     return () => {
-      subscribed = false;
-      resubscribePending = false;
       conn.removeEventListener("ready", markReplace);
       void unsub();
     };
