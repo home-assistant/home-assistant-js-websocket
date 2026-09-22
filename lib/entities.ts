@@ -140,8 +140,6 @@ const subscribeUpdates = async (
     replace = true;
   };
 
-  conn.addEventListener("ready", markReplace);
-
   const unsub = await conn.subscribeMessage<StatesUpdates>(
     (ev) => {
       processEvent(store, ev, replace);
@@ -151,6 +149,8 @@ const subscribeUpdates = async (
       type: "subscribe_entities",
     },
   );
+
+  conn.addEventListener("ready", markReplace);
 
   return () => {
     conn.removeEventListener("ready", markReplace);
