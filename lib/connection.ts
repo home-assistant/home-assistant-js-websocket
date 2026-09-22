@@ -308,6 +308,7 @@ export class Connection {
     callback: (result: Result) => void,
     subscribeMessage: MessageBase,
     options?: {
+      subscriptionStarted?: () => void;
       resubscribe?: boolean;
       preCheck?: () => boolean | Promise<boolean>;
     },
@@ -354,6 +355,7 @@ export class Connection {
       this.commands.set(commandId, info);
 
       try {
+        options?.subscriptionStarted?.();
         this.sendMessage(subscribeMessage, commandId);
       } catch (err) {
         // Happens when the websocket is already closing.

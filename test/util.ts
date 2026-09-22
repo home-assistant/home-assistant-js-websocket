@@ -36,12 +36,32 @@ export class MockConnection extends Connection {
   async subscribeMessage<Result>(
     eventCallback: (result: Result) => void,
     subscribeMessage: { type: string },
+    options?: {
+      subscriptionStarted?: () => void;
+      resubscribe?: boolean;
+    },
   ) {
     if (!(subscribeMessage.type in this._mockListeners)) {
       this._mockListeners[subscribeMessage.type] = [];
     }
     this._mockListeners[subscribeMessage.type].push(eventCallback);
-    return () => Promise.resolve();
+
+    options?.subscriptionStarted?.();
+
+    const markResubscribed = () => {
+      options?.subscriptionStarted?.();
+    };
+
+    if (options?.resubscribe !== false) {
+      this.addEventListener("ready", markResubscribed);
+    }
+
+    return () => {
+      if (options?.resubscribe !== false) {
+        this.removeEventListener("ready", markResubscribed);
+      }
+      return Promise.resolve();
+    };
   }
 
   mockEvent(event: any, data: any) {
