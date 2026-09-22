@@ -44,8 +44,12 @@ interface StatesUpdates {
   c: Record<string, EntityDiff>;
 }
 
-function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
-  const state = { ...store.state };
+function processEvent(
+  store: Store<HassEntities>,
+  updates: StatesUpdates,
+  replace: boolean,
+) {
+  const state = replace ? {} : { ...store.state };
 
   if (updates.a) {
     for (const entityId in updates.a) {
@@ -127,10 +131,32 @@ function processEvent(store: Store<HassEntities>, updates: StatesUpdates) {
   store.setState(state, true);
 }
 
-const subscribeUpdates = (conn: Connection, store: Store<HassEntities>) =>
-  conn.subscribeMessage<StatesUpdates>((ev) => processEvent(store, ev), {
-    type: "subscribe_entities",
-  });
+const subscribeUpdates = async (
+  conn: Connection,
+  store: Store<HassEntities>,
+) => {
+  let replace = true;
+  const markReplace = () => {
+    replace = true;
+  };
+
+  conn.addEventListener("ready", markReplace);
+
+  const unsub = await conn.subscribeMessage<StatesUpdates>(
+    (ev) => {
+      processEvent(store, ev, replace);
+      replace = false;
+    },
+    {
+      type: "subscribe_entities",
+    },
+  );
+
+  return () => {
+    conn.removeEventListener("ready", markReplace);
+    return unsub();
+  };
+};
 
 function legacyProcessEvent(
   store: Store<HassEntities>,
