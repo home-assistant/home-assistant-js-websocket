@@ -154,7 +154,7 @@ const subscribeUpdates = async (
 
   return () => {
     conn.removeEventListener("ready", markReplace);
-    return unsub();
+    void unsub();
   };
 };
 
