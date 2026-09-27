@@ -1,0 +1,52 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+
+  "enabledManagers": ["github-actions", "npm"],
+
+  "minimumReleaseAge": "3 days",
+  "schedule": ["before 8am on monday"],
+
+  "semanticCommits": "disabled",
+  "labels": ["dependencies"],
+
+  "lockFileMaintenance": {
+    "description": "Refresh yarn.lock weekly, so indirect dependencies (like tar) come in one PR instead of one PR each",
+    "enabled": true,
+    "schedule": ["before 8am on monday"]
+  },
+
+  "packageRules": [
+    {
+      "description": "Label npm updates like Dependabot did",
+      "matchManagers": ["npm"],
+      "addLabels": ["javascript"]
+    },
+    {
+      "description": "Label GitHub Actions updates like Dependabot did",
+      "matchManagers": ["github-actions"],
+      "addLabels": ["github_actions"]
+    },
+    {
+      "description": "All non-major devDependency updates in one weekly PR. This library has no runtime dependencies, so none of these reach its users.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "devDependencies (non-major)",
+      "groupSlug": "dev-dependencies-non-major"
+    },
+    {
+      "description": "Leave runner labels and action version inputs alone, Dependabot never updated those",
+      "matchManagers": ["github-actions"],
+      "matchDepTypes": ["github-runner", "uses-with"],
+      "enabled": false
+    },
+    {
+      "description": "Our own actions that follow a branch (like home-assistant/actions@master) float on purpose. Pinning them would open a digest PR in every repository for each change to them. Our own actions on a version tag are pinned like any other.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["home-assistant/**"],
+      "matchCurrentValue": "/^(dev|main|master)$/",
+      "pinDigests": false
+    }
+  ]
+}
