@@ -23,6 +23,7 @@ export type getAuthOptions = {
   clientId?: string | null;
   redirectUrl?: string;
   authCode?: string;
+  codeVerifier?: string;
   saveTokens?: SaveTokensFunc;
   loadTokens?: LoadTokensFunc;
   limitHassInstance?: boolean;
@@ -34,16 +35,33 @@ type QueryCallbackData =
       state: string;
       code: string;
       auth_callback: string;
+      iss?: string;
     };
 
 type OAuthState = {
   hassUrl: string;
   clientId: string | null;
+  pkce?: string;
+};
+
+type StoredOAuthState = {
+  codeVerifier: string;
+  expectedIssuer?: string;
+  redirectUrl: string;
+  state: string;
+};
+
+type AuthorizationServerMetadata = {
+  authorization_response_iss_parameter_supported?: boolean;
+  code_challenge_methods_supported?: string[];
+  issuer?: string;
 };
 
 type AuthorizationCodeRequest = {
   grant_type: "authorization_code";
   code: string;
+  code_verifier?: string;
+  redirect_uri?: string;
 };
 
 type RefreshTokenRequest = {
@@ -58,6 +76,47 @@ export const genExpires = (expires_in: number): number => {
   return expires_in * 1000 + Date.now();
 };
 
+const OAUTH_STATE_STORAGE_PREFIX = "hass_oauth_state_";
+
+function base64UrlEncode(value: Uint8Array): string {
+  let binary = "";
+  value.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function randomBase64Url(byteLength: number): string {
+  const bytes = new Uint8Array(byteLength);
+  crypto.getRandomValues(bytes);
+  return base64UrlEncode(bytes);
+}
+
+async function fetchAuthorizationServerMetadata(
+  hassUrl: string,
+): Promise<AuthorizationServerMetadata | undefined> {
+  try {
+    const response = await fetch(
+      `${hassUrl}/.well-known/oauth-authorization-server`,
+      { credentials: "same-origin" },
+    );
+    if (!response.ok) {
+      return undefined;
+    }
+
+    const metadata: unknown = await response.json();
+    if (typeof metadata !== "object" || metadata === null) {
+      return undefined;
+    }
+    return metadata as AuthorizationServerMetadata;
+  } catch (_err) {
+    return undefined;
+  }
+}
+
 function genRedirectUrl() {
   // Get current url but without # part.
   const { protocol, host, pathname, search } = location;
@@ -69,6 +128,7 @@ function genAuthorizeUrl(
   clientId: string | null,
   redirectUrl: string,
   state: string,
+  codeChallenge?: string,
 ) {
   let authorizeUrl = `${hassUrl}/auth/authorize?response_type=code&redirect_uri=${encodeURIComponent(
     redirectUrl,
@@ -81,23 +141,67 @@ function genAuthorizeUrl(
   if (state) {
     authorizeUrl += `&state=${encodeURIComponent(state)}`;
   }
+  if (codeChallenge !== undefined) {
+    authorizeUrl += `&code_challenge=${encodeURIComponent(codeChallenge)}`;
+    authorizeUrl += "&code_challenge_method=S256";
+  }
   return authorizeUrl;
 }
 
-function redirectAuthorize(
+async function redirectAuthorize(
   hassUrl: string,
   clientId: string | null,
   redirectUrl: string,
-  state: string,
 ) {
   // Add either ?auth_callback=1 or &auth_callback=1
   redirectUrl += (redirectUrl.includes("?") ? "&" : "?") + "auth_callback=1";
+
+  const state: OAuthState = { hassUrl, clientId };
+  let authorizationState = encodeOAuthState(state);
+  let codeChallenge: string | undefined;
+  const metadata = await fetchAuthorizationServerMetadata(hassUrl);
+  if (
+    window.isSecureContext &&
+    Array.isArray(metadata?.code_challenge_methods_supported) &&
+    metadata.code_challenge_methods_supported.indexOf("S256") !== -1
+  ) {
+    if (
+      metadata.authorization_response_iss_parameter_supported === true &&
+      typeof metadata.issuer !== "string"
+    ) {
+      throw ERR_INVALID_AUTH;
+    }
+    const codeVerifier = randomBase64Url(64);
+    const pkce = randomBase64Url(32);
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(codeVerifier),
+    );
+    const challenge = base64UrlEncode(new Uint8Array(digest));
+    const pkceState = encodeOAuthState({ ...state, pkce });
+    sessionStorage.setItem(
+      `${OAUTH_STATE_STORAGE_PREFIX}${pkce}`,
+      JSON.stringify({
+        codeVerifier,
+        expectedIssuer:
+          metadata.authorization_response_iss_parameter_supported === true &&
+          typeof metadata.issuer === "string"
+            ? metadata.issuer
+            : undefined,
+        redirectUrl,
+        state: pkceState,
+      } satisfies StoredOAuthState),
+    );
+    authorizationState = pkceState;
+    codeChallenge = challenge;
+  }
 
   document.location!.href = genAuthorizeUrl(
     hassUrl,
     clientId,
     redirectUrl,
-    state,
+    authorizationState,
+    codeChallenge,
   );
 }
 
@@ -124,8 +228,10 @@ async function tokenRequest(
     formData.append("client_id", clientId);
   }
   Object.keys(data).forEach((key) => {
-    // @ts-ignore
-    formData.append(key, data[key]);
+    const value = data[key as keyof typeof data];
+    if (value !== undefined) {
+      formData.append(key, value);
+    }
   });
 
   const resp = await fetch(`${hassUrl}/auth/token`, {
@@ -148,10 +254,18 @@ async function tokenRequest(
   return tokens;
 }
 
-function fetchToken(hassUrl: string, clientId: string | null, code: string) {
+function fetchToken(
+  hassUrl: string,
+  clientId: string | null,
+  code: string,
+  redirectUrl?: string,
+  codeVerifier?: string,
+) {
   return tokenRequest(hassUrl, clientId, {
     code,
+    code_verifier: codeVerifier,
     grant_type: "authorization_code",
+    redirect_uri: redirectUrl,
   });
 }
 
@@ -251,7 +365,13 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
 
   // Use auth code if it was passed in
   if (options.authCode && hassUrl) {
-    data = await fetchToken(hassUrl, clientId, options.authCode);
+    data = await fetchToken(
+      hassUrl,
+      clientId,
+      options.authCode,
+      options.redirectUrl,
+      options.codeVerifier,
+    );
     if (options.saveTokens) {
       options.saveTokens(data);
     }
@@ -273,7 +393,46 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
         throw ERR_INVALID_AUTH_CALLBACK;
       }
 
-      data = await fetchToken(state.hassUrl, state.clientId, query.code);
+      let storedState: StoredOAuthState | undefined;
+      if (state.pkce !== undefined) {
+        const storageKey = `${OAUTH_STATE_STORAGE_PREFIX}${state.pkce}`;
+        let storedValue: string | null;
+        try {
+          storedValue = sessionStorage.getItem(storageKey);
+          sessionStorage.removeItem(storageKey);
+        } catch (_err) {
+          throw ERR_INVALID_AUTH_CALLBACK;
+        }
+        if (storedValue === null) {
+          throw ERR_INVALID_AUTH_CALLBACK;
+        }
+        try {
+          storedState = JSON.parse(storedValue) as StoredOAuthState;
+        } catch (_err) {
+          throw ERR_INVALID_AUTH_CALLBACK;
+        }
+        if (
+          typeof storedState !== "object" ||
+          storedState === null ||
+          typeof storedState.codeVerifier !== "string" ||
+          !/^[A-Za-z0-9\-._~]{43,128}$/.test(storedState.codeVerifier) ||
+          typeof storedState.redirectUrl !== "string" ||
+          storedState.redirectUrl.length === 0 ||
+          storedState.state !== query.state ||
+          (storedState.expectedIssuer !== undefined &&
+            query.iss !== storedState.expectedIssuer)
+        ) {
+          throw ERR_INVALID_AUTH_CALLBACK;
+        }
+      }
+
+      data = await fetchToken(
+        state.hassUrl,
+        state.clientId,
+        query.code,
+        storedState?.redirectUrl,
+        storedState?.codeVerifier,
+      );
       if (options.saveTokens) {
         options.saveTokens(data);
       }
@@ -295,14 +454,10 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
   }
 
   // If no tokens found but a hassUrl was passed in, let's go get some tokens!
-  redirectAuthorize(
+  await redirectAuthorize(
     hassUrl,
     clientId,
     options.redirectUrl || genRedirectUrl(),
-    encodeOAuthState({
-      hassUrl,
-      clientId,
-    }),
   );
   // Just don't resolve while we navigate to next page
   return new Promise<Auth>(() => {});
