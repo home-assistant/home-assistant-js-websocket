@@ -352,7 +352,6 @@ export class Connection {
         },
       };
       this.commands.set(commandId, info);
-
       try {
         this.sendMessage(subscribeMessage, commandId);
       } catch (err) {
