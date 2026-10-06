@@ -1,6 +1,6 @@
 import * as assert from "assert";
 
-import { subscribeEntities } from "../dist/entities.js";
+import { subscribeEntityStates } from "../dist/states.js";
 import { MockConnection, AwaitableEvent } from "./util.js";
 
 const MOCK_LIGHT = {
@@ -37,7 +37,7 @@ const modernState = (entity_id: string, state: string, lc: number) => ({
   last_updated: new Date(lc * 1000).toISOString(),
 });
 
-describe("subscribeEntities legacy", () => {
+describe("subscribeEntityStates legacy", () => {
   let conn: MockConnection;
   let awaitableEvent: AwaitableEvent;
 
@@ -50,7 +50,7 @@ describe("subscribeEntities legacy", () => {
 
   it("should load initial entities", async () => {
     awaitableEvent.prime();
-    subscribeEntities(conn, awaitableEvent.set);
+    subscribeEntityStates(conn, awaitableEvent.set);
 
     const entities = await awaitableEvent.wait();
     assert.deepStrictEqual(entities, {
@@ -60,7 +60,7 @@ describe("subscribeEntities legacy", () => {
   });
 
   it("should handle state changed with updated state", async () => {
-    subscribeEntities(conn, awaitableEvent.set);
+    subscribeEntityStates(conn, awaitableEvent.set);
 
     await 0;
     await 0;
@@ -90,7 +90,7 @@ describe("subscribeEntities legacy", () => {
   });
 
   it("should handle state changed with new state", async () => {
-    subscribeEntities(conn, awaitableEvent.set);
+    subscribeEntityStates(conn, awaitableEvent.set);
 
     await 0;
     await 0;
@@ -121,7 +121,7 @@ describe("subscribeEntities legacy", () => {
   });
 
   it("should handle state changed with removed state", async () => {
-    subscribeEntities(conn, awaitableEvent.set);
+    subscribeEntityStates(conn, awaitableEvent.set);
 
     await 0;
     await 0;
@@ -144,7 +144,7 @@ describe("subscribeEntities legacy", () => {
   });
 });
 
-describe("subscribeEntities", () => {
+describe("subscribeEntityStates", () => {
   let conn: MockConnection;
   let awaitableEvent: AwaitableEvent;
 
@@ -156,7 +156,7 @@ describe("subscribeEntities", () => {
 
   it("should load initial entities", async () => {
     awaitableEvent.prime();
-    subscribeEntities(conn, awaitableEvent.set);
+    subscribeEntityStates(conn, awaitableEvent.set);
 
     conn.mockEvent("subscribe_entities", {
       a: {
@@ -175,7 +175,7 @@ describe("subscribeEntities", () => {
   });
 
   it("should replace state from full snapshot after reconnect", async () => {
-    subscribeEntities(conn, awaitableEvent.set);
+    subscribeEntityStates(conn, awaitableEvent.set);
 
     awaitableEvent.prime();
     conn.mockEvent("subscribe_entities", {

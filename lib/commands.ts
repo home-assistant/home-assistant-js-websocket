@@ -1,7 +1,7 @@
 import { Connection } from "./connection.js";
 import * as messages from "./messages.js";
 import {
-  HassEntity,
+  HassEntityState,
   HassServices,
   HassConfig,
   HassUser,
@@ -9,7 +9,7 @@ import {
 } from "./types.js";
 
 export const getStates = (connection: Connection) =>
-  connection.sendMessagePromise<HassEntity[]>(messages.states());
+  connection.sendMessagePromise<HassEntityState[]>(messages.states());
 
 export const getServices = (connection: Connection) =>
   connection.sendMessagePromise<HassServices>(messages.services());
