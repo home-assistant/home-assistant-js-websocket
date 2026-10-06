@@ -79,11 +79,7 @@ export const genExpires = (expires_in: number): number => {
 const OAUTH_STATE_STORAGE_PREFIX = "hass_oauth_state_";
 
 function base64UrlEncode(value: Uint8Array): string {
-  let binary = "";
-  value.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary)
+  return btoa(String.fromCharCode(...value))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
@@ -177,23 +173,20 @@ async function redirectAuthorize(
       "SHA-256",
       new TextEncoder().encode(codeVerifier),
     );
-    const challenge = base64UrlEncode(new Uint8Array(digest));
-    const pkceState = encodeOAuthState({ ...state, pkce });
+    codeChallenge = base64UrlEncode(new Uint8Array(digest));
+    authorizationState = encodeOAuthState({ ...state, pkce });
     sessionStorage.setItem(
       `${OAUTH_STATE_STORAGE_PREFIX}${pkce}`,
       JSON.stringify({
         codeVerifier,
         expectedIssuer:
-          metadata.authorization_response_iss_parameter_supported === true &&
-          typeof metadata.issuer === "string"
+          metadata.authorization_response_iss_parameter_supported === true
             ? metadata.issuer
             : undefined,
         redirectUrl,
-        state: pkceState,
+        state: authorizationState,
       } satisfies StoredOAuthState),
     );
-    authorizationState = pkceState;
-    codeChallenge = challenge;
   }
 
   document.location!.href = genAuthorizeUrl(
@@ -396,18 +389,10 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
       let storedState: StoredOAuthState | undefined;
       if (state.pkce !== undefined) {
         const storageKey = `${OAUTH_STATE_STORAGE_PREFIX}${state.pkce}`;
-        let storedValue: string | null;
         try {
-          storedValue = sessionStorage.getItem(storageKey);
+          const storedValue = sessionStorage.getItem(storageKey);
           sessionStorage.removeItem(storageKey);
-        } catch (_err) {
-          throw ERR_INVALID_AUTH_CALLBACK;
-        }
-        if (storedValue === null) {
-          throw ERR_INVALID_AUTH_CALLBACK;
-        }
-        try {
-          storedState = JSON.parse(storedValue) as StoredOAuthState;
+          storedState = JSON.parse(storedValue ?? "null") as StoredOAuthState;
         } catch (_err) {
           throw ERR_INVALID_AUTH_CALLBACK;
         }

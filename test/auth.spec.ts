@@ -118,7 +118,11 @@ describe("PKCE", () => {
     );
     strictEqual(storedState.state, authorizeUrl.searchParams.get("state"));
     strictEqual(storedState.redirectUrl, `${REDIRECT_URL}?auth_callback=1`);
-    strictEqual(storedState.codeVerifier.length, 86);
+    strictEqual(storedState.expectedIssuer, HASS_URL);
+    strictEqual(
+      /^[A-Za-z0-9\-._~]{43,128}$/.test(storedState.codeVerifier),
+      true,
+    );
     strictEqual(
       createHash("sha256").update(storedState.codeVerifier).digest("base64url"),
       codeChallenge,
