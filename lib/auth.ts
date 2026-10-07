@@ -23,7 +23,6 @@ export type getAuthOptions = {
   clientId?: string | null;
   redirectUrl?: string;
   authCode?: string;
-  codeVerifier?: string;
   saveTokens?: SaveTokensFunc;
   loadTokens?: LoadTokensFunc;
   limitHassInstance?: boolean;
@@ -35,7 +34,6 @@ type QueryCallbackData =
       state: string;
       code: string;
       auth_callback: string;
-      iss?: string;
     };
 
 type OAuthState = {
@@ -46,15 +44,8 @@ type OAuthState = {
 
 type StoredOAuthState = {
   codeVerifier: string;
-  expectedIssuer?: string;
   redirectUrl: string;
   state: string;
-};
-
-type AuthorizationServerMetadata = {
-  authorization_response_iss_parameter_supported?: boolean;
-  code_challenge_methods_supported?: string[];
-  issuer?: string;
 };
 
 type AuthorizationCodeRequest = {
@@ -91,25 +82,23 @@ function randomBase64Url(byteLength: number): string {
   return base64UrlEncode(bytes);
 }
 
-async function fetchAuthorizationServerMetadata(
-  hassUrl: string,
-): Promise<AuthorizationServerMetadata | undefined> {
+async function supportsPkce(hassUrl: string): Promise<boolean> {
   try {
     const response = await fetch(
       `${hassUrl}/.well-known/oauth-authorization-server`,
       { credentials: "same-origin" },
     );
     if (!response.ok) {
-      return undefined;
+      return false;
     }
 
-    const metadata: unknown = await response.json();
-    if (typeof metadata !== "object" || metadata === null) {
-      return undefined;
-    }
-    return metadata as AuthorizationServerMetadata;
+    const metadata = await response.json();
+    return (
+      Array.isArray(metadata?.code_challenge_methods_supported) &&
+      metadata.code_challenge_methods_supported.includes("S256")
+    );
   } catch (_err) {
-    return undefined;
+    return false;
   }
 }
 
@@ -155,18 +144,7 @@ async function redirectAuthorize(
   const state: OAuthState = { hassUrl, clientId };
   let authorizationState = encodeOAuthState(state);
   let codeChallenge: string | undefined;
-  const metadata = await fetchAuthorizationServerMetadata(hassUrl);
-  if (
-    window.isSecureContext &&
-    Array.isArray(metadata?.code_challenge_methods_supported) &&
-    metadata.code_challenge_methods_supported.indexOf("S256") !== -1
-  ) {
-    if (
-      metadata.authorization_response_iss_parameter_supported === true &&
-      typeof metadata.issuer !== "string"
-    ) {
-      throw ERR_INVALID_AUTH;
-    }
+  if (window.isSecureContext && (await supportsPkce(hassUrl))) {
     const codeVerifier = randomBase64Url(64);
     const pkce = randomBase64Url(32);
     const digest = await crypto.subtle.digest(
@@ -179,10 +157,6 @@ async function redirectAuthorize(
       `${OAUTH_STATE_STORAGE_PREFIX}${pkce}`,
       JSON.stringify({
         codeVerifier,
-        expectedIssuer:
-          metadata.authorization_response_iss_parameter_supported === true
-            ? metadata.issuer
-            : undefined,
         redirectUrl,
         state: authorizationState,
       } satisfies StoredOAuthState),
@@ -358,13 +332,7 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
 
   // Use auth code if it was passed in
   if (options.authCode && hassUrl) {
-    data = await fetchToken(
-      hassUrl,
-      clientId,
-      options.authCode,
-      options.redirectUrl,
-      options.codeVerifier,
-    );
+    data = await fetchToken(hassUrl, clientId, options.authCode);
     if (options.saveTokens) {
       options.saveTokens(data);
     }
@@ -403,9 +371,7 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
           !/^[A-Za-z0-9\-._~]{43,128}$/.test(storedState.codeVerifier) ||
           typeof storedState.redirectUrl !== "string" ||
           storedState.redirectUrl.length === 0 ||
-          storedState.state !== query.state ||
-          (storedState.expectedIssuer !== undefined &&
-            query.iss !== storedState.expectedIssuer)
+          storedState.state !== query.state
         ) {
           throw ERR_INVALID_AUTH_CALLBACK;
         }

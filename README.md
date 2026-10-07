@@ -65,7 +65,7 @@ connect();
 
 ### `getAuth()`
 
-Use this method to get authentication from a server via OAuth2. This method will handle redirecting to an instance and fetching the token after the user successful logs in. Browser authorization uses S256 PKCE when the server advertises support and Web Crypto and session storage are available.
+Use this method to get authentication from a server via OAuth2. This method will handle redirecting to an instance and fetching the token after the user successful logs in. Browser authorization uses S256 PKCE in a secure context when the server advertises support. Metadata errors or missing S256 support use the existing login flow. Once PKCE is selected, login errors stop the flow. The library does not retry without PKCE.
 
 You can pass options using the syntax:
 
@@ -73,16 +73,15 @@ You can pass options using the syntax:
 getAuth({ hassUrl: "http://localhost:8123" });
 ```
 
-| Option            | Description                                                                                                                                                                                                                                          |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| hassUrl           | The url where the Home Assistant instance can be reached. This option is needed so we know where to redirect the user for authentication. Once redirected back, it is not needed to pass this option in.                                             |
-| clientId          | Client ID to use. Client IDs for Home Assistant is the url of your application. Defaults to domain of current page. Pass `null` if you are making requests on behalf of a system user.                                                               |
-| redirectUrl       | The url to redirect back to when the user has logged in. Defaults to current page.                                                                                                                                                                   |
-| saveTokens        | Function to store an object containing the token information.                                                                                                                                                                                        |
-| loadTokens        | Function that returns a promise that resolves to previously stored token information object or undefined if no info available.                                                                                                                       |
-| authCode          | If you have an auth code received via other means, you can pass it in and it will be used to fetch tokens instead of going through the OAuth2 flow. For a PKCE code, also pass `codeVerifier` and the exact `redirectUrl` used during authorization. |
-| codeVerifier      | The PKCE verifier corresponding to `authCode`.                                                                                                                                                                                                       |
-| limitHassInstance | If set to true, allow only authentication credentials for the passed in `hassUrl` and `clientId`. Defaults to false.                                                                                                                                 |
+| Option            | Description                                                                                                                                                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| hassUrl           | The url where the Home Assistant instance can be reached. This option is needed so we know where to redirect the user for authentication. Once redirected back, it is not needed to pass this option in. |
+| clientId          | Client ID to use. Client IDs for Home Assistant is the url of your application. Defaults to domain of current page. Pass `null` if you are making requests on behalf of a system user.                   |
+| redirectUrl       | The url to redirect back to when the user has logged in. Defaults to current page.                                                                                                                       |
+| saveTokens        | Function to store an object containing the token information.                                                                                                                                            |
+| loadTokens        | Function that returns a promise that resolves to previously stored token information object or undefined if no info available.                                                                           |
+| authCode          | If you have an auth code received via other means, you can pass it in and it will be used to fetch tokens instead of going through the OAuth2 flow.                                                      |
+| limitHassInstance | If set to true, allow only authentication credentials for the passed in `hassUrl` and `clientId`. Defaults to false.                                                                                     |
 
 In certain instances `getAuth` will raise an error. These errors can be imported from the package:
 
