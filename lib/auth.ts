@@ -39,11 +39,18 @@ type QueryCallbackData =
 type OAuthState = {
   hassUrl: string;
   clientId: string | null;
+  nonce?: string;
+};
+
+type StoredOAuthState = {
+  codeVerifier: string;
+  state: string;
 };
 
 type AuthorizationCodeRequest = {
   grant_type: "authorization_code";
   code: string;
+  code_verifier?: string;
 };
 
 type RefreshTokenRequest = {
@@ -58,6 +65,38 @@ export const genExpires = (expires_in: number): number => {
   return expires_in * 1000 + Date.now();
 };
 
+const OAUTH_STATE_STORAGE_PREFIX = "hass_oauth_state_";
+
+function base64UrlEncode(value: Uint8Array): string {
+  return btoa(String.fromCharCode(...value))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+async function supportsPkce(hassUrl: string): Promise<boolean> {
+  if (!crypto.subtle) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(
+      `${hassUrl}/.well-known/oauth-authorization-server`,
+    );
+    if (!response.ok) {
+      return false;
+    }
+
+    const metadata = await response.json();
+    return (
+      Array.isArray(metadata?.code_challenge_methods_supported) &&
+      metadata.code_challenge_methods_supported.includes("S256")
+    );
+  } catch (_err) {
+    return false;
+  }
+}
+
 function genRedirectUrl() {
   // Get current url but without # part.
   const { protocol, host, pathname, search } = location;
@@ -69,6 +108,7 @@ function genAuthorizeUrl(
   clientId: string | null,
   redirectUrl: string,
   state: string,
+  codeChallenge?: string,
 ) {
   let authorizeUrl = `${hassUrl}/auth/authorize?response_type=code&redirect_uri=${encodeURIComponent(
     redirectUrl,
@@ -81,23 +121,50 @@ function genAuthorizeUrl(
   if (state) {
     authorizeUrl += `&state=${encodeURIComponent(state)}`;
   }
+  if (codeChallenge !== undefined) {
+    authorizeUrl += `&code_challenge=${encodeURIComponent(codeChallenge)}`;
+    authorizeUrl += "&code_challenge_method=S256";
+  }
   return authorizeUrl;
 }
 
-function redirectAuthorize(
+async function redirectAuthorize(
   hassUrl: string,
   clientId: string | null,
   redirectUrl: string,
-  state: string,
 ) {
   // Add either ?auth_callback=1 or &auth_callback=1
   redirectUrl += (redirectUrl.includes("?") ? "&" : "?") + "auth_callback=1";
+
+  const state: OAuthState = { hassUrl, clientId };
+  let authorizationState = encodeOAuthState(state);
+  let codeChallenge: string | undefined;
+  if (await supportsPkce(hassUrl)) {
+    const codeVerifier = base64UrlEncode(
+      crypto.getRandomValues(new Uint8Array(64)),
+    );
+    const nonce = base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)));
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(codeVerifier),
+    );
+    codeChallenge = base64UrlEncode(new Uint8Array(digest));
+    authorizationState = encodeOAuthState({ ...state, nonce });
+    sessionStorage.setItem(
+      `${OAUTH_STATE_STORAGE_PREFIX}${nonce}`,
+      JSON.stringify({
+        codeVerifier,
+        state: authorizationState,
+      } satisfies StoredOAuthState),
+    );
+  }
 
   document.location!.href = genAuthorizeUrl(
     hassUrl,
     clientId,
     redirectUrl,
-    state,
+    authorizationState,
+    codeChallenge,
   );
 }
 
@@ -124,8 +191,10 @@ async function tokenRequest(
     formData.append("client_id", clientId);
   }
   Object.keys(data).forEach((key) => {
-    // @ts-ignore
-    formData.append(key, data[key]);
+    const value = data[key as keyof typeof data];
+    if (value !== undefined) {
+      formData.append(key, value);
+    }
   });
 
   const resp = await fetch(`${hassUrl}/auth/token`, {
@@ -148,9 +217,15 @@ async function tokenRequest(
   return tokens;
 }
 
-function fetchToken(hassUrl: string, clientId: string | null, code: string) {
+function fetchToken(
+  hassUrl: string,
+  clientId: string | null,
+  code: string,
+  codeVerifier?: string,
+) {
   return tokenRequest(hassUrl, clientId, {
     code,
+    code_verifier: codeVerifier,
     grant_type: "authorization_code",
   });
 }
@@ -273,7 +348,27 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
         throw ERR_INVALID_AUTH_CALLBACK;
       }
 
-      data = await fetchToken(state.hassUrl, state.clientId, query.code);
+      let storedState: StoredOAuthState | null = null;
+      if (state.nonce !== undefined) {
+        const storageKey = `${OAUTH_STATE_STORAGE_PREFIX}${state.nonce}`;
+        try {
+          const storedValue = sessionStorage.getItem(storageKey);
+          sessionStorage.removeItem(storageKey);
+          storedState = JSON.parse(storedValue!);
+        } catch (_err) {
+          throw ERR_INVALID_AUTH_CALLBACK;
+        }
+        if (storedState?.state !== query.state) {
+          throw ERR_INVALID_AUTH_CALLBACK;
+        }
+      }
+
+      data = await fetchToken(
+        state.hassUrl,
+        state.clientId,
+        query.code,
+        storedState?.codeVerifier,
+      );
       if (options.saveTokens) {
         options.saveTokens(data);
       }
@@ -295,14 +390,10 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
   }
 
   // If no tokens found but a hassUrl was passed in, let's go get some tokens!
-  redirectAuthorize(
+  await redirectAuthorize(
     hassUrl,
     clientId,
     options.redirectUrl || genRedirectUrl(),
-    encodeOAuthState({
-      hassUrl,
-      clientId,
-    }),
   );
   // Just don't resolve while we navigate to next page
   return new Promise<Auth>(() => {});
