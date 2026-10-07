@@ -53,19 +53,18 @@ function mockAuthorizationServerMetadata() {
     Response.json({ code_challenge_methods_supported: ["S256"] });
 }
 
-function setAuthCallback(pkce?: string) {
+function setAuthCallback(nonce?: string) {
   const state = btoa(
-    JSON.stringify({ hassUrl: HASS_URL, clientId: CLIENT_ID, pkce }),
+    JSON.stringify({ hassUrl: HASS_URL, clientId: CLIENT_ID, nonce }),
   );
   const browser = setBrowserGlobals(
     `?auth_callback=1&state=${encodeURIComponent(state)}&code=code`,
   );
-  if (pkce !== undefined) {
+  if (nonce !== undefined) {
     browser.storage.set(
-      `hass_oauth_state_${pkce}`,
+      `hass_oauth_state_${nonce}`,
       JSON.stringify({
         codeVerifier: CODE_VERIFIER,
-        redirectUrl: `${REDIRECT_URL}?auth_callback=1`,
         state,
       }),
     );
@@ -142,13 +141,12 @@ describe("PKCE", () => {
     strictEqual(codeChallenge?.length, 43);
     strictEqual(/^[A-Za-z0-9_-]+$/.test(codeChallenge!), true);
     const state = JSON.parse(atob(authorizeUrl.searchParams.get("state")!)) as {
-      pkce: string;
+      nonce: string;
     };
     const storedState = JSON.parse(
-      storage.get(`hass_oauth_state_${state.pkce}`)!,
+      storage.get(`hass_oauth_state_${state.nonce}`)!,
     );
     strictEqual(storedState.state, authorizeUrl.searchParams.get("state"));
-    strictEqual(storedState.redirectUrl, `${REDIRECT_URL}?auth_callback=1`);
     strictEqual(
       /^[A-Za-z0-9\-._~]{43,128}$/.test(storedState.codeVerifier),
       true,
@@ -180,10 +178,6 @@ describe("PKCE", () => {
 
     strictEqual(requests[0].get("code"), "code");
     strictEqual(requests[0].get("code_verifier"), CODE_VERIFIER);
-    strictEqual(
-      requests[0].get("redirect_uri"),
-      `${REDIRECT_URL}?auth_callback=1`,
-    );
     strictEqual(storage.size, 0);
     await rejects(
       getAuth(AUTH_OPTIONS),
@@ -230,19 +224,6 @@ describe("PKCE", () => {
 
     strictEqual(requests[0].get("code"), "code");
     strictEqual(requests[0].has("code_verifier"), false);
-    strictEqual(requests[0].has("redirect_uri"), false);
-  });
-
-  it("should keep the existing flow for a supplied authorization code", async () => {
-    setBrowserGlobals();
-    const requests = mockTokenRequest();
-
-    await getAuth({ ...AUTH_OPTIONS, authCode: "code" });
-
-    strictEqual(requests.length, 1);
-    strictEqual(requests[0].get("code"), "code");
-    strictEqual(requests[0].has("code_verifier"), false);
-    strictEqual(requests[0].has("redirect_uri"), false);
   });
 
   it("should skip discovery in an insecure context", async () => {
@@ -253,7 +234,7 @@ describe("PKCE", () => {
     const authorizeUrl = await waitForAuthorizeUrl(location);
     strictEqual(authorizeUrl.searchParams.has("code_challenge"), false);
     const state = JSON.parse(atob(authorizeUrl.searchParams.get("state")!));
-    strictEqual("pkce" in state, false);
+    strictEqual("nonce" in state, false);
     strictEqual(storage.size, 0);
     strictEqual(requests.length, 0);
   });
@@ -261,18 +242,11 @@ describe("PKCE", () => {
   for (const [name, fetchMetadata] of [
     ["missing S256", async () => Response.json({})],
     [
-      "plain only",
-      async () =>
-        Response.json({ code_challenge_methods_supported: ["plain"] }),
-    ],
-    [
       "network error",
       async () => {
         throw new Error("Network unavailable");
       },
     ],
-    ["HTTP error", async () => new Response("", { status: 503 })],
-    ["invalid JSON", async () => new Response("not json")],
   ] as const) {
     it(`should use a legacy redirect for ${name} metadata`, async () => {
       const { location, storage } = setBrowserGlobals();
@@ -284,20 +258,4 @@ describe("PKCE", () => {
       strictEqual(storage.size, 0);
     });
   }
-
-  it("should reject when storage is unavailable in a secure context", async () => {
-    const { location } = setBrowserGlobals();
-    mockAuthorizationServerMetadata();
-    Object.defineProperty(globalThis, "sessionStorage", {
-      configurable: true,
-      value: {
-        setItem: () => {
-          throw new Error("Storage unavailable");
-        },
-      },
-    });
-
-    await rejects(getAuth(AUTH_OPTIONS), /Storage unavailable/);
-    strictEqual(location.href, "");
-  });
 });

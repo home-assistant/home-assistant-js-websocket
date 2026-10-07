@@ -39,12 +39,11 @@ type QueryCallbackData =
 type OAuthState = {
   hassUrl: string;
   clientId: string | null;
-  pkce?: string;
+  nonce?: string;
 };
 
 type StoredOAuthState = {
   codeVerifier: string;
-  redirectUrl: string;
   state: string;
 };
 
@@ -52,7 +51,6 @@ type AuthorizationCodeRequest = {
   grant_type: "authorization_code";
   code: string;
   code_verifier?: string;
-  redirect_uri?: string;
 };
 
 type RefreshTokenRequest = {
@@ -84,7 +82,6 @@ async function supportsPkce(hassUrl: string): Promise<boolean> {
   try {
     const response = await fetch(
       `${hassUrl}/.well-known/oauth-authorization-server`,
-      { credentials: "same-origin" },
     );
     if (!response.ok) {
       return false;
@@ -146,18 +143,17 @@ async function redirectAuthorize(
     const codeVerifier = base64UrlEncode(
       crypto.getRandomValues(new Uint8Array(64)),
     );
-    const pkce = base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)));
+    const nonce = base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)));
     const digest = await crypto.subtle.digest(
       "SHA-256",
       new TextEncoder().encode(codeVerifier),
     );
     codeChallenge = base64UrlEncode(new Uint8Array(digest));
-    authorizationState = encodeOAuthState({ ...state, pkce });
+    authorizationState = encodeOAuthState({ ...state, nonce });
     sessionStorage.setItem(
-      `${OAUTH_STATE_STORAGE_PREFIX}${pkce}`,
+      `${OAUTH_STATE_STORAGE_PREFIX}${nonce}`,
       JSON.stringify({
         codeVerifier,
-        redirectUrl,
         state: authorizationState,
       } satisfies StoredOAuthState),
     );
@@ -225,14 +221,12 @@ function fetchToken(
   hassUrl: string,
   clientId: string | null,
   code: string,
-  redirectUrl?: string,
   codeVerifier?: string,
 ) {
   return tokenRequest(hassUrl, clientId, {
     code,
     code_verifier: codeVerifier,
     grant_type: "authorization_code",
-    redirect_uri: redirectUrl,
   });
 }
 
@@ -354,25 +348,17 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
         throw ERR_INVALID_AUTH_CALLBACK;
       }
 
-      let storedState: StoredOAuthState | undefined;
-      if (state.pkce !== undefined) {
-        const storageKey = `${OAUTH_STATE_STORAGE_PREFIX}${state.pkce}`;
+      let storedState: StoredOAuthState | null = null;
+      if (state.nonce !== undefined) {
+        const storageKey = `${OAUTH_STATE_STORAGE_PREFIX}${state.nonce}`;
         try {
           const storedValue = sessionStorage.getItem(storageKey);
           sessionStorage.removeItem(storageKey);
-          storedState = JSON.parse(storedValue ?? "null") as StoredOAuthState;
+          storedState = JSON.parse(storedValue!);
         } catch (_err) {
           throw ERR_INVALID_AUTH_CALLBACK;
         }
-        if (
-          typeof storedState !== "object" ||
-          storedState === null ||
-          typeof storedState.codeVerifier !== "string" ||
-          !/^[A-Za-z0-9\-._~]{43,128}$/.test(storedState.codeVerifier) ||
-          typeof storedState.redirectUrl !== "string" ||
-          storedState.redirectUrl.length === 0 ||
-          storedState.state !== query.state
-        ) {
+        if (storedState?.state !== query.state) {
           throw ERR_INVALID_AUTH_CALLBACK;
         }
       }
@@ -381,7 +367,6 @@ export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
         state.hassUrl,
         state.clientId,
         query.code,
-        storedState?.redirectUrl,
         storedState?.codeVerifier,
       );
       if (options.saveTokens) {

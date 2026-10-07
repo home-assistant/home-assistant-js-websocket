@@ -65,7 +65,7 @@ connect();
 
 ### `getAuth()`
 
-Use this method to get authentication from a server via OAuth2. This method will handle redirecting to an instance and fetching the token after the user successful logs in. Browser authorization uses S256 PKCE in a secure context when the server advertises support. Metadata errors or missing S256 support use the existing login flow. Once PKCE is selected, login errors stop the flow. The library does not retry without PKCE.
+Use this method to get authentication from a server via OAuth2. This method will handle redirecting to an instance and fetching the token after the user successful logs in. Uses S256 PKCE in a secure context when the server advertises it.
 
 You can pass options using the syntax:
 
