@@ -75,7 +75,7 @@ function base64UrlEncode(value: Uint8Array): string {
 }
 
 async function supportsPkce(hassUrl: string): Promise<boolean> {
-  if (!isSecureContext) {
+  if (!crypto.subtle) {
     return false;
   }
 

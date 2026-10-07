@@ -14,7 +14,7 @@ const AUTH_OPTIONS = {
   redirectUrl: REDIRECT_URL,
 };
 
-function setBrowserGlobals(search = "", secureContext = true) {
+function setBrowserGlobals(search = "") {
   const location = {
     href: "",
     host: "client.example",
@@ -31,10 +31,6 @@ function setBrowserGlobals(search = "", secureContext = true) {
     configurable: true,
     value: { location },
   });
-  Object.defineProperty(globalThis, "isSecureContext", {
-    configurable: true,
-    value: secureContext,
-  });
   Object.defineProperty(globalThis, "sessionStorage", {
     configurable: true,
     value: {
@@ -47,6 +43,10 @@ function setBrowserGlobals(search = "", secureContext = true) {
 }
 
 const originalFetch = globalThis.fetch;
+const originalCryptoDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "crypto",
+)!;
 
 function mockAuthorizationServerMetadata() {
   globalThis.fetch = async () =>
@@ -99,7 +99,7 @@ afterEach(() => {
   Reflect.deleteProperty(globalThis, "document");
   Reflect.deleteProperty(globalThis, "location");
   Reflect.deleteProperty(globalThis, "sessionStorage");
-  Reflect.deleteProperty(globalThis, "isSecureContext");
+  Object.defineProperty(globalThis, "crypto", originalCryptoDescriptor);
   globalThis.fetch = originalFetch;
 });
 
@@ -226,8 +226,12 @@ describe("PKCE", () => {
     strictEqual(requests[0].has("code_verifier"), false);
   });
 
-  it("should skip discovery in an insecure context", async () => {
-    const { location, storage } = setBrowserGlobals("", false);
+  it("should skip discovery when crypto.subtle is unavailable", async () => {
+    const { location, storage } = setBrowserGlobals();
+    Object.defineProperty(globalThis, "crypto", {
+      configurable: true,
+      value: { subtle: undefined },
+    });
     const requests = mockTokenRequest();
 
     void getAuth(AUTH_OPTIONS);
