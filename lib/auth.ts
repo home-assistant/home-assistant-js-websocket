@@ -76,13 +76,11 @@ function base64UrlEncode(value: Uint8Array): string {
     .replace(/=+$/, "");
 }
 
-function randomBase64Url(byteLength: number): string {
-  const bytes = new Uint8Array(byteLength);
-  crypto.getRandomValues(bytes);
-  return base64UrlEncode(bytes);
-}
-
 async function supportsPkce(hassUrl: string): Promise<boolean> {
+  if (!window.isSecureContext) {
+    return false;
+  }
+
   try {
     const response = await fetch(
       `${hassUrl}/.well-known/oauth-authorization-server`,
@@ -144,9 +142,11 @@ async function redirectAuthorize(
   const state: OAuthState = { hassUrl, clientId };
   let authorizationState = encodeOAuthState(state);
   let codeChallenge: string | undefined;
-  if (window.isSecureContext && (await supportsPkce(hassUrl))) {
-    const codeVerifier = randomBase64Url(64);
-    const pkce = randomBase64Url(32);
+  if (await supportsPkce(hassUrl)) {
+    const codeVerifier = base64UrlEncode(
+      crypto.getRandomValues(new Uint8Array(64)),
+    );
+    const pkce = base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)));
     const digest = await crypto.subtle.digest(
       "SHA-256",
       new TextEncoder().encode(codeVerifier),
