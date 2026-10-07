@@ -31,9 +31,9 @@ function setBrowserGlobals(search = "", secureContext = true) {
     configurable: true,
     value: { location },
   });
-  Object.defineProperty(globalThis, "window", {
+  Object.defineProperty(globalThis, "isSecureContext", {
     configurable: true,
-    value: { isSecureContext: secureContext },
+    value: secureContext,
   });
   Object.defineProperty(globalThis, "sessionStorage", {
     configurable: true,
@@ -99,7 +99,7 @@ afterEach(() => {
   Reflect.deleteProperty(globalThis, "document");
   Reflect.deleteProperty(globalThis, "location");
   Reflect.deleteProperty(globalThis, "sessionStorage");
-  Reflect.deleteProperty(globalThis, "window");
+  Reflect.deleteProperty(globalThis, "isSecureContext");
   globalThis.fetch = originalFetch;
 });
 
