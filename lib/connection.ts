@@ -476,6 +476,10 @@ export class Connection {
           }
           try {
             const socket = await options.createSocket(options);
+            if (this.closeRequested) {
+              socket.close();
+              return;
+            }
             this._setSocket(socket);
           } catch (err) {
             if (this._queuedMessages) {

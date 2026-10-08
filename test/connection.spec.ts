@@ -99,3 +99,25 @@ describe("Connection subscriptions across a reconnect", () => {
     assert.strictEqual(conn.commands.size, 0);
   });
 });
+
+describe("Connection close during reconnect", () => {
+  it("closes a socket that finishes connecting after close()", async () => {
+    const socket = new FakeSocket();
+    let reconnected: FakeSocket | undefined;
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => {
+        await settle(10);
+        return (reconnected = new FakeSocket()) as any;
+      },
+    });
+
+    socket.close();
+    await settle(0);
+    conn.close();
+    await settle(30);
+
+    assert.strictEqual(reconnected!.readyState, 3);
+    assert.strictEqual(conn.socket, undefined);
+  });
+});
