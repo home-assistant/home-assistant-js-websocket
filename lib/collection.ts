@@ -97,7 +97,7 @@ export const getCollection = <State>(
         unsub();
       });
     store.clearState();
-    conn.removeEventListener("ready", refresh);
+    conn.removeEventListener("ready", refreshSwallow);
     conn.removeEventListener("disconnected", handleDisconnect);
   };
 
