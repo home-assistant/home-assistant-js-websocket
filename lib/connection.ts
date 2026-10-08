@@ -140,13 +140,12 @@ export class Connection {
       this.oldSubscriptions = undefined;
       oldSubscriptions.forEach((info) => {
         if ("subscribe" in info && info.subscribe) {
-          info.subscribe().then((unsub) => {
-            info.unsubscribe = unsub;
-            // We need to resolve this in case it wasn't resolved yet.
-            // This allows us to subscribe while we're disconnected
-            // and recover properly.
-            info.resolve();
-          });
+          const resubscribed = info.subscribe();
+          info.unsubscribe = () => resubscribed.then((unsub) => unsub());
+          // We need to resolve this in case it wasn't resolved yet.
+          // This allows us to subscribe while we're disconnected
+          // and recover properly.
+          resubscribed.then(() => info.resolve());
         }
       });
     }
@@ -342,13 +341,16 @@ export class Connection {
             ? () => this.subscribeMessage(callback, subscribeMessage, options)
             : undefined,
         unsubscribe: async () => {
-          // No need to unsubscribe if we're disconnected
-          if (this.connected) {
-            await this.sendMessagePromise(
-              messages.unsubscribeEvents(commandId),
-            );
+          try {
+            if (this.connected) {
+              await this.sendMessagePromise(
+                messages.unsubscribeEvents(commandId),
+              );
+            }
+          } finally {
+            this.commands.delete(commandId);
+            this.oldSubscriptions?.delete(commandId);
           }
-          this.commands.delete(commandId);
         },
       };
       this.commands.set(commandId, info);
@@ -474,6 +476,10 @@ export class Connection {
           }
           try {
             const socket = await options.createSocket(options);
+            if (this.closeRequested) {
+              socket.close();
+              return;
+            }
             this._setSocket(socket);
           } catch (err) {
             if (this._queuedMessages) {
