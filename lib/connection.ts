@@ -10,9 +10,10 @@ import type { Auth } from "./auth.js";
 
 const DEBUG = false;
 
-// The backend drops all subscriptions of a connection when it closes.
-const isConnectionLost = (err: any) =>
-  err === ERR_CONNECTION_LOST || err?.error?.code === ERR_CONNECTION_LOST;
+const isConnectionLost = (err: unknown) =>
+  err === ERR_CONNECTION_LOST ||
+  (err as { error?: { code?: number } } | undefined)?.error?.code ===
+    ERR_CONNECTION_LOST;
 
 export type ConnectionOptions = {
   setupRetry: number;
@@ -153,9 +154,8 @@ export class Connection {
         if ("subscribe" in info && info.subscribe) {
           const resubscribed = info.subscribe();
           info.unsubscribe = () => resubscribed.then((unsub) => unsub());
-          // We need to resolve this in case it wasn't resolved yet.
-          // This allows us to subscribe while we're disconnected
-          // and recover properly.
+          // We need to resolve this in case it wasn't resolved yet,
+          // which happens when it was sent while the socket was closing.
           resubscribed.then(() => info.resolve());
         }
       });
@@ -335,24 +335,17 @@ export class Connection {
     },
   ): Promise<SubscriptionUnsubscribe> {
     if (!this.socket) {
-      if (this.closeRequested) {
-        throw ERR_CONNECTION_LOST;
-      }
-      await new Promise<void>((resolve, reject) => {
-        this._socketWaiters.push({ resolve, reject });
-      });
-    }
-
-    if (this._queuedMessages) {
-      await new Promise((resolve, reject) => {
-        this._queuedMessages!.push({ resolve, reject });
-      });
+      await this._waitForSocket();
     }
 
     if (options?.preCheck) {
       const precheck = await options.preCheck();
       if (!precheck) {
         throw new Error("Pre-check failed");
+      }
+      // The socket can have closed while running the pre-check.
+      if (!this.socket) {
+        await this._waitForSocket();
       }
     }
 
@@ -380,6 +373,7 @@ export class Connection {
               );
             }
           } catch (err) {
+            // The backend drops all subscriptions of a connection when it closes.
             if (!isConnectionLost(err)) {
               throw err;
             }
@@ -522,6 +516,7 @@ export class Connection {
           } catch (err) {
             this._rejectQueuedMessages();
             if (err === ERR_INVALID_AUTH) {
+              this._rejectWaiting();
               this.fireEvent("reconnect-error", err);
             } else {
               reconnect(tries + 1);
@@ -543,6 +538,19 @@ export class Connection {
     reconnect(0);
   };
 
+  // Messages are only queued while there is no socket, so waiting for the
+  // socket also covers the queue.
+  private async _waitForSocket() {
+    while (!this.socket) {
+      if (this.closeRequested) {
+        throw ERR_CONNECTION_LOST;
+      }
+      await new Promise<void>((resolve, reject) => {
+        this._socketWaiters.push({ resolve, reject });
+      });
+    }
+  }
+
   private _rejectQueuedMessages() {
     const queuedMessages = this._queuedMessages;
     if (!queuedMessages) {
@@ -556,7 +564,7 @@ export class Connection {
     }
   }
 
-  // Nothing will connect anymore after close(), don't leave callers hanging.
+  // Nothing will connect anymore, don't leave callers hanging.
   private _rejectWaiting() {
     this._rejectQueuedMessages();
     const socketWaiters = this._socketWaiters;

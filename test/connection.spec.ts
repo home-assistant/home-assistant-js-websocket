@@ -1,6 +1,7 @@
 import * as assert from "assert";
 
 import { Connection } from "../dist/connection.js";
+import { ERR_INVALID_AUTH } from "../dist/errors.js";
 
 class FakeSocket {
   OPEN = 1;
@@ -94,6 +95,27 @@ describe("Connection subscriptions across a reconnect", () => {
     assert.strictEqual(conn.commands.size, 1);
   });
 
+  it("establishes a subscription when the socket closes during the pre-check", async () => {
+    let passPreCheck!: (value: boolean) => void;
+    const subscribing = conn.subscribeMessage(
+      () => {},
+      { type: "y" },
+      { preCheck: () => new Promise((resolve) => (passPreCheck = resolve)) },
+    );
+    await settle(0);
+
+    socket.close();
+    passPreCheck(true);
+    await settle();
+
+    assert.deepStrictEqual(
+      reconnected!.sent.map((m) => m.type),
+      ["y"],
+    );
+    reconnected!.succeed("y");
+    await subscribing;
+  });
+
   it("does not keep a command sent while disconnected", async () => {
     socket.close();
     await assert.rejects(conn.sendMessagePromise({ type: "z" }));
@@ -154,6 +176,21 @@ describe("Connection close while waiting for a reconnect", () => {
     socket.close();
     const subscribing = conn.subscribeMessage(() => {}, { type: "y" });
     conn.close();
+
+    await assert.rejects(subscribing);
+  });
+
+  it("rejects subscriptions waiting for a socket on invalid auth", async () => {
+    const socket = new FakeSocket();
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => {
+        throw ERR_INVALID_AUTH;
+      },
+    });
+
+    socket.close();
+    const subscribing = conn.subscribeMessage(() => {}, { type: "y" });
 
     await assert.rejects(subscribing);
   });
