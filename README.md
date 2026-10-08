@@ -34,7 +34,7 @@ To initialize a connection, you need an authentication token for the instance th
 import {
   getAuth,
   createConnection,
-  subscribeEntities,
+  subscribeEntityStates,
   ERR_HASS_HOST_REQUIRED,
 } from "home-assistant-js-websocket";
 
@@ -57,7 +57,7 @@ async function connect() {
     }
   }
   const connection = await createConnection({ auth });
-  subscribeEntities(connection, (ent) => console.log(ent));
+  subscribeEntityStates(connection, (ent) => console.log(ent));
 }
 
 connect();
@@ -206,29 +206,29 @@ conn.addEventListener("ready", eventHandler);
 conn.removeEventListener("ready", eventHandler);
 ```
 
-### Entities
+### Entity states
 
-You can subscribe to the entities of Home Assistant. Your callback will be called when the entities are first loaded and on every change to the state of any of the entities after that. The callback will be called with a single object that contains the entities keyed by entity_id.
+You can subscribe to the entity states of Home Assistant. Your callback will be called when the states are first loaded and on every change to the state of any entity after that. The callback will be called with a single object that contains the states keyed by entity_id. (`subscribeEntities` and `entitiesColl` remain available as deprecated aliases.)
 
-The function `subscribeEntities` will return an unsubscribe function.
+The function `subscribeEntityStates` will return an unsubscribe function.
 
 ```javascript
-import { subscribeEntities } from "home-assistant-js-websocket";
+import { subscribeEntityStates } from "home-assistant-js-websocket";
 
 // conn is the connection from earlier.
-subscribeEntities(conn, (entities) => console.log("New entities!", entities));
+subscribeEntityStates(conn, (states) => console.log("New states!", states));
 ```
 
 You can also import the collection:
 
 ```javascript
-import { entitiesColl } from "home-assistant-js-websocket";
+import { entityStatesColl } from "home-assistant-js-websocket";
 
 // conn is the connection from earlier.
-const coll = entitiesColl(conn);
+const coll = entityStatesColl(conn);
 console.log(coll.state);
 await coll.refresh();
-coll.subscribe((entities) => console.log(entities));
+coll.subscribe((states) => console.log(states));
 ```
 
 ### Config
@@ -425,9 +425,9 @@ The library also contains a few helper method that you can use to ineract with t
 
 The following are also available, but it's recommended that you use the subscribe methods documented above.
 
-- `getStates(connection) -> Promise<HassEntity[]>`
-- `getServices(connection) -> Promise<HassEntity[]>`
-- `getConfig(connection) -> Promise<HassEntity[]>`
+- `getStates(connection) -> Promise<HassEntityState[]>`
+- `getServices(connection) -> Promise<HassServices>`
+- `getConfig(connection) -> Promise<HassConfig>`
 
 ## Using this with long-lived access tokens
 
@@ -439,7 +439,7 @@ You will need to create your own auth object if you want to use this library wit
 import {
   Auth,
   createConnection,
-  subscribeEntities,
+  subscribeEntityStates,
   createLongLivedTokenAuth,
 } from "home-assistant-js-websocket";
 
@@ -450,7 +450,7 @@ import {
   );
 
   const connection = await createConnection({ auth });
-  subscribeEntities(connection, (entities) => console.log(entities));
+  subscribeEntityStates(connection, (entities) => console.log(entities));
 })();
 ```
 
