@@ -148,7 +148,9 @@ describe("Connection subscriptions across a reconnect", () => {
 
   it("does not keep a command sent while disconnected", async () => {
     socket.close();
-    await assert.rejects(conn.sendMessagePromise({ type: "z" }));
+    await assert.rejects(conn.sendMessagePromise({ type: "z" }), {
+      error: { code: ERR_CONNECTION_LOST, message: "Connection lost" },
+    });
 
     assert.strictEqual(conn.commands.size, 0);
   });
@@ -262,7 +264,9 @@ describe("Connection close while waiting for a reconnect", () => {
     const sending = conn.sendMessagePromise({ type: "z" });
     conn.close();
 
-    await assert.rejects(sending);
+    await assert.rejects(sending, {
+      error: { code: ERR_CONNECTION_LOST, message: "Connection lost" },
+    });
   });
 });
 

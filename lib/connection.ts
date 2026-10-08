@@ -103,7 +103,7 @@ export class Connection {
   // after the connection has been suspended.
   _queuedMessages?: Array<{
     resolve: (value?: unknown) => unknown;
-    reject?: (err: typeof ERR_CONNECTION_LOST) => unknown;
+    reject?: (err: unknown) => unknown;
   }>;
 
   // Subscriptions requested while there is no socket wait here for the reconnect.
@@ -329,7 +329,7 @@ export class Connection {
         this.sendMessage(message, commandId);
       } catch (err) {
         this.commands.delete(commandId);
-        reject(err);
+        reject(err === ERR_CONNECTION_LOST ? connectionLost() : err);
       }
     });
   }
@@ -586,7 +586,7 @@ export class Connection {
     this._queuedMessages = undefined;
     for (const msg of queuedMessages) {
       if (msg.reject) {
-        msg.reject(ERR_CONNECTION_LOST);
+        msg.reject(connectionLost());
       }
     }
   }
