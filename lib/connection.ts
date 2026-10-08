@@ -3,17 +3,19 @@
  * the Home Assistant websocket API.
  */
 import * as messages from "./messages.js";
-import { ERR_INVALID_AUTH, ERR_CONNECTION_LOST } from "./errors.js";
+import {
+  ERR_INVALID_AUTH,
+  ERR_CONNECTION_LOST,
+  isConnectionLost,
+} from "./errors.js";
 import { HassEvent, MessageBase } from "./types.js";
 import { HaWebSocket } from "./socket.js";
 import type { Auth } from "./auth.js";
 
 const DEBUG = false;
 
-const isConnectionLost = (err: unknown) =>
-  err === ERR_CONNECTION_LOST ||
-  (err as { error?: { code?: number } } | undefined)?.error?.code ===
-    ERR_CONNECTION_LOST;
+const connectionLost = () =>
+  messages.error(ERR_CONNECTION_LOST, "Connection lost");
 
 export type ConnectionOptions = {
   setupRetry: number;
@@ -107,7 +109,7 @@ export class Connection {
   // Subscriptions requested while there is no socket wait here for the reconnect.
   private _socketWaiters: Array<{
     resolve: () => void;
-    reject: (err: typeof ERR_CONNECTION_LOST) => void;
+    reject: (err: unknown) => void;
   }> = [];
 
   // Set when reconnecting stopped on invalid auth, nothing will connect anymore.
@@ -497,7 +499,7 @@ export class Connection {
       // as we will be able to recover them. Rejecting an already
       // established subscription is a no-op.
       if (!("subscribe" in info) || !info.subscribe) {
-        info.reject(messages.error(ERR_CONNECTION_LOST, "Connection lost"));
+        info.reject(connectionLost());
       }
     });
 
@@ -530,6 +532,10 @@ export class Connection {
             }
             this._setSocket(socket);
           } catch (err) {
+            if (this.closeRequested) {
+              this._rejectWaiting();
+              return;
+            }
             this._rejectQueuedMessages();
             if (err === ERR_INVALID_AUTH) {
               this._reconnectFailed = true;
@@ -564,7 +570,7 @@ export class Connection {
   private async _waitForSocket() {
     while (!this._isUsable) {
       if (this.closeRequested || this._reconnectFailed) {
-        throw ERR_CONNECTION_LOST;
+        throw connectionLost();
       }
       await new Promise<void>((resolve, reject) => {
         this._socketWaiters.push({ resolve, reject });
@@ -591,13 +597,11 @@ export class Connection {
     const socketWaiters = this._socketWaiters;
     this._socketWaiters = [];
     for (const waiter of socketWaiters) {
-      waiter.reject(ERR_CONNECTION_LOST);
+      waiter.reject(connectionLost());
     }
     // Settle subscriptions that were in flight. Rejecting an already
     // established subscription is a no-op.
-    this.oldSubscriptions?.forEach((info) =>
-      info.reject(messages.error(ERR_CONNECTION_LOST, "Connection lost")),
-    );
+    this.oldSubscriptions?.forEach((info) => info.reject(connectionLost()));
   }
 
   private _genCmdId() {

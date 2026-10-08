@@ -1,7 +1,8 @@
 import * as assert from "assert";
 
 import { Connection } from "../dist/connection.js";
-import { ERR_INVALID_AUTH } from "../dist/errors.js";
+import { getCollection } from "../dist/collection.js";
+import { ERR_CONNECTION_LOST, ERR_INVALID_AUTH } from "../dist/errors.js";
 
 class FakeSocket {
   OPEN = 1;
@@ -325,6 +326,67 @@ describe("Connection settles subscriptions that can't recover", () => {
     await settle();
 
     assert.strictEqual(await outcome(subscribing), "rejected");
+  });
+});
+
+describe("Connection after close()", () => {
+  it("rejects waiting subscriptions with a connection lost error", async () => {
+    const socket = new FakeSocket();
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: () => new Promise(() => {}),
+    });
+
+    socket.close();
+    const subscribing = conn.subscribeMessage(() => {}, { type: "y" });
+    conn.close();
+
+    await assert.rejects(subscribing, {
+      error: { code: ERR_CONNECTION_LOST, message: "Connection lost" },
+    });
+  });
+
+  it("does not fire reconnect-error when auth fails after close()", async () => {
+    const socket = new FakeSocket();
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => {
+        await settle(10);
+        throw ERR_INVALID_AUTH;
+      },
+    });
+    let reconnectErrors = 0;
+    conn.addEventListener("reconnect-error", () => reconnectErrors++);
+
+    socket.close();
+    await settle(0);
+    conn.close();
+    await settle(30);
+
+    assert.strictEqual(reconnectErrors, 0);
+  });
+
+  it("does not leave an unhandled rejection in a collection", async () => {
+    const tracker = trackUnhandled();
+    try {
+      const socket = new FakeSocket();
+      const conn = new Connection(socket as any, {
+        setupRetry: 0,
+        createSocket: async () => new FakeSocket() as any,
+      });
+      const coll = getCollection(conn, "_test", undefined, (conn) =>
+        conn.subscribeMessage(() => {}, { type: "x" }),
+      );
+      coll.subscribe(() => {});
+      await settle(0);
+
+      conn.close();
+      await settle();
+
+      assert.deepStrictEqual(tracker.unhandled, []);
+    } finally {
+      tracker.stop();
+    }
   });
 });
 
