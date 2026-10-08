@@ -147,6 +147,17 @@ export class Connection {
     socket.addEventListener("message", this._handleMessage);
     socket.addEventListener("close", this._handleClose);
 
+    // Flush the queue first, sendMessage can't send with a command id while
+    // messages are queued, which resubscribing does.
+    const queuedMessages = this._queuedMessages;
+
+    if (queuedMessages) {
+      this._queuedMessages = undefined;
+      for (const queuedMsg of queuedMessages) {
+        queuedMsg.resolve();
+      }
+    }
+
     const oldSubscriptions = this.oldSubscriptions;
     if (oldSubscriptions) {
       this.oldSubscriptions = undefined;
@@ -160,19 +171,11 @@ export class Connection {
         }
       });
     }
+
     const socketWaiters = this._socketWaiters;
     this._socketWaiters = [];
     for (const waiter of socketWaiters) {
       waiter.resolve();
-    }
-
-    const queuedMessages = this._queuedMessages;
-
-    if (queuedMessages) {
-      this._queuedMessages = undefined;
-      for (const queuedMsg of queuedMessages) {
-        queuedMsg.resolve();
-      }
     }
 
     this.fireEvent("ready");

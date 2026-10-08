@@ -195,6 +195,27 @@ describe("Connection close while waiting for a reconnect", () => {
     await assert.rejects(subscribing);
   });
 
+  it("resends existing subscriptions after a suspend", async () => {
+    const socket = new FakeSocket();
+    let reconnected: FakeSocket | undefined;
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => (reconnected = new FakeSocket()) as any,
+    });
+    const subscribing = conn.subscribeMessage(() => {}, { type: "x" });
+    socket.succeed("x");
+    await subscribing;
+
+    conn.suspendReconnectUntil(Promise.resolve());
+    conn.suspend();
+    await settle();
+
+    assert.deepStrictEqual(
+      reconnected!.sent.map((m) => m.type),
+      ["x"],
+    );
+  });
+
   it("rejects messages queued after a suspend", async () => {
     const socket = new FakeSocket();
     const conn = new Connection(socket as any, {
