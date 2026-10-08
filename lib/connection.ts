@@ -10,6 +10,10 @@ import type { Auth } from "./auth.js";
 
 const DEBUG = false;
 
+// The backend drops all subscriptions of a connection when it closes.
+const isConnectionLost = (err: any) =>
+  err === ERR_CONNECTION_LOST || err?.error?.code === ERR_CONNECTION_LOST;
+
 export type ConnectionOptions = {
   setupRetry: number;
   auth?: Auth;
@@ -98,6 +102,13 @@ export class Connection {
     resolve: (value?: unknown) => unknown;
     reject?: (err: typeof ERR_CONNECTION_LOST) => unknown;
   }>;
+
+  // Subscriptions requested while there is no socket wait here for the reconnect.
+  _socketWaiters: Array<{
+    resolve: () => void;
+    reject: (err: typeof ERR_CONNECTION_LOST) => void;
+  }> = [];
+
   socket?: HaWebSocket;
   /**
    * Version string of the Home Assistant instance. Set to version of last connection while reconnecting.
@@ -149,6 +160,12 @@ export class Connection {
         }
       });
     }
+    const socketWaiters = this._socketWaiters;
+    this._socketWaiters = [];
+    for (const waiter of socketWaiters) {
+      waiter.resolve();
+    }
+
     const queuedMessages = this._queuedMessages;
 
     if (queuedMessages) {
@@ -228,6 +245,7 @@ export class Connection {
     if (this.socket) {
       this.socket.close();
     }
+    this._rejectWaiting();
   }
 
   /**
@@ -291,7 +309,12 @@ export class Connection {
 
       const commandId = this._genCmdId();
       this.commands.set(commandId, { resolve, reject });
-      this.sendMessage(message, commandId);
+      try {
+        this.sendMessage(message, commandId);
+      } catch (err) {
+        this.commands.delete(commandId);
+        reject(err);
+      }
     });
   }
 
@@ -311,6 +334,15 @@ export class Connection {
       preCheck?: () => boolean | Promise<boolean>;
     },
   ): Promise<SubscriptionUnsubscribe> {
+    if (!this.socket) {
+      if (this.closeRequested) {
+        throw ERR_CONNECTION_LOST;
+      }
+      await new Promise<void>((resolve, reject) => {
+        this._socketWaiters.push({ resolve, reject });
+      });
+    }
+
     if (this._queuedMessages) {
       await new Promise((resolve, reject) => {
         this._queuedMessages!.push({ resolve, reject });
@@ -346,6 +378,10 @@ export class Connection {
               await this.sendMessagePromise(
                 messages.unsubscribeEvents(commandId),
               );
+            }
+          } catch (err) {
+            if (!isConnectionLost(err)) {
+              throw err;
             }
           } finally {
             this.commands.delete(commandId);
@@ -469,6 +505,7 @@ export class Connection {
       setTimeout(
         async () => {
           if (this.closeRequested) {
+            this._rejectWaiting();
             return;
           }
           if (DEBUG) {
@@ -478,19 +515,12 @@ export class Connection {
             const socket = await options.createSocket(options);
             if (this.closeRequested) {
               socket.close();
+              this._rejectWaiting();
               return;
             }
             this._setSocket(socket);
           } catch (err) {
-            if (this._queuedMessages) {
-              const queuedMessages = this._queuedMessages;
-              this._queuedMessages = undefined;
-              for (const msg of queuedMessages) {
-                if (msg.reject) {
-                  msg.reject(ERR_CONNECTION_LOST);
-                }
-              }
-            }
+            this._rejectQueuedMessages();
             if (err === ERR_INVALID_AUTH) {
               this.fireEvent("reconnect-error", err);
             } else {
@@ -512,6 +542,29 @@ export class Connection {
 
     reconnect(0);
   };
+
+  private _rejectQueuedMessages() {
+    const queuedMessages = this._queuedMessages;
+    if (!queuedMessages) {
+      return;
+    }
+    this._queuedMessages = undefined;
+    for (const msg of queuedMessages) {
+      if (msg.reject) {
+        msg.reject(ERR_CONNECTION_LOST);
+      }
+    }
+  }
+
+  // Nothing will connect anymore after close(), don't leave callers hanging.
+  private _rejectWaiting() {
+    this._rejectQueuedMessages();
+    const socketWaiters = this._socketWaiters;
+    this._socketWaiters = [];
+    for (const waiter of socketWaiters) {
+      waiter.reject(ERR_CONNECTION_LOST);
+    }
+  }
 
   private _genCmdId() {
     return ++this.commandId;

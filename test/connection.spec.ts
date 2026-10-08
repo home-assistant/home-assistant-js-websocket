@@ -72,12 +72,33 @@ describe("Connection subscriptions across a reconnect", () => {
   it("drops a subscription whose unsubscribe was cut off by the close", async () => {
     const unsub = await subscribe();
 
-    const result = unsub().catch((err) => err);
+    const result = unsub();
     socket.close();
     await result;
     await settle();
 
     assert.deepStrictEqual(reconnected!.sent, []);
+  });
+
+  it("establishes a subscription requested while disconnected", async () => {
+    socket.close();
+    const subscribing = conn.subscribeMessage(() => {}, { type: "y" });
+    await settle();
+
+    assert.deepStrictEqual(
+      reconnected!.sent.map((m) => m.type),
+      ["y"],
+    );
+    reconnected!.succeed("y");
+    await subscribing;
+    assert.strictEqual(conn.commands.size, 1);
+  });
+
+  it("does not keep a command sent while disconnected", async () => {
+    socket.close();
+    await assert.rejects(conn.sendMessagePromise({ type: "z" }));
+
+    assert.strictEqual(conn.commands.size, 0);
   });
 
   it("drops a subscription unsubscribed while it is being re-established", async () => {
@@ -119,5 +140,40 @@ describe("Connection close during reconnect", () => {
 
     assert.strictEqual(reconnected!.readyState, 3);
     assert.strictEqual(conn.socket, undefined);
+  });
+});
+
+describe("Connection close while waiting for a reconnect", () => {
+  it("rejects subscriptions waiting for a socket", async () => {
+    const socket = new FakeSocket();
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: () => new Promise(() => {}),
+    });
+
+    socket.close();
+    const subscribing = conn.subscribeMessage(() => {}, { type: "y" });
+    conn.close();
+
+    await assert.rejects(subscribing);
+  });
+
+  it("rejects messages queued after a suspend", async () => {
+    const socket = new FakeSocket();
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => {
+        await settle(10);
+        return new FakeSocket() as any;
+      },
+    });
+
+    conn.suspendReconnectUntil(Promise.resolve());
+    conn.suspend();
+    await settle(0);
+    const sending = conn.sendMessagePromise({ type: "z" });
+    conn.close();
+
+    await assert.rejects(sending);
   });
 });
