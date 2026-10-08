@@ -9,6 +9,8 @@ class FakeSocket {
   haVersion = "2026.9.0";
   sent: any[] = [];
   listeners: Record<string, ((ev: any) => void)[]> = {};
+  // Fire the close event later, like a real WebSocket.
+  asyncClose = false;
 
   addEventListener(type: string, cb: (ev: any) => void) {
     (this.listeners[type] ??= []).push(cb);
@@ -23,8 +25,16 @@ class FakeSocket {
   }
 
   close() {
-    this.readyState = 3;
-    this.listeners.close?.forEach((cb) => cb({}));
+    const fire = () => {
+      this.readyState = 3;
+      this.listeners.close?.forEach((cb) => cb({}));
+    };
+    if (this.asyncClose) {
+      this.readyState = 2;
+      setTimeout(fire, 0);
+    } else {
+      fire();
+    }
   }
 
   receive(msg: any) {
@@ -39,6 +49,25 @@ class FakeSocket {
 }
 
 const settle = (ms = 20) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const outcome = (promise: Promise<unknown>) =>
+  Promise.race([
+    promise.then(
+      () => "resolved",
+      () => "rejected",
+    ),
+    settle(60).then(() => "pending"),
+  ]);
+
+const trackUnhandled = () => {
+  const unhandled: unknown[] = [];
+  const onUnhandled = (reason: unknown) => unhandled.push(reason);
+  process.on("unhandledRejection", onUnhandled);
+  return {
+    unhandled,
+    stop: () => process.off("unhandledRejection", onUnhandled),
+  };
+};
 
 describe("Connection subscriptions across a reconnect", () => {
   let socket: FakeSocket;
@@ -233,5 +262,140 @@ describe("Connection close while waiting for a reconnect", () => {
     conn.close();
 
     await assert.rejects(sending);
+  });
+});
+
+describe("Connection settles subscriptions that can't recover", () => {
+  it("rejects a subscription in flight when close() is called", async () => {
+    const socket = new FakeSocket();
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => new FakeSocket() as any,
+    });
+
+    const subscribing = conn.subscribeMessage(() => {}, { type: "x" });
+    conn.close();
+
+    assert.strictEqual(await outcome(subscribing), "rejected");
+  });
+
+  it("rejects a subscription made after close() before the socket closed", async () => {
+    const socket = new FakeSocket();
+    socket.asyncClose = true;
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => new FakeSocket() as any,
+    });
+
+    conn.close();
+    const subscribing = conn.subscribeMessage(() => {}, { type: "x" });
+
+    assert.strictEqual(await outcome(subscribing), "rejected");
+  });
+
+  it("rejects a subscription made after reconnecting failed on invalid auth", async () => {
+    const socket = new FakeSocket();
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => {
+        throw ERR_INVALID_AUTH;
+      },
+    });
+
+    socket.close();
+    await settle();
+    const subscribing = conn.subscribeMessage(() => {}, { type: "x" });
+
+    assert.strictEqual(await outcome(subscribing), "rejected");
+  });
+
+  it("rejects an in flight subscription that won't be resubscribed", async () => {
+    const socket = new FakeSocket();
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => new FakeSocket() as any,
+    });
+
+    const subscribing = conn.subscribeMessage(
+      () => {},
+      { type: "x" },
+      { resubscribe: false },
+    );
+    socket.close();
+    await settle();
+
+    assert.strictEqual(await outcome(subscribing), "rejected");
+  });
+});
+
+describe("Connection failed resubscribe", () => {
+  it("resolves unsubscribe when the pre-check fails on reconnect", async () => {
+    const tracker = trackUnhandled();
+    try {
+      const socket = new FakeSocket();
+      let reconnected: FakeSocket | undefined;
+      const conn = new Connection(socket as any, {
+        setupRetry: 0,
+        createSocket: async () => (reconnected = new FakeSocket()) as any,
+      });
+      let preCheckPasses = true;
+      const subscribing = conn.subscribeMessage(
+        () => {},
+        { type: "x" },
+        { preCheck: () => preCheckPasses },
+      );
+      await settle(0);
+      socket.succeed("x");
+      const unsub = await subscribing;
+
+      preCheckPasses = false;
+      socket.close();
+      await settle();
+
+      assert.deepStrictEqual(reconnected!.sent, []);
+      assert.strictEqual(await outcome(unsub()), "resolved");
+      assert.deepStrictEqual(tracker.unhandled, []);
+    } finally {
+      tracker.stop();
+    }
+  });
+
+  it("resolves unsubscribe when close() is called during the resubscribe pre-check", async () => {
+    const tracker = trackUnhandled();
+    try {
+      const socket = new FakeSocket();
+      let reconnected: FakeSocket | undefined;
+      const conn = new Connection(socket as any, {
+        setupRetry: 0,
+        createSocket: async () => (reconnected = new FakeSocket()) as any,
+      });
+      let preChecks = 0;
+      let passPreCheck!: (value: boolean) => void;
+      const subscribing = conn.subscribeMessage(
+        () => {},
+        { type: "x" },
+        {
+          preCheck: () =>
+            preChecks++ === 0
+              ? true
+              : new Promise<boolean>((resolve) => (passPreCheck = resolve)),
+        },
+      );
+      await settle(0);
+      socket.succeed("x");
+      const unsub = await subscribing;
+
+      socket.close();
+      await settle();
+      reconnected!.close();
+      conn.close();
+      passPreCheck(true);
+      await settle();
+
+      assert.strictEqual(await outcome(unsub()), "resolved");
+      assert.deepStrictEqual(tracker.unhandled, []);
+    } finally {
+      tracker.stop();
+    }
   });
 });

@@ -105,10 +105,13 @@ export class Connection {
   }>;
 
   // Subscriptions requested while there is no socket wait here for the reconnect.
-  _socketWaiters: Array<{
+  private _socketWaiters: Array<{
     resolve: () => void;
     reject: (err: typeof ERR_CONNECTION_LOST) => void;
   }> = [];
+
+  // Set when reconnecting stopped on invalid auth, nothing will connect anymore.
+  private _reconnectFailed = false;
 
   socket?: HaWebSocket;
   /**
@@ -164,10 +167,18 @@ export class Connection {
       oldSubscriptions.forEach((info) => {
         if ("subscribe" in info && info.subscribe) {
           const resubscribed = info.subscribe();
-          info.unsubscribe = () => resubscribed.then((unsub) => unsub());
-          // We need to resolve this in case it wasn't resolved yet,
+          // If resubscribing failed there is nothing to unsubscribe.
+          info.unsubscribe = () =>
+            resubscribed.then(
+              (unsub) => unsub(),
+              () => undefined,
+            );
+          // We need to settle this in case it wasn't settled yet,
           // which happens when it was sent while the socket was closing.
-          resubscribed.then(() => info.resolve());
+          resubscribed.then(
+            () => info.resolve(),
+            (err) => info.reject(err),
+          );
         }
       });
     }
@@ -337,7 +348,7 @@ export class Connection {
       preCheck?: () => boolean | Promise<boolean>;
     },
   ): Promise<SubscriptionUnsubscribe> {
-    if (!this.socket) {
+    if (!this._isUsable) {
       await this._waitForSocket();
     }
 
@@ -347,7 +358,7 @@ export class Connection {
         throw new Error("Pre-check failed");
       }
       // The socket can have closed while running the pre-check.
-      if (!this.socket) {
+      if (!this._isUsable) {
         await this._waitForSocket();
       }
     }
@@ -483,13 +494,15 @@ export class Connection {
     // Reject in-flight sendMessagePromise requests
     oldCommands.forEach((info) => {
       // We don't cancel subscribeEvents commands in flight
-      // as we will be able to recover them.
-      if (!("subscribe" in info)) {
+      // as we will be able to recover them. Rejecting an already
+      // established subscription is a no-op.
+      if (!("subscribe" in info) || !info.subscribe) {
         info.reject(messages.error(ERR_CONNECTION_LOST, "Connection lost"));
       }
     });
 
     if (this.closeRequested) {
+      this._rejectWaiting();
       return;
     }
 
@@ -519,6 +532,7 @@ export class Connection {
           } catch (err) {
             this._rejectQueuedMessages();
             if (err === ERR_INVALID_AUTH) {
+              this._reconnectFailed = true;
               this._rejectWaiting();
               this.fireEvent("reconnect-error", err);
             } else {
@@ -541,11 +555,15 @@ export class Connection {
     reconnect(0);
   };
 
+  private get _isUsable() {
+    return this.socket !== undefined && !this.closeRequested;
+  }
+
   // Messages are only queued while there is no socket, so waiting for the
   // socket also covers the queue.
   private async _waitForSocket() {
-    while (!this.socket) {
-      if (this.closeRequested) {
+    while (!this._isUsable) {
+      if (this.closeRequested || this._reconnectFailed) {
         throw ERR_CONNECTION_LOST;
       }
       await new Promise<void>((resolve, reject) => {
@@ -575,6 +593,11 @@ export class Connection {
     for (const waiter of socketWaiters) {
       waiter.reject(ERR_CONNECTION_LOST);
     }
+    // Settle subscriptions that were in flight. Rejecting an already
+    // established subscription is a no-op.
+    this.oldSubscriptions?.forEach((info) =>
+      info.reject(messages.error(ERR_CONNECTION_LOST, "Connection lost")),
+    );
   }
 
   private _genCmdId() {
