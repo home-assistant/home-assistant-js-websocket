@@ -124,7 +124,7 @@ describe("Connection close during reconnect", () => {
 
 describe("Connection ready listener errors", () => {
   it("does not reconnect again when a ready listener throws", async function () {
-    this.timeout(2000);
+    this.timeout(3000);
     const socket = new FakeSocket();
     let created = 0;
     const conn = new Connection(socket as any, {
@@ -150,15 +150,15 @@ describe("Connection ready listener errors", () => {
     process.on("unhandledRejection", (reason) => rejections.push(reason));
     try {
       socket.close();
-      // Long enough for the 1s backoff retry to have run.
-      await settle(1100);
+      // Well past the 1s backoff, so a retry would have run.
+      await settle(1500);
     } finally {
       process.removeAllListeners("unhandledRejection");
       mochaHandlers.forEach((h) => process.on("unhandledRejection", h));
+      conn.close();
     }
 
     assert.strictEqual(created, 1);
     assert.deepStrictEqual(rejections, [error]);
-    conn.close();
   });
 });
