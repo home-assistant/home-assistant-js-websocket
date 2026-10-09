@@ -474,13 +474,9 @@ export class Connection {
           if (DEBUG) {
             console.log("Trying to reconnect");
           }
+          let socket: HaWebSocket;
           try {
-            const socket = await options.createSocket(options);
-            if (this.closeRequested) {
-              socket.close();
-              return;
-            }
-            this._setSocket(socket);
+            socket = await options.createSocket(options);
           } catch (err) {
             if (this._queuedMessages) {
               const queuedMessages = this._queuedMessages;
@@ -496,7 +492,15 @@ export class Connection {
             } else {
               reconnect(tries + 1);
             }
+            return;
           }
+          if (this.closeRequested) {
+            socket.close();
+            return;
+          }
+          // Outside the try: a throwing "ready" listener is not a failed
+          // connect and must not start another reconnect.
+          this._setSocket(socket);
         },
         Math.min(tries, 5) * 1000,
       );
