@@ -1,5 +1,6 @@
 import { Store, createStore } from "./store.js";
 import { Connection } from "./connection.js";
+import { isConnectionLost } from "./errors.js";
 import { UnsubscribeFunc } from "./types.js";
 
 export type Collection<State> = {
@@ -74,6 +75,12 @@ export const getCollection = <State>(
 
     if (subscribeUpdates) {
       unsubProm = subscribeUpdates(conn, store);
+      // The subscription is gone when the connection is closed for good.
+      unsubProm.catch((err: unknown) => {
+        if (!isConnectionLost(err)) {
+          throw err;
+        }
+      });
     }
 
     if (fetchCollection) {
@@ -93,9 +100,12 @@ export const getCollection = <State>(
 
     // Unsubscribe from changes
     if (unsubProm)
-      unsubProm.then((unsub) => {
-        unsub();
-      });
+      unsubProm.then(
+        (unsub) => {
+          unsub();
+        },
+        () => undefined,
+      );
     store.clearState();
     conn.removeEventListener("ready", refreshSwallow);
     conn.removeEventListener("disconnected", handleDisconnect);
