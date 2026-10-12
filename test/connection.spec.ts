@@ -121,3 +121,77 @@ describe("Connection close during reconnect", () => {
     assert.strictEqual(conn.socket, undefined);
   });
 });
+
+describe("Connection command ids after a reconnect", () => {
+  it("does not unsubscribe a new subscription that reused the id", async () => {
+    const socket = new FakeSocket();
+    let reconnected: FakeSocket | undefined;
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => (reconnected = new FakeSocket()) as any,
+    });
+    const subscribing = conn.subscribeMessage(
+      () => {},
+      { type: "stream" },
+      { resubscribe: false },
+    );
+    const staleId = socket.succeed("stream");
+    const unsubStream = await subscribing;
+
+    socket.close();
+    await settle();
+    const first = conn.subscribeMessage(() => {}, { type: "a" });
+    reconnected!.succeed("a");
+    await first;
+    const second = conn.subscribeMessage(() => {}, { type: "b" });
+    const reusedId = reconnected!.succeed("b");
+    await second;
+    assert.strictEqual(reusedId, staleId);
+
+    await unsubStream();
+
+    assert.deepStrictEqual(
+      reconnected!.sent.map((m) => m.type),
+      ["a", "b"],
+    );
+    assert.ok(conn.commands.has(reusedId));
+  });
+
+  it("does not drop a new subscription that reused the id while disconnected", async () => {
+    const socket = new FakeSocket();
+    const sockets: FakeSocket[] = [];
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => {
+        const created = new FakeSocket();
+        sockets.push(created);
+        return created as any;
+      },
+    });
+    const subscribing = conn.subscribeMessage(
+      () => {},
+      { type: "stream" },
+      { resubscribe: false },
+    );
+    const staleId = socket.succeed("stream");
+    const unsubStream = await subscribing;
+
+    socket.close();
+    await settle();
+    const first = conn.subscribeMessage(() => {}, { type: "a" });
+    sockets[0].succeed("a");
+    await first;
+    const second = conn.subscribeMessage(() => {}, { type: "b" });
+    assert.strictEqual(sockets[0].succeed("b"), staleId);
+    await second;
+
+    sockets[0].close();
+    await unsubStream();
+    await settle();
+
+    assert.deepStrictEqual(
+      sockets[1].sent.map((m) => m.type),
+      ["a", "b"],
+    );
+  });
+});
