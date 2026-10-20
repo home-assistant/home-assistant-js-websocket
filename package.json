@@ -35,7 +35,7 @@
     "@types/assert": "^1.4.7",
     "@types/mocha": "^10.0.9",
     "assert": "^2.0.0",
-    "husky": "^4.2.5",
+    "husky": "^9.0.0",
     "lint-staged": "^17.0.7",
     "mocha": "^12.0.0",
     "prettier": "^3.0.0",
