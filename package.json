@@ -27,7 +27,10 @@
     "build": "tsc && rollup -c",
     "test": "tsc && prettier --check . && mocha --loader=ts-node/esm",
     "format": "prettier --write .",
-    "prepublishOnly": "rm -rf dist && yarn build && yarn test"
+    "prepublishOnly": "rm -rf dist && yarn build && yarn test",
+    "postinstall": "husky",
+    "prepack": "pinst --disable",
+    "postpack": "pinst --enable"
   },
   "author": "Paulus Schoutsen <paulus@paulusschoutsen.nl>",
   "license": "Apache-2.0",
@@ -35,9 +38,10 @@
     "@types/assert": "^1.4.7",
     "@types/mocha": "^10.0.9",
     "assert": "^2.0.0",
-    "husky": "^4.2.5",
+    "husky": "^9.0.0",
     "lint-staged": "^17.0.7",
     "mocha": "^12.0.0",
+    "pinst": "^3.0.0",
     "prettier": "^3.0.0",
     "rollup": "^4.3.0",
     "ts-node": "^10.9.2",
@@ -46,11 +50,6 @@
   "files": [
     "dist"
   ],
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "lint-staged": {
     "*.{ts,js,json,css,md}": [
       "prettier --write"
