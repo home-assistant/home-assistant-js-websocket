@@ -374,7 +374,7 @@ Listen for events on the connection. [See docs.](#automatic-reconnecting)
 
 ##### `conn.sendMessagePromise(message)`
 
-Send a message to the server. Returns a promise that resolves or rejects based on the result of the server. Special case rejection is `ERR_CONNECTION_LOST` if the connection is lost while the command is in progress.
+Send a message to the server. Returns a promise that resolves or rejects based on the result of the server. If there is no connection, or the connection is lost while the command is in progress, it rejects with a connection lost error. Use `isConnectionLost(err)` to check for it.
 
 ##### `conn.subscribeMessage(callback, subscribeMessage[, options])`
 
@@ -382,7 +382,7 @@ Call an endpoint in Home Assistant that creates a subscription. Calls `callback`
 
 Returns a promise that will resolve to a function that will cancel the subscription once called.
 
-Subscription will be automatically re-established after a reconnect unless `options.resubscribe` is false.
+Subscription will be automatically re-established after a reconnect unless `options.resubscribe` is false. Subscribing while disconnected waits for the reconnect. Rejects with a connection lost error when the subscription can't be established anymore, for example after `conn.close()`.
 
 | Option      | Description                                     |
 | ----------- | ----------------------------------------------- |
@@ -415,6 +415,8 @@ Makes a request to the server to revoke the refresh and all related access token
 | ERR_CONNECTION_LOST       | 3            |
 | ERR_HASS_HOST_REQUIRED    | 4            |
 | ERR_INVALID_HTTPS_TO_HTTP | 5            |
+
+Promises from the connection reject with an error result for a lost connection: `{ type: "result", success: false, error: { code: ERR_CONNECTION_LOST, message: "Connection lost" } }`. `conn.sendMessage` throws the bare `ERR_CONNECTION_LOST` code. `isConnectionLost(err)` recognises both.
 
 ## Other methods
 
