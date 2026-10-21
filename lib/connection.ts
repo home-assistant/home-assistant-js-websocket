@@ -382,8 +382,6 @@ export class Connection {
             ? () => this.subscribeMessage(callback, subscribeMessage, options)
             : undefined,
         unsubscribe: async () => {
-          // Command ids restart after a reconnect, so the id can belong to
-          // another command when this subscription was not resubscribed.
           try {
             if (this.connected && this.commands.get(commandId) === info) {
               await this.sendMessagePromise(
