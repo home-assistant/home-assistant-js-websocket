@@ -550,8 +550,6 @@ export class Connection {
             this._rejectWaiting();
             return;
           }
-          // Outside the try: a throwing "ready" listener is not a failed
-          // connect and must not start another reconnect.
           this._setSocket(socket);
         },
         Math.min(tries, 5) * 1000,
