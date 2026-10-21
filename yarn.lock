@@ -820,6 +820,7 @@ __metadata:
     husky: "npm:^9.0.0"
     lint-staged: "npm:^17.0.7"
     mocha: "npm:^12.0.0"
+    pinst: "npm:^3.0.0"
     prettier: "npm:^3.0.0"
     rollup: "npm:^4.3.0"
     ts-node: "npm:^10.9.2"
@@ -1388,6 +1389,15 @@ __metadata:
   version: 4.0.7
   resolution: "picomatch@npm:4.0.7"
   checksum: 10/66e1df34bc39c72fa3756be4069f7887ea3e35e94bba1c3f6167763007698cb04b8a0a365161d186fda6e9571a2d3efb606b2966eb6a7dea6252911224dc2f48
+  languageName: node
+  linkType: hard
+
+"pinst@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "pinst@npm:3.0.0"
+  bin:
+    pinst: bin.js
+  checksum: 10/a75e4f7b5eeb9c76e7fd1b2d9854fcd38c304a3b1f9b563946a0f4357772c742222094e851f4c23d0bbdc4151af2d7875bb919c9ef8a9c4af77a02a73e8f72f0
   languageName: node
   linkType: hard
 
