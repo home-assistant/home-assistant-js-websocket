@@ -383,7 +383,7 @@ export class Connection {
             : undefined,
         unsubscribe: async () => {
           try {
-            if (this.connected) {
+            if (this.connected && this.commands.get(commandId) === info) {
               await this.sendMessagePromise(
                 messages.unsubscribeEvents(commandId),
               );
@@ -394,8 +394,12 @@ export class Connection {
               throw err;
             }
           } finally {
-            this.commands.delete(commandId);
-            this.oldSubscriptions?.delete(commandId);
+            if (this.commands.get(commandId) === info) {
+              this.commands.delete(commandId);
+            }
+            if (this.oldSubscriptions?.get(commandId) === info) {
+              this.oldSubscriptions.delete(commandId);
+            }
           }
         },
       };
