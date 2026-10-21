@@ -527,14 +527,9 @@ export class Connection {
           if (DEBUG) {
             console.log("Trying to reconnect");
           }
+          let socket: HaWebSocket;
           try {
-            const socket = await options.createSocket(options);
-            if (this.closeRequested) {
-              socket.close();
-              this._rejectWaiting();
-              return;
-            }
-            this._setSocket(socket);
+            socket = await options.createSocket(options);
           } catch (err) {
             if (this.closeRequested) {
               this._rejectWaiting();
@@ -548,7 +543,14 @@ export class Connection {
             } else {
               reconnect(tries + 1);
             }
+            return;
           }
+          if (this.closeRequested) {
+            socket.close();
+            this._rejectWaiting();
+            return;
+          }
+          this._setSocket(socket);
         },
         Math.min(tries, 5) * 1000,
       );
