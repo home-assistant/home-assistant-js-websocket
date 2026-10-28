@@ -25,7 +25,7 @@
   "scripts": {
     "watch": "tsc --watch",
     "build": "tsc && rollup -c",
-    "test": "tsc && prettier --check . && mocha --loader=ts-node/esm",
+    "test": "tsc && prettier --check . && mocha",
     "format": "prettier --write .",
     "prepublishOnly": "rm -rf dist && yarn build && yarn test",
     "postinstall": "husky",
@@ -44,7 +44,6 @@
     "pinst": "^3.0.0",
     "prettier": "^3.0.0",
     "rollup": "^4.3.0",
-    "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   },
   "files": [

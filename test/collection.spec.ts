@@ -1,7 +1,7 @@
 import * as assert from "assert";
 
 import { getCollection } from "../dist/collection.js";
-import { MockConnection } from "./util.js";
+import { MockConnection } from "./util.ts";
 
 describe("getCollection", () => {
   it("stops refreshing on ready after the last unsubscribe", async () => {

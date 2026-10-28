@@ -8,10 +8,12 @@ import { ERR_CANNOT_CONNECT } from "../dist/errors.js";
 class StalledWebSocket {
   static instances: StalledWebSocket[] = [];
 
+  url: string;
   closeCalled = false;
   private _listeners: { [event: string]: ((data: any) => void)[] } = {};
 
-  constructor(public url: string) {
+  constructor(url: string) {
+    this.url = url;
     StalledWebSocket.instances.push(this);
   }
 
