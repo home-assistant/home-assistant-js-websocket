@@ -220,9 +220,10 @@ export class Connection {
   }
 
   fireEvent(eventType: Events, eventData?: any) {
-    (this.eventListeners.get(eventType) || []).forEach((callback) =>
-      callback(this, eventData),
-    );
+    // Iterate a copy, a listener removing itself would skip the next one.
+    (this.eventListeners.get(eventType) || [])
+      .slice()
+      .forEach((callback) => callback(this, eventData));
   }
 
   suspendReconnectUntil(suspendPromise: Promise<void>) {
@@ -512,7 +513,12 @@ export class Connection {
       return;
     }
 
-    this.fireEvent("disconnected");
+    try {
+      this.fireEvent("disconnected");
+    } catch (err) {
+      // Surface the listener error without skipping the reconnect below.
+      Promise.reject(err);
+    }
 
     // Disable setupRetry, we control it here with auto-backoff
     const options = { ...this.options, setupRetry: 0 };
@@ -557,7 +563,8 @@ export class Connection {
     };
 
     if (this.suspendReconnectPromise) {
-      await this.suspendReconnectPromise;
+      // A rejected suspend promise must not leave the connection down for good.
+      await this.suspendReconnectPromise.catch(() => undefined);
       this.suspendReconnectPromise = undefined;
       // For the first retry after suspend, we will queue up
       // all messages.
