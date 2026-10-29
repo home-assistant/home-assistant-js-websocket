@@ -30,4 +30,7 @@ jobs:
       - name: Update npm to latest
         run: npm install -g npm@latest
       - run: yarn install --immutable
+      # postinstall only sets up husky's git hooks for local development, don't
+      # publish it or npm will run it for everyone installing this package.
+      - run: npm pkg delete scripts.postinstall
       - run: npm publish --provenance
