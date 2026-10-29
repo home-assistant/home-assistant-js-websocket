@@ -513,7 +513,12 @@ export class Connection {
       return;
     }
 
-    this.fireEvent("disconnected");
+    try {
+      this.fireEvent("disconnected");
+    } catch (err) {
+      // Surface the listener error without skipping the reconnect below.
+      Promise.reject(err);
+    }
 
     // Disable setupRetry, we control it here with auto-backoff
     const options = { ...this.options, setupRetry: 0 };
@@ -558,7 +563,8 @@ export class Connection {
     };
 
     if (this.suspendReconnectPromise) {
-      await this.suspendReconnectPromise;
+      // A rejected suspend promise must not leave the connection down for good.
+      await this.suspendReconnectPromise.catch(() => undefined);
       this.suspendReconnectPromise = undefined;
       // For the first retry after suspend, we will queue up
       // all messages.
