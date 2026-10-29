@@ -603,3 +603,53 @@ describe("Connection event listeners", () => {
     assert.deepStrictEqual(calls, ["first", "second"]);
   });
 });
+
+describe("Connection reconnects despite", () => {
+  let created: number;
+  let conn: Connection;
+  let socket: FakeSocket;
+
+  beforeEach(() => {
+    created = 0;
+    socket = new FakeSocket();
+    conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => {
+        created++;
+        return new FakeSocket() as any;
+      },
+    });
+  });
+
+  afterEach(() => conn.close());
+
+  it("a disconnected listener that throws", async () => {
+    const error = new Error("listener failed");
+    conn.addEventListener("disconnected", () => {
+      throw error;
+    });
+    const mochaHandlers = process.listeners("unhandledRejection");
+    process.removeAllListeners("unhandledRejection");
+    const rejections: unknown[] = [];
+    process.on("unhandledRejection", (reason) => rejections.push(reason));
+    try {
+      socket.close();
+      await settle();
+    } finally {
+      process.removeAllListeners("unhandledRejection");
+      mochaHandlers.forEach((h) => process.on("unhandledRejection", h));
+    }
+
+    assert.strictEqual(created, 1);
+    assert.deepStrictEqual(rejections, [error]);
+  });
+
+  it("a suspend promise that rejects", async () => {
+    conn.suspendReconnectUntil(Promise.reject(new Error("resume failed")));
+    conn.suspend();
+    await settle();
+
+    assert.strictEqual(created, 1);
+    assert.strictEqual(conn.suspendReconnectPromise, undefined);
+  });
+});
