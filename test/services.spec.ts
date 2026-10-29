@@ -1,6 +1,6 @@
 import * as assert from "assert";
 
-import { subscribeServices } from "../dist/services.js";
+import { subscribeServices, servicesColl } from "../dist/services.js";
 import { MockConnection, AwaitableEvent } from "./util.ts";
 
 const MOCK_SERVICES = {
@@ -68,6 +68,23 @@ describe("subscribeServices", () => {
         },
       },
     });
+  });
+
+  it("should keep known metadata when an existing service registers again", async () => {
+    subscribeServices(conn, awaitableEvent.set);
+    await 0;
+
+    conn.mockEvent("service_registered", {
+      data: {
+        domain: "light",
+        service: "turn_on",
+      },
+    });
+
+    assert.deepStrictEqual(
+      servicesColl(conn).state.light.turn_on,
+      MOCK_SERVICES.light.turn_on,
+    );
   });
 
   it("should handle service registered events for new domains", async () => {

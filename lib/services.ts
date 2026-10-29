@@ -29,7 +29,7 @@ function processServiceRegistered(
 
   const { domain, service } = event.data;
 
-  if (!state.domain?.service) {
+  if (!state[domain]?.[service]) {
     const domainInfo = {
       ...state[domain],
       [service]: { description: "", fields: {} },
