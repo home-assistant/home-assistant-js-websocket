@@ -155,7 +155,14 @@ export const getCollection = <State>(
         setTimeout(() => subscriber(store.state!), 0);
       }
 
+      let unsubscribed = false;
+
       return () => {
+        // Cleanup code tends to run twice, don't let that drive active negative.
+        if (unsubscribed) {
+          return;
+        }
+        unsubscribed = true;
         unsub();
         active--;
 

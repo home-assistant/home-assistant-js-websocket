@@ -24,4 +24,23 @@ describe("getCollection", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.strictEqual(fetches, 1);
   });
+
+  it("ignores a second call of the same unsubscribe", async () => {
+    const conn = new MockConnection();
+    let fetches = 0;
+    const fetchCollection = async () => ({ fetches: ++fetches });
+
+    const coll = getCollection(conn, "_test", fetchCollection, undefined, {
+      unsubGrace: false,
+    });
+    const unsub = coll.subscribe(() => {});
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    unsub();
+    unsub();
+
+    // A fresh subscriber is the first one again and has to start the collection.
+    coll.subscribe(() => {});
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.strictEqual(fetches, 2);
+  });
 });
