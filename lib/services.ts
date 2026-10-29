@@ -3,7 +3,10 @@ import { HassServices, HassDomainServices, UnsubscribeFunc } from "./types.js";
 import { Connection } from "./connection.js";
 import { Store } from "./store.js";
 import { getServices } from "./commands.js";
-import { debounce } from "./util.js";
+import { isConnectionLost } from "./errors.js";
+
+// Time to wait for more registrations before fetching all services again
+const FETCH_DEBOUNCE = 5000; // 5 seconds
 
 type ServiceRegisteredEvent = {
   data: {
@@ -20,9 +23,9 @@ type ServiceRemovedEvent = {
 };
 
 function processServiceRegistered(
-  conn: Connection,
   store: Store<HassServices>,
   event: ServiceRegisteredEvent,
+  scheduleFetch: () => void,
 ) {
   const state = store.state;
   if (state === undefined) return;
@@ -36,7 +39,7 @@ function processServiceRegistered(
     };
     store.setState({ [domain]: domainInfo });
   }
-  debouncedFetchServices(conn, store);
+  scheduleFetch();
 }
 
 function processServiceRemoved(
@@ -58,25 +61,46 @@ function processServiceRemoved(
   return { [domain]: domainInfo };
 }
 
-const debouncedFetchServices = debounce(
-  (conn: Connection, store: Store<HassServices>) =>
-    fetchServices(conn).then((services) => store.setState(services, true)),
-  5000,
-);
-
 const fetchServices = (conn: Connection) => getServices(conn);
-const subscribeUpdates = (conn: Connection, store: Store<HassServices>) =>
-  Promise.all([
+
+const subscribeUpdates = (conn: Connection, store: Store<HassServices>) => {
+  // One debounced fetch per collection, so connections don't share a timer
+  // and tearing the collection down can cancel a pending fetch.
+  let fetchTimer: number | undefined;
+  const scheduleFetch = () => {
+    clearTimeout(fetchTimer);
+    fetchTimer = setTimeout(() => {
+      fetchTimer = undefined;
+      fetchServices(conn)
+        .then((services) => store.setState(services, true))
+        .catch((err: unknown) => {
+          // The collection refreshes itself once the connection is back.
+          if (!isConnectionLost(err)) {
+            throw err;
+          }
+        });
+    }, FETCH_DEBOUNCE);
+  };
+
+  return Promise.all([
     conn.subscribeEvents<ServiceRegisteredEvent>(
       (ev) =>
-        processServiceRegistered(conn, store, ev as ServiceRegisteredEvent),
+        processServiceRegistered(
+          store,
+          ev as ServiceRegisteredEvent,
+          scheduleFetch,
+        ),
       "service_registered",
     ),
     conn.subscribeEvents<ServiceRemovedEvent>(
       store.action(processServiceRemoved),
       "service_removed",
     ),
-  ]).then((unsubs) => () => unsubs.forEach((fn) => fn()));
+  ]).then((unsubs) => () => {
+    clearTimeout(fetchTimer);
+    unsubs.forEach((fn) => fn());
+  });
+};
 
 export const servicesColl = (conn: Connection) =>
   getCollection(conn, "_srv", fetchServices, subscribeUpdates);
