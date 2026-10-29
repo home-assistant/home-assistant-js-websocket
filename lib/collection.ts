@@ -149,13 +149,29 @@ export const getCollection = <State>(
 
       const unsub = store.subscribe(subscriber);
 
+      let initialTimer: number | undefined;
+
       if (store.state !== undefined) {
         // Don't call it right away so that caller has time
         // to initialize all the things.
-        setTimeout(() => subscriber(store.state!), 0);
+        initialTimer = setTimeout(() => {
+          initialTimer = undefined;
+          // Another unsubscribe can have torn the collection down meanwhile.
+          if (store.state !== undefined) {
+            subscriber(store.state);
+          }
+        }, 0);
       }
 
+      let unsubscribed = false;
+
       return () => {
+        // Cleanup code tends to run twice, don't let that drive active negative.
+        if (unsubscribed) {
+          return;
+        }
+        unsubscribed = true;
+        clearTimeout(initialTimer);
         unsub();
         active--;
 
