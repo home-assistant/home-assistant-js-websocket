@@ -1,7 +1,7 @@
 import * as assert from "assert";
 
 import { createSocket } from "../dist/socket.js";
-import { ERR_CANNOT_CONNECT } from "../dist/errors.js";
+import { ERR_CANNOT_CONNECT, ERR_INVALID_AUTH } from "../dist/errors.js";
 
 // A socket that stays in CONNECTING until something closes it, which is the
 // state createSocket has to protect itself against.
@@ -10,6 +10,7 @@ class StalledWebSocket {
 
   url: string;
   closeCalled = false;
+  sent: any[] = [];
   private _listeners: { [event: string]: ((data: any) => void)[] } = {};
 
   constructor(url: string) {
@@ -27,7 +28,9 @@ class StalledWebSocket {
     );
   }
 
-  send(message: string) {}
+  send(message: string) {
+    this.sent.push(JSON.parse(message));
+  }
 
   // Safari fires error and then close in the same tick when close() is called
   // on a socket that is still connecting.
@@ -92,4 +95,62 @@ describe("createSocket connect timeout", () => {
     await new Promise((resolve) => setTimeout(resolve, 200));
     assert.strictEqual(StalledWebSocket.instances[0].closeCalled, false);
   }).timeout(500);
+});
+
+describe("createSocket token refresh", () => {
+  let originalWebSocket: any;
+
+  beforeEach(() => {
+    originalWebSocket = (globalThis as any).WebSocket;
+    (globalThis as any).WebSocket = StalledWebSocket;
+    StalledWebSocket.instances = [];
+  });
+
+  afterEach(() => {
+    (globalThis as any).WebSocket = originalWebSocket;
+  });
+
+  // An expired token whose refresh is still pending when the socket opens.
+  const expiredAuth = () => {
+    let reject!: (err: unknown) => void;
+    const auth = {
+      wsUrl: "ws://localhost:8123/api/websocket",
+      accessToken: "expired-token",
+      expired: true,
+      refreshAccessToken: () =>
+        new Promise<void>((_resolve, promReject) => {
+          reject = promReject;
+        }),
+    };
+    return { auth, failRefresh: (err: unknown) => reject(err) };
+  };
+
+  const open = async () => {
+    const socket = StalledWebSocket.instances[0];
+    socket.fire("open", {});
+    await 0;
+    return socket;
+  };
+
+  it("should retry instead of sending the expired token when the refresh fails", async () => {
+    const { auth, failRefresh } = expiredAuth();
+    const promise = createSocket({ setupRetry: 0, auth } as any);
+    const socket = await open();
+
+    failRefresh(new Error("token endpoint unavailable"));
+
+    await assert.rejects(promise, (err: any) => err === ERR_CANNOT_CONNECT);
+    assert.strictEqual(socket.closeCalled, true);
+    assert.deepStrictEqual(socket.sent, []);
+  });
+
+  it("should report invalid auth when the refresh is rejected as such", async () => {
+    const { auth, failRefresh } = expiredAuth();
+    const promise = createSocket({ setupRetry: 0, auth } as any);
+    await open();
+
+    failRefresh(ERR_INVALID_AUTH);
+
+    await assert.rejects(promise, (err: any) => err === ERR_INVALID_AUTH);
+  });
 });
