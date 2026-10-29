@@ -220,9 +220,10 @@ export class Connection {
   }
 
   fireEvent(eventType: Events, eventData?: any) {
-    (this.eventListeners.get(eventType) || []).forEach((callback) =>
-      callback(this, eventData),
-    );
+    // Iterate a copy, a listener removing itself would skip the next one.
+    (this.eventListeners.get(eventType) || [])
+      .slice()
+      .forEach((callback) => callback(this, eventData));
   }
 
   suspendReconnectUntil(suspendPromise: Promise<void>) {
