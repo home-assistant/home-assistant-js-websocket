@@ -580,3 +580,26 @@ describe("Connection ready listener errors", () => {
     assert.deepStrictEqual(rejections, [error]);
   });
 });
+
+describe("Connection event listeners", () => {
+  it("still calls the next listener when one removes itself", () => {
+    const socket = new FakeSocket();
+    const conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => new FakeSocket() as any,
+    });
+    const calls: string[] = [];
+    const first = () => {
+      calls.push("first");
+      conn.removeEventListener("disconnected", first);
+    };
+    const second = () => calls.push("second");
+    conn.addEventListener("disconnected", first);
+    conn.addEventListener("disconnected", second);
+
+    socket.close();
+    conn.close();
+
+    assert.deepStrictEqual(calls, ["first", "second"]);
+  });
+});
