@@ -33,16 +33,17 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
 
   // Start refreshing expired tokens even before the WS connection is open.
   // We know that we will need auth anyway.
-  let authRefreshTask = auth.expired
-    ? auth.refreshAccessToken().then(
-        () => {
-          authRefreshTask = undefined;
-        },
-        () => {
-          authRefreshTask = undefined;
-        },
-      )
-    : undefined;
+  let authRefreshTask: Promise<void> | undefined;
+  if (auth.expired) {
+    authRefreshTask = auth.refreshAccessToken();
+    // handleOpen awaits the task itself so a failure reaches its error
+    // handling. Observe it here too, the socket may never open.
+    authRefreshTask
+      .catch(() => undefined)
+      .then(() => {
+        authRefreshTask = undefined;
+      });
+  }
 
   // Convert from http:// -> ws://, https:// -> wss://
   const url = auth.wsUrl;
