@@ -59,8 +59,16 @@ function processServiceRemoved(
 }
 
 const debouncedFetchServices = debounce(
-  (conn: Connection, store: Store<HassServices>) =>
-    fetchServices(conn).then((services) => store.setState(services, true)),
+  (conn: Connection, store: Store<HassServices>) => {
+    const socket = conn.socket;
+    return fetchServices(conn)
+      .then((services) => store.setState(services, true))
+      .catch((err: unknown) => {
+        if (conn.connected && conn.socket === socket) {
+          throw err;
+        }
+      });
+  },
   5000,
 );
 
