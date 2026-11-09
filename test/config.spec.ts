@@ -27,6 +27,39 @@ describe("subscribeConfig", () => {
     assert.deepStrictEqual(config, MOCK_CONFIG);
   });
 
+  it("should not leave an unhandled rejection when config updates after disconnect", async () => {
+    const unhandledRejections: unknown[] = [];
+    const onUnhandledRejection = (reason: unknown) =>
+      unhandledRejections.push(reason);
+    const sendMessagePromise = conn.sendMessagePromise.bind(conn);
+    conn.sendMessagePromise = async (message: any) => {
+      if (conn.closeRequested) {
+        throw new Error("Connection lost");
+      }
+      return sendMessagePromise(message);
+    };
+
+    process.on("unhandledRejection", onUnhandledRejection);
+
+    try {
+      awaitableEvent.prime();
+      subscribeConfig(conn, awaitableEvent.set);
+      await awaitableEvent.wait();
+
+      conn.close();
+      conn.socket = undefined;
+      conn.mockEvent("core_config_updated", {});
+      conn.socket = { OPEN: 1, readyState: 1 } as any;
+
+      await new Promise((resolve) => setImmediate(resolve));
+
+      assert.deepStrictEqual(unhandledRejections, []);
+    } finally {
+      conn.sendMessagePromise = sendMessagePromise;
+      process.removeListener("unhandledRejection", onUnhandledRejection);
+    }
+  });
+
   it("should handle component loaded events", async () => {
     subscribeConfig(conn, awaitableEvent.set);
 
