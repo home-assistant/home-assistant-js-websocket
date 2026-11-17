@@ -147,11 +147,13 @@ describe("subscribeServices", () => {
   });
 });
 
-// Captures timers so the fetch debounce can be driven from a test. Mocha
-// keeps its own references to the real timer functions.
+// A virtual clock for the timers the library sets, so the fetch debounce and
+// the collection's unsubscribe grace period run in the order they were
+// scheduled. Mocha keeps its own references to the real timer functions.
 class FakeTimers {
-  private _timers = new Map<number, { fn: () => void; ms: number }>();
+  private _timers = new Map<number, { fn: () => void; at: number }>();
   private _nextId = 0;
+  private _now = 0;
   private _real = {
     setTimeout: globalThis.setTimeout,
     clearTimeout: globalThis.clearTimeout,
@@ -159,7 +161,7 @@ class FakeTimers {
 
   install() {
     (globalThis as any).setTimeout = (fn: () => void, ms = 0) => {
-      this._timers.set(++this._nextId, { fn, ms });
+      this._timers.set(++this._nextId, { fn, at: this._now + ms });
       return this._nextId;
     };
     (globalThis as any).clearTimeout = (id: number) => {
@@ -170,15 +172,26 @@ class FakeTimers {
   restore() {
     globalThis.setTimeout = this._real.setTimeout;
     globalThis.clearTimeout = this._real.clearTimeout;
+    this._timers.clear();
+    this._now = 0;
   }
 
-  fire(ms: number) {
-    for (const [id, timer] of [...this._timers]) {
-      if (timer.ms === ms) {
-        this._timers.delete(id);
-        timer.fn();
-      }
+  // Run every timer due within the next `ms`, earliest first. Microtasks
+  // run between timers, like they do on the real event loop.
+  async advance(ms: number) {
+    const until = this._now + ms;
+    for (;;) {
+      const due = [...this._timers]
+        .filter(([, timer]) => timer.at <= until)
+        .sort(([idA, a], [idB, b]) => a.at - b.at || idA - idB)[0];
+      if (!due) break;
+      const [id, timer] = due;
+      this._timers.delete(id);
+      this._now = timer.at;
+      timer.fn();
+      await flush();
     }
+    this._now = until;
   }
 }
 
@@ -216,7 +229,7 @@ describe("subscribeServices fetch debounce", () => {
 
     conn.mockEvent("service_registered", registration);
     other.mockEvent("service_registered", registration);
-    timers.fire(5000);
+    await timers.advance(5000);
     await flush();
 
     assert.strictEqual(fetches(), 2);
@@ -262,7 +275,7 @@ describe("subscribeServices fetch debounce", () => {
         success: false,
         error: { code: ERR_CONNECTION_LOST, message: "Connection lost" },
       });
-      timers.fire(5000);
+      await timers.advance(5000);
       await flush();
     });
 
@@ -279,7 +292,7 @@ describe("subscribeServices fetch debounce", () => {
     const rejections = await unhandledDuring(async () => {
       conn.mockEvent("service_registered", registration);
       failNextFetch(conn, error);
-      timers.fire(5000);
+      await timers.advance(5000);
       await flush();
     });
 
@@ -294,14 +307,47 @@ describe("subscribeServices fetch debounce", () => {
     const unsub = subscribeServices(conn, () => {});
     await flush();
 
-    conn.mockEvent("service_registered", registration);
+    // A registration during the grace period schedules a fetch that would
+    // fire after the teardown.
     unsub();
-    // Losing the connection during the grace period tears down right away.
-    conn.fireEvent("disconnected");
-    await flush();
-    timers.fire(5000);
+    await timers.advance(1000);
+    conn.mockEvent("service_registered", registration);
+    await timers.advance(10000);
     await flush();
 
     assert.strictEqual(fetches(), 1);
+  });
+
+  it("drops the result of a fetch in flight when the collection is torn down", async () => {
+    const conn = new MockConnection();
+    conn.mockResponse("get_services", MOCK_SERVICES);
+    const unsub = subscribeServices(conn, () => {});
+    await flush();
+
+    // Hold the debounced fetch until the test releases it.
+    let release!: () => void;
+    const original = conn.sendMessagePromise.bind(conn);
+    conn.sendMessagePromise = async (message: any) => {
+      if (message.type === "get_services") {
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+      }
+      return original(message);
+    };
+
+    conn.mockEvent("service_registered", registration);
+    await timers.advance(5000);
+    await flush();
+    unsub();
+    await timers.advance(5000);
+    await flush();
+    assert.strictEqual(servicesColl(conn).state, undefined);
+
+    release();
+    await flush();
+
+    // The next subscriber must start from a fresh fetch, not this result.
+    assert.strictEqual(servicesColl(conn).state, undefined);
   });
 });

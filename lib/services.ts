@@ -67,12 +67,22 @@ const subscribeUpdates = (conn: Connection, store: Store<HassServices>) => {
   // One debounced fetch per collection, so connections don't share a timer
   // and tearing the collection down can cancel a pending fetch.
   let fetchTimer: number | undefined;
+  // Set on teardown. A fetch that is already in flight must not write into
+  // the cleared store, the next subscriber would start from stale state.
+  let disposed = false;
   const scheduleFetch = () => {
+    if (disposed) {
+      return;
+    }
     clearTimeout(fetchTimer);
     fetchTimer = setTimeout(() => {
       fetchTimer = undefined;
       fetchServices(conn)
-        .then((services) => store.setState(services, true))
+        .then((services) => {
+          if (!disposed) {
+            store.setState(services, true);
+          }
+        })
         .catch((err: unknown) => {
           // The collection refreshes itself once the connection is back.
           if (!isConnectionLost(err)) {
@@ -97,6 +107,7 @@ const subscribeUpdates = (conn: Connection, store: Store<HassServices>) => {
       "service_removed",
     ),
   ]).then((unsubs) => () => {
+    disposed = true;
     clearTimeout(fetchTimer);
     unsubs.forEach((fn) => fn());
   });
