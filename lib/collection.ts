@@ -154,12 +154,11 @@ export const getCollection = <State>(
       if (store.state !== undefined) {
         // Don't call it right away so that caller has time
         // to initialize all the things.
+        // Unsubscribing clears the timer, and teardown needs this subscriber
+        // gone first, so the state is still there when it fires.
         initialTimer = setTimeout(() => {
           initialTimer = undefined;
-          // Another unsubscribe can have torn the collection down meanwhile.
-          if (store.state !== undefined) {
-            subscriber(store.state);
-          }
+          subscriber(store.state!);
         }, 0);
       }
 

@@ -44,6 +44,31 @@ describe("getCollection", () => {
     assert.strictEqual(fetches, 2);
   });
 
+  it("does not tear down a newer subscriber on a repeated unsubscribe", async () => {
+    const conn = new MockConnection();
+    let fetches = 0;
+    const fetchCollection = async () => ({ fetches: ++fetches });
+
+    const coll = getCollection(conn, "_test", fetchCollection, undefined, {
+      unsubGrace: false,
+    });
+    const unsubFirst = coll.subscribe(() => {});
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    unsubFirst();
+
+    coll.subscribe(() => {});
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.strictEqual(fetches, 2);
+
+    // The stale unsubscribe must not count against the live subscriber.
+    unsubFirst();
+
+    assert.notStrictEqual(coll.state, undefined);
+    conn.fireEvent("ready");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.strictEqual(fetches, 3);
+  });
+
   it("does not call a subscriber that unsubscribed before the initial state", async () => {
     const conn = new MockConnection();
     const coll = getCollection(
