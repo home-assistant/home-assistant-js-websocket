@@ -110,29 +110,68 @@ describe("createSocket token refresh", () => {
     (globalThis as any).WebSocket = originalWebSocket;
   });
 
+  const EXPIRED_TOKEN = "expired-token";
+  const FRESH_TOKEN = "fresh-token";
+
+  // Answers the auth message like the server would: the expired token is
+  // rejected, a refreshed one is accepted.
+  class AuthCheckingWebSocket extends StalledWebSocket {
+    send(message: string) {
+      super.send(message);
+      const { type, access_token } = JSON.parse(message);
+      if (type !== "auth") {
+        return;
+      }
+      this.fire("message", {
+        data: JSON.stringify(
+          access_token === FRESH_TOKEN
+            ? { type: "auth_ok", ha_version: "2026.9.1" }
+            : { type: "auth_invalid", message: "Invalid access token" },
+        ),
+      });
+    }
+  }
+
   // An expired token whose refresh is still pending when the socket opens.
+  // Each refresh call gets its own promise, settled by the test.
   const expiredAuth = () => {
-    let reject!: (err: unknown) => void;
+    const pending: { resolve: () => void; reject: (err: unknown) => void }[] =
+      [];
+    let calls = 0;
     const auth = {
       wsUrl: "ws://localhost:8123/api/websocket",
-      accessToken: "expired-token",
+      accessToken: EXPIRED_TOKEN,
       expired: true,
       refreshAccessToken: () =>
-        new Promise<void>((_resolve, promReject) => {
-          reject = promReject;
+        new Promise<void>((resolve, reject) => {
+          calls++;
+          pending.push({ resolve, reject });
         }),
     };
-    return { auth, failRefresh: (err: unknown) => reject(err) };
+    return {
+      auth,
+      refreshCalls: () => calls,
+      failRefresh: (err: unknown) => pending.shift()!.reject(err),
+      completeRefresh: () => {
+        auth.accessToken = FRESH_TOKEN;
+        auth.expired = false;
+        pending.shift()!.resolve();
+      },
+    };
   };
 
-  const open = async () => {
-    const socket = StalledWebSocket.instances[0];
+  const open = async (index = 0) => {
+    const socket = StalledWebSocket.instances[index];
     socket.fire("open", {});
     await 0;
     return socket;
   };
 
-  it("should retry instead of sending the expired token when the refresh fails", async () => {
+  beforeEach(() => {
+    (globalThis as any).WebSocket = AuthCheckingWebSocket;
+  });
+
+  it("should not send the expired token when the refresh fails", async () => {
     const { auth, failRefresh } = expiredAuth();
     const promise = createSocket({ setupRetry: 0, auth } as any);
     const socket = await open();
@@ -144,13 +183,39 @@ describe("createSocket token refresh", () => {
     assert.deepStrictEqual(socket.sent, []);
   });
 
+  it("should retry and refresh again when the refresh fails", async () => {
+    const { auth, failRefresh, completeRefresh, refreshCalls } = expiredAuth();
+    const promise = createSocket({ setupRetry: 1, auth } as any);
+    const first = await open();
+
+    failRefresh(new Error("token endpoint unavailable"));
+    await 0;
+    assert.strictEqual(first.closeCalled, true);
+
+    // The retry is scheduled a second after the failed attempt closes.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    assert.strictEqual(StalledWebSocket.instances.length, 2);
+    const second = await open(1);
+    assert.strictEqual(refreshCalls(), 2);
+
+    completeRefresh();
+
+    assert.strictEqual(await promise, second);
+    assert.deepStrictEqual(first.sent, []);
+    assert.deepStrictEqual(second.sent[0], {
+      type: "auth",
+      access_token: FRESH_TOKEN,
+    });
+  }).timeout(3000);
+
   it("should report invalid auth when the refresh is rejected as such", async () => {
     const { auth, failRefresh } = expiredAuth();
-    const promise = createSocket({ setupRetry: 0, auth } as any);
+    const promise = createSocket({ setupRetry: 1, auth } as any);
     await open();
 
     failRefresh(ERR_INVALID_AUTH);
 
     await assert.rejects(promise, (err: any) => err === ERR_INVALID_AUTH);
+    assert.strictEqual(StalledWebSocket.instances.length, 1);
   });
 });

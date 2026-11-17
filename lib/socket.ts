@@ -38,11 +38,10 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
     authRefreshTask = auth.refreshAccessToken();
     // handleOpen awaits the task itself so a failure reaches its error
     // handling. Observe it here too, the socket may never open.
-    authRefreshTask
-      .catch(() => undefined)
-      .then(() => {
-        authRefreshTask = undefined;
-      });
+    const clearAuthRefreshTask = () => {
+      authRefreshTask = undefined;
+    };
+    authRefreshTask.then(clearAuthRefreshTask, clearAuthRefreshTask);
   }
 
   // Convert from http:// -> ws://, https:// -> wss://
