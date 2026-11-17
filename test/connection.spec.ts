@@ -60,6 +60,24 @@ const outcome = (promise: Promise<unknown>) =>
     settle(60).then(() => "pending"),
   ]);
 
+// Collect the unhandled rejections raised while `run` executes. Mocha's own
+// handler is detached meanwhile, it would fail the test on the first one.
+const unhandledDuring = async (run: () => Promise<void> | void) => {
+  const mochaHandlers = process.listeners("unhandledRejection");
+  process.removeAllListeners("unhandledRejection");
+  const rejections: unknown[] = [];
+  process.on("unhandledRejection", (reason) => rejections.push(reason));
+  try {
+    await run();
+    // Rejections are reported after the current macrotask.
+    await new Promise((resolve) => setImmediate(resolve));
+  } finally {
+    process.removeAllListeners("unhandledRejection");
+    mochaHandlers.forEach((h) => process.on("unhandledRejection", h));
+  }
+  return rejections;
+};
+
 const trackUnhandled = () => {
   const unhandled: unknown[] = [];
   const onUnhandled = (reason: unknown) => unhandled.push(reason);
@@ -562,19 +580,15 @@ describe("Connection ready listener errors", () => {
     });
 
     // The listener error should surface as an unhandled rejection.
-    const mochaHandlers = process.listeners("unhandledRejection");
-    process.removeAllListeners("unhandledRejection");
-    const rejections: unknown[] = [];
-    process.on("unhandledRejection", (reason) => rejections.push(reason));
-    try {
-      socket.close();
-      // Well past the 1s backoff, so a retry would have run.
-      await settle(1500);
-    } finally {
-      process.removeAllListeners("unhandledRejection");
-      mochaHandlers.forEach((h) => process.on("unhandledRejection", h));
-      conn.close();
-    }
+    const rejections = await unhandledDuring(async () => {
+      try {
+        socket.close();
+        // Well past the 1s backoff, so a retry would have run.
+        await settle(1500);
+      } finally {
+        conn.close();
+      }
+    });
 
     assert.strictEqual(created, 1);
     assert.deepStrictEqual(rejections, [error]);
@@ -582,25 +596,56 @@ describe("Connection ready listener errors", () => {
 });
 
 describe("Connection event listeners", () => {
-  it("still calls the next listener when one removes itself", () => {
-    const socket = new FakeSocket();
-    const conn = new Connection(socket as any, {
+  let conn: Connection;
+  let calls: string[];
+
+  beforeEach(() => {
+    conn = new Connection(new FakeSocket() as any, {
       setupRetry: 0,
       createSocket: async () => new FakeSocket() as any,
     });
-    const calls: string[] = [];
+    calls = [];
+  });
+
+  afterEach(() => conn.close());
+
+  it("still calls the next listener when one removes itself", () => {
     const first = () => {
       calls.push("first");
-      conn.removeEventListener("disconnected", first);
+      conn.removeEventListener("ready", first);
     };
-    const second = () => calls.push("second");
-    conn.addEventListener("disconnected", first);
-    conn.addEventListener("disconnected", second);
+    conn.addEventListener("ready", first);
+    conn.addEventListener("ready", () => calls.push("second"));
 
-    socket.close();
-    conn.close();
+    conn.fireEvent("ready");
 
     assert.deepStrictEqual(calls, ["first", "second"]);
+  });
+
+  it("does not call a listener that an earlier one removed", () => {
+    const second = () => calls.push("second");
+    conn.addEventListener("ready", () => {
+      calls.push("first");
+      conn.removeEventListener("ready", second);
+    });
+    conn.addEventListener("ready", second);
+
+    conn.fireEvent("ready");
+
+    assert.deepStrictEqual(calls, ["first"]);
+  });
+
+  it("still calls the next listener when one throws", async () => {
+    const error = new Error("listener failed");
+    conn.addEventListener("ready", () => {
+      throw error;
+    });
+    conn.addEventListener("ready", () => calls.push("second"));
+
+    const rejections = await unhandledDuring(() => conn.fireEvent("ready"));
+
+    assert.deepStrictEqual(calls, ["second"]);
+    assert.deepStrictEqual(rejections, [error]);
   });
 });
 
@@ -628,28 +673,26 @@ describe("Connection reconnects despite", () => {
     conn.addEventListener("disconnected", () => {
       throw error;
     });
-    const mochaHandlers = process.listeners("unhandledRejection");
-    process.removeAllListeners("unhandledRejection");
-    const rejections: unknown[] = [];
-    process.on("unhandledRejection", (reason) => rejections.push(reason));
-    try {
+    const rejections = await unhandledDuring(async () => {
       socket.close();
       await settle();
-    } finally {
-      process.removeAllListeners("unhandledRejection");
-      mochaHandlers.forEach((h) => process.on("unhandledRejection", h));
-    }
+    });
 
     assert.strictEqual(created, 1);
     assert.deepStrictEqual(rejections, [error]);
   });
 
   it("a suspend promise that rejects", async () => {
-    conn.suspendReconnectUntil(Promise.reject(new Error("resume failed")));
-    conn.suspend();
-    await settle();
+    const error = new Error("resume failed");
+    const rejections = await unhandledDuring(async () => {
+      conn.suspendReconnectUntil(Promise.reject(error));
+      conn.suspend();
+      await settle();
+    });
 
     assert.strictEqual(created, 1);
     assert.strictEqual(conn.suspendReconnectPromise, undefined);
+    // The rejection stays visible, it is not swallowed.
+    assert.deepStrictEqual(rejections, [error]);
   });
 });
