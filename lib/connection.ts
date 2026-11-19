@@ -220,9 +220,24 @@ export class Connection {
   }
 
   fireEvent(eventType: Events, eventData?: any) {
-    (this.eventListeners.get(eventType) || []).forEach((callback) =>
-      callback(this, eventData),
-    );
+    const listeners = this.eventListeners.get(eventType);
+    if (!listeners) {
+      return;
+    }
+    // Iterate a copy, a listener removing itself would skip the next one.
+    for (const callback of listeners.slice()) {
+      // A listener removed by an earlier one is not called, like EventTarget.
+      if (listeners.indexOf(callback) === -1) {
+        continue;
+      }
+      try {
+        callback(this, eventData);
+      } catch (err) {
+        // Surface the error without skipping the other listeners or the
+        // work the caller does after the dispatch.
+        Promise.reject(err);
+      }
+    }
   }
 
   suspendReconnectUntil(suspendPromise: Promise<void>) {
@@ -557,7 +572,11 @@ export class Connection {
     };
 
     if (this.suspendReconnectPromise) {
-      await this.suspendReconnectPromise;
+      // A rejected suspend promise must not leave the connection down for
+      // good. Surface the rejection the same way as a listener error.
+      await this.suspendReconnectPromise.catch((err) => {
+        Promise.reject(err);
+      });
       this.suspendReconnectPromise = undefined;
       // For the first retry after suspend, we will queue up
       // all messages.
