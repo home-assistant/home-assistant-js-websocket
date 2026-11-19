@@ -1,6 +1,8 @@
 import * as assert from "assert";
 
 import { subscribeConfig } from "../dist/config.js";
+import { ERR_CONNECTION_LOST } from "../dist/errors.js";
+import { error } from "../dist/messages.js";
 import { MockConnection, AwaitableEvent } from "./util.ts";
 
 const MOCK_CONFIG = {
@@ -34,7 +36,7 @@ describe("subscribeConfig", () => {
     const sendMessagePromise = conn.sendMessagePromise.bind(conn);
     conn.sendMessagePromise = async (message: any) => {
       if (conn.closeRequested) {
-        throw new Error("Connection lost");
+        throw error(ERR_CONNECTION_LOST, "Connection lost");
       }
       return sendMessagePromise(message);
     };
@@ -47,9 +49,7 @@ describe("subscribeConfig", () => {
       await awaitableEvent.wait();
 
       conn.close();
-      conn.socket = undefined;
       conn.mockEvent("core_config_updated", {});
-      conn.socket = { OPEN: 1, readyState: 1 } as any;
 
       await new Promise((resolve) => setImmediate(resolve));
 

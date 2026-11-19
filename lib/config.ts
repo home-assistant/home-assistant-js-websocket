@@ -3,6 +3,7 @@ import { HassConfig, UnsubscribeFunc } from "./types.js";
 import { Connection } from "./connection.js";
 import { Store } from "./store.js";
 import { getConfig } from "./commands.js";
+import { isConnectionLost } from "./errors.js";
 
 type ComponentLoadedEvent = {
   data: {
@@ -28,16 +29,17 @@ const subscribeUpdates = (conn: Connection, store: Store<HassConfig>) =>
       store.action(processComponentLoaded),
       "component_loaded",
     ),
-    conn.subscribeEvents(() => {
-      const socket = conn.socket;
-      return fetchConfig(conn)
-        .then((config) => store.setState(config, true))
-        .catch((err: unknown) => {
-          if (conn.connected && conn.socket === socket) {
-            throw err;
-          }
-        });
-    }, "core_config_updated"),
+    conn.subscribeEvents(
+      () =>
+        fetchConfig(conn)
+          .then((config) => store.setState(config, true))
+          .catch((err: unknown) => {
+            if (!isConnectionLost(err)) {
+              throw err;
+            }
+          }),
+      "core_config_updated",
+    ),
   ]).then((unsubs) => () => unsubs.forEach((unsub) => unsub()));
 
 export const configColl = (conn: Connection) =>
