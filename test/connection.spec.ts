@@ -696,3 +696,44 @@ describe("Connection reconnects despite", () => {
     assert.deepStrictEqual(rejections, [error]);
   });
 });
+
+describe("Connection invalid JSON", () => {
+  let created: number;
+  let conn: Connection;
+  let socket: FakeSocket;
+  let originalError: typeof console.error;
+
+  beforeEach(() => {
+    created = 0;
+    socket = new FakeSocket();
+    conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => {
+        created++;
+        return new FakeSocket() as any;
+      },
+    });
+    originalError = console.error;
+    console.error = () => {};
+  });
+
+  afterEach(() => {
+    console.error = originalError;
+    conn.close();
+  });
+
+  it("reconnects and rejects pending commands instead of throwing", async () => {
+    const sending = assert.rejects(conn.sendMessagePromise({ type: "z" }), {
+      error: { code: ERR_CONNECTION_LOST, message: "Connection lost" },
+    });
+
+    const rejections = await unhandledDuring(async () => {
+      socket.listeners.message.forEach((cb) => cb({ data: '{"id":1,nuLl}' }));
+      await settle();
+    });
+
+    await sending;
+    assert.strictEqual(created, 1);
+    assert.deepStrictEqual(rejections, []);
+  });
+});

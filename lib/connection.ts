@@ -431,9 +431,15 @@ export class Connection {
   }
 
   private _handleMessage = (event: MessageEvent) => {
-    let messageGroup: WebSocketResponse | WebSocketResponse[] = JSON.parse(
-      event.data,
-    );
+    let messageGroup: WebSocketResponse | WebSocketResponse[];
+    try {
+      messageGroup = JSON.parse(event.data);
+    } catch (err) {
+      // A reply may be lost, so reconnect to settle the commands waiting on it.
+      console.error("Received invalid JSON, reconnecting", err);
+      this.reconnect(true);
+      return;
+    }
 
     if (!Array.isArray(messageGroup)) {
       messageGroup = [messageGroup];
