@@ -1,7 +1,7 @@
 import { rejects, strictEqual } from "assert";
 import { createHash } from "node:crypto";
 
-import { Auth, getAuth } from "../dist/auth.js";
+import { Auth, createLongLivedTokenAuth, getAuth } from "../dist/auth.js";
 import { ERR_INVALID_AUTH, ERR_INVALID_AUTH_CALLBACK } from "../dist/errors.js";
 
 const HASS_URL = "http://home-assistant.example";
@@ -125,6 +125,14 @@ describe("Auth", () => {
       expires: Date.now() + 1000,
     });
     strictEqual(auth.expired, false);
+  });
+});
+
+describe("createLongLivedTokenAuth", () => {
+  it("should strip a trailing slash from the url", () => {
+    const auth = createLongLivedTokenAuth(`${HASS_URL}/`, "token");
+    strictEqual(auth.data.hassUrl, HASS_URL);
+    strictEqual(auth.wsUrl, "ws://home-assistant.example/api/websocket");
   });
 });
 
