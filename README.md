@@ -285,7 +285,7 @@ coll.subscribe((services) => console.log(services));
 
 Besides entities, config and services you might want to create your own collections. A collection has the following features:
 
-- Fetch a full data set on initial creation and on reconnect
+- Fetch a full data set on initial creation and on reconnect. When Home Assistant rejects the fetch after a reconnect, for example while it is still starting, it is retried like a subscription.
 - Subscribe to events to keep collection up to date
 - Share subscription between multiple listeners
 - Unsubscribe when no listeners
@@ -383,6 +383,8 @@ Call an endpoint in Home Assistant that creates a subscription. Calls `callback`
 Returns a promise that will resolve to a function that will cancel the subscription once called.
 
 Subscription will be automatically re-established after a reconnect unless `options.resubscribe` is false. Subscribing while disconnected waits for the reconnect. Rejects with a connection lost error when the subscription can't be established anymore, for example after `conn.close()`.
+
+Home Assistant accepts connections while it is still starting, before the integration behind a subscription has loaded. When Home Assistant rejects re-establishing a subscription that worked before, it is retried with a backoff of up to 30 seconds until it succeeds, you unsubscribe or the connection is closed.
 
 | Option      | Description                                     |
 | ----------- | ----------------------------------------------- |

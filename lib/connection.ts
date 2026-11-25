@@ -11,6 +11,7 @@ import {
 import { HassEvent, MessageBase } from "./types.js";
 import { HaWebSocket } from "./socket.js";
 import type { Auth } from "./auth.js";
+import { isErrorResult, retryDelay } from "./util.js";
 
 const DEBUG = false;
 
@@ -79,6 +80,7 @@ interface SubscribeEventCommmandInFlight<T> {
   callback: (ev: T) => void;
   subscribe: (() => Promise<SubscriptionUnsubscribe>) | undefined;
   unsubscribe: SubscriptionUnsubscribe;
+  established?: boolean;
 }
 
 type CommandWithAnswerInFlight = {
@@ -114,6 +116,12 @@ export class Connection {
 
   // Set when reconnecting stopped on invalid auth, nothing will connect anymore.
   private _reconnectFailed = false;
+
+  // Subscriptions whose resubscribe failed, with the timer of the next try.
+  private _resubscribeRetries = new Map<
+    SubscribeEventCommmandInFlight<any>,
+    number
+  >();
 
   socket?: HaWebSocket;
   /**
@@ -168,22 +176,18 @@ export class Connection {
       this.oldSubscriptions = undefined;
       oldSubscriptions.forEach((info) => {
         if ("subscribe" in info && info.subscribe) {
-          const resubscribed = info.subscribe();
-          // If resubscribing failed there is nothing to unsubscribe.
-          info.unsubscribe = () =>
-            resubscribed.then(
-              (unsub) => unsub(),
-              () => undefined,
-            );
-          // We need to settle this in case it wasn't settled yet,
-          // which happens when it was sent while the socket was closing.
-          resubscribed.then(
-            () => info.resolve(),
-            (err) => info.reject(err),
-          );
+          this._resubscribe(info);
         }
       });
     }
+
+    // Retry failed resubscribes now instead of waiting out their delay.
+    const resubscribeRetries = this._resubscribeRetries;
+    this._resubscribeRetries = new Map();
+    resubscribeRetries.forEach((timer, info) => {
+      clearTimeout(timer);
+      this._resubscribe(info);
+    });
 
     const socketWaiters = this._socketWaiters;
     this._socketWaiters = [];
@@ -427,7 +431,57 @@ export class Connection {
       }
     });
 
+    info!.established = true;
+
     return () => info.unsubscribe();
+  }
+
+  // Home Assistant accepts connections while it is starting, before the
+  // integrations behind subscriptions have loaded. Retry, don't drop them.
+  private _resubscribe(info: SubscribeEventCommmandInFlight<any>, attempt = 0) {
+    let unsubscribed = false;
+    const resubscribed = info.subscribe!();
+    info.unsubscribe = () => {
+      unsubscribed = true;
+      const retry = this._resubscribeRetries.get(info);
+      if (retry !== undefined) {
+        clearTimeout(retry);
+        this._resubscribeRetries.delete(info);
+      }
+      // If resubscribing failed there is nothing to unsubscribe.
+      return resubscribed.then(
+        (unsub) => unsub(),
+        () => undefined,
+      );
+    };
+    resubscribed.then(
+      // We need to settle this in case it wasn't settled yet,
+      // which happens when it was sent while the socket was closing.
+      () => info.resolve(),
+      (err) => {
+        // One that never got established can be invalid, report it instead.
+        if (
+          unsubscribed ||
+          !info.established ||
+          !isErrorResult(err) ||
+          this.closeRequested ||
+          this._reconnectFailed
+        ) {
+          info.reject(err);
+          return;
+        }
+        if (DEBUG) {
+          console.log("Resubscribe failed, retrying", err);
+        }
+        this._resubscribeRetries.set(
+          info,
+          setTimeout(() => {
+            this._resubscribeRetries.delete(info);
+            this._resubscribe(info, attempt + 1);
+          }, retryDelay(attempt)),
+        );
+      },
+    );
   }
 
   private _handleMessage = (event: MessageEvent) => {
@@ -624,6 +678,8 @@ export class Connection {
     for (const waiter of socketWaiters) {
       waiter.reject(connectionLost());
     }
+    this._resubscribeRetries.forEach((timer) => clearTimeout(timer));
+    this._resubscribeRetries.clear();
     // Settle subscriptions that were in flight. Rejecting an already
     // established subscription is a no-op.
     this.oldSubscriptions?.forEach((info) => info.reject(connectionLost()));

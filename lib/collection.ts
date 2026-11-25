@@ -2,6 +2,7 @@ import { Store, createStore } from "./store.js";
 import { Connection } from "./connection.js";
 import { isConnectionLost } from "./errors.js";
 import { UnsubscribeFunc } from "./types.js";
+import { isErrorResult, retryDelay } from "./util.js";
 
 export type Collection<State> = {
   state: State;
@@ -40,6 +41,7 @@ export const getCollection = <State>(
   let active = 0;
   let unsubProm: Promise<UnsubscribeFunc>;
   let unsubTimer: number | undefined;
+  let refreshRetryTimer: number | undefined;
   let store = createStore<State>();
 
   const refresh = (): Promise<void> => {
@@ -50,14 +52,28 @@ export const getCollection = <State>(
     return fetchCollection(conn).then((state) => store.setState(state, true));
   };
 
-  const refreshSwallow = () =>
-    refresh().catch((err: unknown) => {
+  const refreshSwallow = (attempt = 0): Promise<void> => {
+    clearTimeout(refreshRetryTimer);
+    return refresh().catch((err: unknown) => {
       // Swallow errors if socket is connecting, closing or closed.
       // We will automatically call refresh again when we re-establish the connection.
-      if (conn.connected) {
+      if (!conn.connected) {
+        return;
+      }
+      // Home Assistant accepts connections while it is starting, before the
+      // integration behind the collection has loaded. Retry what worked before.
+      if (store.state === undefined || !isErrorResult(err)) {
         throw err;
       }
+      refreshRetryTimer = setTimeout(
+        () => refreshSwallow(attempt + 1),
+        retryDelay(attempt),
+      );
     });
+  };
+
+  // Listeners get the connection as first argument, not an attempt.
+  const refreshOnReady = () => refreshSwallow();
 
   const setupUpdateSubscription = () => {
     if (unsubTimer !== undefined) {
@@ -85,7 +101,7 @@ export const getCollection = <State>(
 
     if (fetchCollection) {
       // Fetch when connection re-established.
-      conn.addEventListener("ready", refreshSwallow);
+      conn.addEventListener("ready", refreshOnReady);
       refreshSwallow();
     }
 
@@ -106,8 +122,9 @@ export const getCollection = <State>(
         },
         () => undefined,
       );
+    clearTimeout(refreshRetryTimer);
     store.clearState();
-    conn.removeEventListener("ready", refreshSwallow);
+    conn.removeEventListener("ready", refreshOnReady);
     conn.removeEventListener("disconnected", handleDisconnect);
   };
 

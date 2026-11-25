@@ -1,7 +1,7 @@
 import * as assert from "assert";
 
-import { getCollection } from "../dist/collection.js";
-import { MockConnection } from "./util.ts";
+import { getCollection, type Collection } from "../dist/collection.js";
+import { MockConnection, unhandledDuring } from "./util.ts";
 
 describe("getCollection", () => {
   it("stops refreshing on ready after the last unsubscribe", async () => {
@@ -91,5 +91,83 @@ describe("getCollection", () => {
 
     assert.deepStrictEqual(calls, []);
     keep();
+  });
+});
+
+describe("getCollection refresh rejected by Home Assistant", () => {
+  const unknownCommand = {
+    code: "unknown_command",
+    message: "Unknown command.",
+  };
+  let conn: MockConnection;
+  let fetches: number;
+  let failing: boolean;
+  let coll: Collection<{ fetches: number }>;
+
+  beforeEach(() => {
+    conn = new MockConnection();
+    fetches = 0;
+    failing = false;
+    coll = getCollection(
+      conn,
+      "_test",
+      async () => {
+        fetches++;
+        if (failing) {
+          throw unknownCommand;
+        }
+        return { fetches };
+      },
+      undefined,
+      { unsubGrace: false },
+    );
+  });
+
+  const settle = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const rejectRefreshOnReady = async () => {
+    failing = true;
+    conn.fireEvent("ready");
+    await settle();
+  };
+
+  it("retries a refresh after a reconnect until it succeeds", async function () {
+    this.timeout(3000);
+    const unsub = coll.subscribe(() => {});
+    await settle();
+
+    await rejectRefreshOnReady();
+    assert.strictEqual(fetches, 2);
+    assert.deepStrictEqual(coll.state, { fetches: 1 });
+
+    failing = false;
+    await settle(1100);
+    assert.deepStrictEqual(coll.state, { fetches: 3 });
+    unsub();
+  });
+
+  it("stops retrying once torn down", async function () {
+    this.timeout(3000);
+    const unsub = coll.subscribe(() => {});
+    await settle();
+
+    await rejectRefreshOnReady();
+    unsub();
+    await settle(1100);
+
+    assert.strictEqual(fetches, 2);
+  });
+
+  it("does not retry a fetch that never succeeded", async function () {
+    this.timeout(3000);
+    failing = true;
+
+    const rejections = await unhandledDuring(async () => {
+      coll.subscribe(() => {});
+      await settle(1100);
+    });
+
+    assert.strictEqual(fetches, 1);
+    assert.deepStrictEqual(rejections, [unknownCommand]);
   });
 });
