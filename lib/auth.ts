@@ -298,12 +298,16 @@ export class Auth {
   }
 }
 
+// The paths we append start with a slash.
+const stripTrailingSlash = (url: string) =>
+  url[url.length - 1] === "/" ? url.slice(0, -1) : url;
+
 export function createLongLivedTokenAuth(
   hassUrl: string,
   access_token: string,
 ) {
   return new Auth({
-    hassUrl,
+    hassUrl: stripTrailingSlash(hassUrl),
     clientId: null,
     expires: Date.now() + 1e11,
     refresh_token: "",
@@ -315,11 +319,7 @@ export function createLongLivedTokenAuth(
 export async function getAuth(options: getAuthOptions = {}): Promise<Auth> {
   let data: AuthData | null | undefined;
 
-  let hassUrl = options.hassUrl;
-  // Strip trailing slash.
-  if (hassUrl && hassUrl[hassUrl.length - 1] === "/") {
-    hassUrl = hassUrl.substr(0, hassUrl.length - 1);
-  }
+  const hassUrl = options.hassUrl && stripTrailingSlash(options.hassUrl);
   const clientId =
     options.clientId !== undefined ? options.clientId : genClientId();
   const limitHassInstance = options.limitHassInstance === true;
