@@ -112,12 +112,12 @@ You need to either provide `auth` or `createSocket` as options to createConnecti
 createConnection({ auth });
 ```
 
-| Option         | Description                                                                                                                                                                                      |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| auth           | Auth object to use to create a connection.                                                                                                                                                       |
-| createSocket   | Override the createSocket method with your own. `(options) => Promise<WebSocket>`. Needs to return a connection that is already authenticated.                                                   |
-| setupRetry     | Number of times to retry initial connection when it fails. Set to -1 for infinite retries. Default is 0 (no retries)                                                                             |
-| connectTimeout | Milliseconds to wait for a socket to open before closing it, after which the retry policy above applies. Only used by the built-in createSocket. Set to 0 to wait indefinitely. Default is 10000 |
+| Option         | Description                                                                                                                                                                                                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| auth           | Auth object to use to create a connection.                                                                                                                                                                                                                                           |
+| createSocket   | Override the createSocket method with your own. `(options) => Promise<HaWebSocket>`. Needs to return a socket that is already authenticated, with `haVersion` set to the `ha_version` of the `auth_ok` message. The library uses it to check which commands Home Assistant supports. |
+| setupRetry     | Number of times to retry initial connection when it fails. Set to -1 for infinite retries. Default is 0 (no retries)                                                                                                                                                                 |
+| connectTimeout | Milliseconds to wait for a socket to open before closing it, after which the retry policy above applies. Only used by the built-in createSocket. Set to 0 to wait indefinitely. Default is 10000                                                                                     |
 
 Currently the following error codes can be raised by createConnection:
 
