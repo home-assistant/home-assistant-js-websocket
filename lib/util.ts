@@ -62,3 +62,11 @@ export const atLeastHaVersion = (
       Number(haPatch) >= patch)
   );
 };
+
+// Home Assistant error codes are strings, ours are numbers.
+export const isErrorResult = (err: unknown) =>
+  typeof (err as { code?: unknown } | null | undefined)?.code === "string";
+
+// Wait before retry `attempt`, doubling from a second up to 30 seconds.
+export const retryDelay = (attempt: number) =>
+  Math.min(1000 * 2 ** attempt, 30000);

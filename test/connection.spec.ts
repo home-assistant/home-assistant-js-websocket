@@ -3,6 +3,7 @@ import * as assert from "assert";
 import { Connection } from "../dist/connection.js";
 import { getCollection } from "../dist/collection.js";
 import { ERR_CONNECTION_LOST, ERR_INVALID_AUTH } from "../dist/errors.js";
+import { unhandledDuring } from "./util.ts";
 
 class FakeSocket {
   OPEN = 1;
@@ -43,8 +44,19 @@ class FakeSocket {
   }
 
   succeed(type: string) {
-    const id = this.sent.find((m) => m.type === type).id;
+    const id = this.sent.findLast((m) => m.type === type).id;
     this.receive({ id, type: "result", success: true, result: null });
+    return id;
+  }
+
+  fail(type: string, code = "unknown_command") {
+    const id = this.sent.findLast((m) => m.type === type).id;
+    this.receive({
+      id,
+      type: "result",
+      success: false,
+      error: { code, message: "Unknown command." },
+    });
     return id;
   }
 }
@@ -59,24 +71,6 @@ const outcome = (promise: Promise<unknown>) =>
     ),
     settle(60).then(() => "pending"),
   ]);
-
-// Collect the unhandled rejections raised while `run` executes. Mocha's own
-// handler is detached meanwhile, it would fail the test on the first one.
-const unhandledDuring = async (run: () => Promise<void> | void) => {
-  const mochaHandlers = process.listeners("unhandledRejection");
-  process.removeAllListeners("unhandledRejection");
-  const rejections: unknown[] = [];
-  process.on("unhandledRejection", (reason) => rejections.push(reason));
-  try {
-    await run();
-    // Rejections are reported after the current macrotask.
-    await new Promise((resolve) => setImmediate(resolve));
-  } finally {
-    process.removeAllListeners("unhandledRejection");
-    mochaHandlers.forEach((h) => process.on("unhandledRejection", h));
-  }
-  return rejections;
-};
 
 const trackUnhandled = () => {
   const unhandled: unknown[] = [];
@@ -481,6 +475,121 @@ describe("Connection failed resubscribe", () => {
     } finally {
       tracker.stop();
     }
+  });
+});
+
+describe("Connection resubscribe rejected by Home Assistant", () => {
+  let sockets: FakeSocket[];
+  let socket: FakeSocket;
+  let conn: Connection;
+
+  beforeEach(() => {
+    sockets = [];
+    socket = new FakeSocket();
+    conn = new Connection(socket as any, {
+      setupRetry: 0,
+      createSocket: async () => {
+        const created = new FakeSocket();
+        sockets.push(created);
+        return created as any;
+      },
+    });
+  });
+
+  afterEach(() => conn.close());
+
+  const subscribe = async (callback: (ev: any) => void = () => {}) => {
+    const subscribing = conn.subscribeMessage(callback, { type: "x" });
+    socket.succeed("x");
+    return subscribing;
+  };
+
+  const rejectResubscribe = async () => {
+    socket.close();
+    await settle();
+    sockets[0].fail("x");
+    await settle(0);
+  };
+
+  const sentTypes = (sock: FakeSocket) => sock.sent.map((m) => m.type);
+
+  it("retries until the subscription is back", async function () {
+    this.timeout(3000);
+    const tracker = trackUnhandled();
+    try {
+      const events: unknown[] = [];
+      const unsub = await subscribe((ev) => events.push(ev));
+
+      await rejectResubscribe();
+      assert.deepStrictEqual(sentTypes(sockets[0]), ["x"]);
+
+      // The first retry is after a second.
+      await settle(1100);
+      assert.deepStrictEqual(sentTypes(sockets[0]), ["x", "x"]);
+      const id = sockets[0].succeed("x");
+      sockets[0].receive({ id, type: "event", event: "fired" });
+      assert.deepStrictEqual(events, ["fired"]);
+
+      const unsubscribing = unsub();
+      await settle(0);
+      sockets[0].succeed("unsubscribe_events");
+      await unsubscribing;
+      assert.strictEqual(sockets[0].sent[2].subscription, id);
+      assert.strictEqual(conn.commands.size, 0);
+      assert.deepStrictEqual(tracker.unhandled, []);
+    } finally {
+      tracker.stop();
+    }
+  });
+
+  it("stops retrying once unsubscribed", async function () {
+    this.timeout(3000);
+    const unsub = await subscribe();
+
+    await rejectResubscribe();
+    assert.strictEqual(await outcome(unsub()), "resolved");
+    await settle(1100);
+
+    assert.deepStrictEqual(sentTypes(sockets[0]), ["x"]);
+  });
+
+  it("stops retrying when the connection is closed", async function () {
+    this.timeout(3000);
+    await subscribe();
+
+    await rejectResubscribe();
+    conn.close();
+    await settle(1100);
+
+    assert.deepStrictEqual(sentTypes(sockets[0]), ["x"]);
+  });
+
+  it("retries right away after the next reconnect", async function () {
+    this.timeout(3000);
+    await subscribe();
+
+    await rejectResubscribe();
+    sockets[0].close();
+    await settle();
+    assert.deepStrictEqual(sentTypes(sockets[1]), ["x"]);
+    sockets[1].succeed("x");
+
+    // The pending retry is dropped, it doesn't subscribe a second time.
+    await settle(1100);
+    assert.deepStrictEqual(sentTypes(sockets[1]), ["x"]);
+    assert.strictEqual(conn.commands.size, 1);
+  });
+
+  it("rejects a subscription that was never established", async () => {
+    const rejected = assert.rejects(
+      conn.subscribeMessage(() => {}, { type: "x" }),
+      { code: "unknown_command" },
+    );
+    await settle(0);
+
+    await rejectResubscribe();
+
+    await rejected;
   });
 });
 

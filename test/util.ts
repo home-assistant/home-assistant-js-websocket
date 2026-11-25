@@ -62,6 +62,24 @@ export class MockConnection extends Connection {
   }
 }
 
+// Collect the unhandled rejections raised while `run` executes. Mocha's own
+// handler is detached meanwhile, it would fail the test on the first one.
+export const unhandledDuring = async (run: () => Promise<void> | void) => {
+  const mochaHandlers = process.listeners("unhandledRejection");
+  process.removeAllListeners("unhandledRejection");
+  const rejections: unknown[] = [];
+  process.on("unhandledRejection", (reason) => rejections.push(reason));
+  try {
+    await run();
+    // Rejections are reported after the current macrotask.
+    await new Promise((resolve) => setImmediate(resolve));
+  } finally {
+    process.removeAllListeners("unhandledRejection");
+    mochaHandlers.forEach((h) => process.on("unhandledRejection", h));
+  }
+  return rejections;
+};
+
 export class AwaitableEvent {
   curPromise?: Promise<any>;
   curResolve?: (...args: any[]) => void;
