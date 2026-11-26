@@ -189,11 +189,11 @@ You can also close the connection, without any reconnect, with `connection.close
 
 The `Connection` object implements three events related to the reconnecting logic.
 
-| Event           | Data       | Description                                                                                              |
-| --------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
-| ready           | -          | Fired when authentication is successful and the connection is ready to take commands.                    |
-| disconnected    | -          | Fired when the connection is lost.                                                                       |
-| reconnect-error | Error code | Fired when we encounter a fatal error when trying to reconnect. Currently limited to `ERR_INVALID_AUTH`. |
+| Event           | Data       | Description                                                                                                                                               |
+| --------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ready           | -          | Fired when authentication is successful and the connection is ready to take commands.                                                                     |
+| disconnected    | -          | Fired when the connection is lost.                                                                                                                        |
+| reconnect-error | Error code | Fired when we encounter a fatal error when trying to reconnect: `ERR_INVALID_AUTH`, or `ERR_INVALID_JSON` when Home Assistant keeps sending invalid JSON. |
 
 You can attach and remove listeners as follows:
 
@@ -415,6 +415,7 @@ Makes a request to the server to revoke the refresh and all related access token
 | ERR_CONNECTION_LOST       | 3            |
 | ERR_HASS_HOST_REQUIRED    | 4            |
 | ERR_INVALID_HTTPS_TO_HTTP | 5            |
+| ERR_INVALID_JSON          | 7            |
 
 Promises from the connection reject with an error result for a lost connection: `{ type: "result", success: false, error: { code: ERR_CONNECTION_LOST, message: "Connection lost" } }`. `conn.sendMessage` throws the bare `ERR_CONNECTION_LOST` code. `isConnectionLost(err)` recognises both.
 

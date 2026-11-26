@@ -2,7 +2,11 @@ import * as assert from "assert";
 
 import { Connection } from "../dist/connection.js";
 import { getCollection } from "../dist/collection.js";
-import { ERR_CONNECTION_LOST, ERR_INVALID_AUTH } from "../dist/errors.js";
+import {
+  ERR_CONNECTION_LOST,
+  ERR_INVALID_AUTH,
+  ERR_INVALID_JSON,
+} from "../dist/errors.js";
 
 class FakeSocket {
   OPEN = 1;
@@ -700,40 +704,92 @@ describe("Connection reconnects despite", () => {
 describe("Connection invalid JSON", () => {
   let created: number;
   let conn: Connection;
-  let socket: FakeSocket;
-  let originalError: typeof console.error;
+  let delays: number[];
+  let now: number;
+  const originalError = console.error;
+  const originalSetTimeout = globalThis.setTimeout;
+  const originalNow = Date.now;
+
+  // The settle() helper waits 20 ms, reconnect delays are multiples of 5 s.
+  const reconnectDelays = () => delays.filter((ms) => ms % 5000 === 0);
+
+  const sendInvalidJson = () =>
+    (conn.socket as unknown as FakeSocket).listeners.message.forEach((cb) =>
+      cb({ data: '{"id":1,nuLl}' }),
+    );
 
   beforeEach(() => {
     created = 0;
-    socket = new FakeSocket();
-    conn = new Connection(socket as any, {
+    delays = [];
+    now = 1000000;
+    conn = new Connection(new FakeSocket() as any, {
       setupRetry: 0,
       createSocket: async () => {
         created++;
         return new FakeSocket() as any;
       },
     });
-    originalError = console.error;
     console.error = () => {};
+    // Record the delays without waiting for them.
+    globalThis.setTimeout = ((fn: () => void, ms: number) => {
+      delays.push(ms);
+      return originalSetTimeout(fn, 0);
+    }) as typeof setTimeout;
+    Date.now = () => now;
   });
 
   afterEach(() => {
     console.error = originalError;
+    globalThis.setTimeout = originalSetTimeout;
+    Date.now = originalNow;
     conn.close();
   });
 
-  it("reconnects and rejects pending commands instead of throwing", async () => {
+  it("rejects pending commands and reconnects instead of throwing", async () => {
     const sending = assert.rejects(conn.sendMessagePromise({ type: "z" }), {
       error: { code: ERR_CONNECTION_LOST, message: "Connection lost" },
     });
 
     const rejections = await unhandledDuring(async () => {
-      socket.listeners.message.forEach((cb) => cb({ data: '{"id":1,nuLl}' }));
+      sendInvalidJson();
       await settle();
     });
 
     await sending;
     assert.strictEqual(created, 1);
     assert.deepStrictEqual(rejections, []);
+  });
+
+  it("delays each reconnect more on repeated invalid JSON, then gives up", async () => {
+    const errors: unknown[] = [];
+    conn.addEventListener("reconnect-error", (_conn, err) => errors.push(err));
+
+    for (let i = 0; i < 13; i++) {
+      sendInvalidJson();
+      await settle();
+    }
+
+    assert.deepStrictEqual(
+      reconnectDelays(),
+      Array.from({ length: 12 }, (_, i) => i * 5000),
+    );
+    assert.strictEqual(created, 12);
+    assert.deepStrictEqual(errors, [ERR_INVALID_JSON]);
+    await assert.rejects(conn.sendMessagePromise({ type: "z" }), {
+      error: { code: ERR_CONNECTION_LOST, message: "Connection lost" },
+    });
+  });
+
+  it("resets the delay after a minute of valid JSON", async () => {
+    sendInvalidJson();
+    await settle();
+    sendInvalidJson();
+    await settle();
+    now += 60001;
+    (conn.socket as unknown as FakeSocket).receive({ type: "pong", id: 99 });
+    sendInvalidJson();
+    await settle();
+
+    assert.deepStrictEqual(reconnectDelays(), [0, 5000, 0]);
   });
 });

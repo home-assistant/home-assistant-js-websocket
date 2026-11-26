@@ -5,6 +5,7 @@
 import * as messages from "./messages.js";
 import {
   ERR_INVALID_AUTH,
+  ERR_INVALID_JSON,
   ERR_CONNECTION_LOST,
   isConnectionLost,
 } from "./errors.js";
@@ -13,6 +14,9 @@ import { HaWebSocket } from "./socket.js";
 import type { Auth } from "./auth.js";
 
 const DEBUG = false;
+// Good frames this long after invalid JSON reset the reconnect delay,
+// and a delay this long gives up instead.
+const INVALID_JSON_RESET_MS = 60000;
 
 const connectionLost = () =>
   messages.error(ERR_CONNECTION_LOST, "Connection lost");
@@ -112,8 +116,13 @@ export class Connection {
     reject: (err: unknown) => void;
   }> = [];
 
-  // Set when reconnecting stopped on invalid auth, nothing will connect anymore.
+  // Set when reconnecting stopped on invalid auth or invalid JSON, nothing will connect anymore.
   private _reconnectFailed = false;
+
+  // Invalid JSON may come back on every connection, so each one delays the
+  // next reconnect more.
+  private _invalidJsonCount = 0;
+  private _lastInvalidJson = 0;
 
   socket?: HaWebSocket;
   /**
@@ -434,9 +443,22 @@ export class Connection {
     let messageGroup: WebSocketResponse | WebSocketResponse[];
     try {
       messageGroup = JSON.parse(event.data);
+      if (
+        this._invalidJsonCount > 0 &&
+        Date.now() - this._lastInvalidJson > INVALID_JSON_RESET_MS
+      ) {
+        this._invalidJsonCount = 0;
+      }
     } catch (err) {
       // A reply may be lost, so reconnect to settle the commands waiting on it.
-      console.error("Received invalid JSON, reconnecting", err);
+      this._invalidJsonCount++;
+      this._lastInvalidJson = Date.now();
+      if ((this._invalidJsonCount - 1) * 5000 >= INVALID_JSON_RESET_MS) {
+        console.error("Received invalid JSON, giving up", err);
+        this._reconnectFailed = true;
+      } else {
+        console.error("Received invalid JSON, reconnecting", err);
+      }
       this.reconnect(true);
       return;
     }
@@ -535,10 +557,16 @@ export class Connection {
 
     this.fireEvent("disconnected");
 
+    if (this._reconnectFailed) {
+      this._rejectWaiting();
+      this.fireEvent("reconnect-error", ERR_INVALID_JSON);
+      return;
+    }
+
     // Disable setupRetry, we control it here with auto-backoff
     const options = { ...this.options, setupRetry: 0 };
 
-    const reconnect = (tries: number) => {
+    const reconnect = (tries: number, delay?: number) => {
       setTimeout(
         async () => {
           if (this.closeRequested) {
@@ -573,7 +601,7 @@ export class Connection {
           }
           this._setSocket(socket);
         },
-        Math.min(tries, 5) * 1000,
+        delay ?? Math.min(tries, 5) * 1000,
       );
     };
 
@@ -589,7 +617,7 @@ export class Connection {
       this._queuedMessages = [];
     }
 
-    reconnect(0);
+    reconnect(0, Math.max(this._invalidJsonCount - 1, 0) * 5000);
   };
 
   private get _isUsable() {
