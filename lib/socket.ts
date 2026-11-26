@@ -122,7 +122,14 @@ export function createSocket(options: ConnectionOptions): Promise<HaWebSocket> {
     };
 
     const handleMessage = async (event: MessageEvent) => {
-      const message = JSON.parse(event.data);
+      let message;
+      try {
+        message = JSON.parse(event.data);
+      } catch (err) {
+        console.error("[Auth phase] Received invalid JSON", err);
+        socket.close();
+        return;
+      }
 
       if (DEBUG) {
         console.log("[Auth phase] Received", message);

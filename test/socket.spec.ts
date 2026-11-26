@@ -88,6 +88,24 @@ describe("createSocket connect timeout", () => {
     assert.strictEqual(socket.closeCalled, false);
   }).timeout(500);
 
+  it("should close and reject a socket that sends invalid JSON", async () => {
+    const originalError = console.error;
+    console.error = () => {};
+    try {
+      const promise = createSocket(options(0));
+      const socket = StalledWebSocket.instances[0];
+
+      socket.fire("open", {});
+      await 0;
+      socket.fire("message", { data: "{nuLl" });
+
+      await assert.rejects(promise, (err: any) => err === ERR_CANNOT_CONNECT);
+      assert.strictEqual(socket.closeCalled, true);
+    } finally {
+      console.error = originalError;
+    }
+  }).timeout(500);
+
   it("should wait indefinitely when the timeout is disabled", async () => {
     const promise = createSocket(options(0));
     promise.catch(() => {});
