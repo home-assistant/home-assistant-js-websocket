@@ -270,8 +270,8 @@ export class Auth {
       grant_type: "refresh_token",
       refresh_token: this.data.refresh_token,
     });
-    // Access token response does not contain refresh token.
-    data.refresh_token = this.data.refresh_token;
+    // The server may omit the refresh token, the current one then stays valid.
+    if (!data.refresh_token) data.refresh_token = this.data.refresh_token;
     this.data = data;
     if (this._saveTokens) this._saveTokens(data);
   }
