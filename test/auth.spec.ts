@@ -128,6 +128,40 @@ describe("Auth", () => {
   });
 });
 
+describe("refreshAccessToken", () => {
+  function refreshableAuth() {
+    return new Auth({
+      hassUrl: HASS_URL,
+      clientId: CLIENT_ID,
+      refresh_token: "old-refresh",
+      access_token: "old-access",
+      expires_in: 3000,
+      expires: Date.now() - 1000,
+    });
+  }
+
+  it("should keep the refresh token when the response has none", async () => {
+    globalThis.fetch = async () =>
+      Response.json({ access_token: "new-access", expires_in: 1800 });
+    const auth = refreshableAuth();
+    await auth.refreshAccessToken();
+    strictEqual(auth.data.access_token, "new-access");
+    strictEqual(auth.data.refresh_token, "old-refresh");
+  });
+
+  it("should store the refresh token from the response", async () => {
+    globalThis.fetch = async () =>
+      Response.json({
+        access_token: "new-access",
+        refresh_token: "new-refresh",
+        expires_in: 1800,
+      });
+    const auth = refreshableAuth();
+    await auth.refreshAccessToken();
+    strictEqual(auth.data.refresh_token, "new-refresh");
+  });
+});
+
 describe("createLongLivedTokenAuth", () => {
   it("should strip a trailing slash from the url", () => {
     const auth = createLongLivedTokenAuth(`${HASS_URL}/`, "token");
